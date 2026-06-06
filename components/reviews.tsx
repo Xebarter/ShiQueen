@@ -66,109 +66,113 @@ export function Reviews() {
   }));
 
   return (
-    <div className="py-12 border-t border-border">
-      <h2 className="text-2xl font-semibold mb-8">Customer Reviews</h2>
+    <div className="border-t border-border py-8 sm:py-12">
+      <h2 className="mb-6 text-xl font-semibold sm:mb-8 sm:text-2xl">Customer reviews</h2>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-12">
+      <div className="mb-8 grid grid-cols-1 gap-8 lg:grid-cols-4 lg:mb-12">
         {/* Rating Summary */}
         <div className="lg:col-span-1">
-          <div className="space-y-6">
-            <div>
-              <div className="text-4xl font-semibold mb-2">{averageRating}</div>
-              <div className="flex gap-1 mb-2">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-4 h-4 ${
-                      i < Math.round(parseFloat(averageRating))
-                        ? 'fill-accent text-accent'
-                        : 'text-muted'
-                    }`}
-                  />
-                ))}
+          <div className="rounded-xl border border-border/60 bg-card p-5 sm:p-0 sm:border-0 sm:bg-transparent">
+            <div className="space-y-6">
+              <div>
+                <div className="mb-2 text-4xl font-semibold">{averageRating}</div>
+                <div className="mb-2 flex gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`h-4 w-4 ${
+                        i < Math.round(parseFloat(averageRating))
+                          ? 'fill-accent text-accent'
+                          : 'text-muted'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Based on {mockReviews.length} reviews
+                </p>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Based on {mockReviews.length} reviews
-              </p>
+
+              <Button className="hidden w-full sm:inline-flex">Write a review</Button>
             </div>
 
-            <Button className="w-full">Write a Review</Button>
-          </div>
-
-          {/* Rating Distribution */}
-          <div className="mt-8 space-y-3">
-            {ratingDistribution.map((dist) => (
-              <div key={dist.rating} className="space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{dist.rating} stars</span>
-                  <span className="text-muted-foreground">{dist.count}</span>
+            {/* Rating Distribution */}
+            <div className="mt-6 space-y-3 sm:mt-8">
+              {ratingDistribution.map((dist) => (
+                <div key={dist.rating} className="space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{dist.rating} stars</span>
+                    <span className="text-muted-foreground">{dist.count}</span>
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-secondary">
+                    <div
+                      className="h-2 rounded-full bg-accent"
+                      style={{ width: `${dist.percentage}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="w-full bg-secondary rounded-full h-2">
-                  <div
-                    className="bg-accent h-2 rounded-full"
-                    style={{ width: `${dist.percentage}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Reviews List */}
         <div className="lg:col-span-3">
-          <div className="mb-6 flex justify-between items-center">
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground">
               Showing all {mockReviews.length} reviews
             </p>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="text-sm px-3 py-1 border border-border rounded-lg bg-background"
+              className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm sm:w-auto sm:py-1"
             >
-              <option value="helpful">Most Helpful</option>
-              <option value="recent">Most Recent</option>
-              <option value="highest">Highest Rating</option>
-              <option value="lowest">Lowest Rating</option>
+              <option value="helpful">Most helpful</option>
+              <option value="recent">Most recent</option>
+              <option value="highest">Highest rating</option>
+              <option value="lowest">Lowest rating</option>
             </select>
           </div>
 
           <div className="space-y-6">
             {mockReviews.map((review) => (
               <div key={review.id} className="border-b border-border pb-6">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
+                <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
                     <h3 className="font-semibold">{review.title}</h3>
                     <p className="text-sm text-muted-foreground">
-                      by {review.author} • {review.date}
+                      by {review.author} · {review.date}
                     </p>
                   </div>
                   {review.verified && (
-                    <span className="text-xs bg-accent/10 text-accent px-2 py-1 rounded">
-                      Verified Purchase
+                    <span className="w-fit shrink-0 rounded bg-accent/10 px-2 py-1 text-xs text-accent">
+                      Verified purchase
                     </span>
                   )}
                 </div>
 
-                <div className="flex gap-1 mb-3">
+                <div className="mb-3 flex gap-1">
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
-                      className={`w-4 h-4 ${
+                      className={`h-4 w-4 ${
                         i < review.rating ? 'fill-accent text-accent' : 'text-muted'
                       }`}
                     />
                   ))}
                 </div>
 
-                <p className="text-muted-foreground text-sm mb-4">{review.content}</p>
+                <p className="mb-4 text-sm leading-relaxed text-muted-foreground">{review.content}</p>
 
-                <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition">
-                  <ThumbsUp className="w-4 h-4" />
+                <button className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground">
+                  <ThumbsUp className="h-4 w-4" />
                   Helpful ({review.helpful})
                 </button>
               </div>
             ))}
           </div>
+
+          <Button className="mt-6 w-full sm:hidden">Write a review</Button>
         </div>
       </div>
     </div>

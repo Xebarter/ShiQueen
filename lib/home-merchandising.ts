@@ -32,6 +32,16 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   },
 ];
 
+/** Preserve order; drop duplicate product ids (common in merged / localStorage lists). */
+export function uniqueByProductId(products: Product[]): Product[] {
+  const seen = new Set<string>();
+  return products.filter((product) => {
+    if (seen.has(product.id)) return false;
+    seen.add(product.id);
+    return true;
+  });
+}
+
 export function getDiscountPercent(product: Product): number {
   if (!product.originalPrice || product.originalPrice <= product.price) return 0;
   return Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
@@ -110,12 +120,14 @@ export function getRecommended(
     (p) => !viewedIds.includes(p.id) && categories.includes(p.category)
   );
 
-  if (recommended.length >= limit) return recommended.slice(0, limit);
+  if (recommended.length >= limit) return uniqueByProductId(recommended).slice(0, limit);
+
+  const recommendedIds = new Set(recommended.map((p) => p.id));
   const filler = getTrending(
-    products.filter((p) => !viewedIds.includes(p.id)),
+    products.filter((p) => !viewedIds.includes(p.id) && !recommendedIds.has(p.id)),
     limit - recommended.length
   );
-  return [...recommended, ...filler].slice(0, limit);
+  return uniqueByProductId([...recommended, ...filler]).slice(0, limit);
 }
 
 export function getCompleteTheLook(products: Product[], limit = 4): Product[] {
@@ -144,9 +156,19 @@ export function getFrequentlyBoughtTogether(products: Product[], limit = 3): Pro
 }
 
 export function getRecentlyViewed(products: Product[], viewedIds: string[]): Product[] {
-  return viewedIds
-    .map((id) => products.find((p) => p.id === id))
-    .filter((p): p is Product => Boolean(p));
+  const seen = new Set<string>();
+  const result: Product[] = [];
+
+  for (const id of viewedIds) {
+    if (seen.has(id)) continue;
+    const product = products.find((p) => p.id === id);
+    if (product) {
+      seen.add(id);
+      result.push(product);
+    }
+  }
+
+  return result;
 }
 
 export function isSellingFast(product: Product): boolean {
@@ -208,10 +230,10 @@ export function getMostWishlisted(products: Product[], wishlistIds: string[], li
   const wishlisted = wishlistIds
     .map((id) => products.find((p) => p.id === id))
     .filter((p): p is Product => Boolean(p));
-  if (wishlisted.length >= limit) return wishlisted.slice(0, limit);
+  if (wishlisted.length >= limit) return uniqueByProductId(wishlisted).slice(0, limit);
   const filler = getTrending(
     products.filter((p) => !wishlistIds.includes(p.id)),
     limit - wishlisted.length
   );
-  return [...wishlisted, ...filler].slice(0, limit);
+  return uniqueByProductId([...wishlisted, ...filler]).slice(0, limit);
 }

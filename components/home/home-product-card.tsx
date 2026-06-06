@@ -108,12 +108,12 @@ export function HomeProductCard({
           />
 
           <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 max-w-[70%]">
-            {displayBadges.slice(0, 2).map((badge) => {
+            {displayBadges.slice(0, 2).map((badge, badgeIndex) => {
               const config = BADGE_CONFIG[badge];
               const Icon = config.icon;
               return (
                 <span
-                  key={badge}
+                  key={`${product.id}-${badge}-${badgeIndex}`}
                   className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide ${config.className}`}
                 >
                   {Icon && <Icon className="w-3 h-3" />}

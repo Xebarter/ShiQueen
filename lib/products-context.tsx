@@ -5,6 +5,7 @@ import { Product } from '@/lib/types/database';
 import { subscribeProducts } from '@/lib/firebase/products';
 import { ensureDatabaseSeeded } from '@/lib/firebase/seed';
 import { SEED_PRODUCTS } from '@/lib/firebase/seed-data';
+import { uniqueByProductId } from '@/lib/home-merchandising';
 
 interface ProductsContextType {
   products: Product[];
@@ -34,7 +35,8 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
         await ensureDatabaseSeeded();
         unsubscribe = subscribeProducts(
           (nextProducts) => {
-            setProducts(nextProducts.length > 0 ? nextProducts : FALLBACK_PRODUCTS);
+            const source = nextProducts.length > 0 ? nextProducts : FALLBACK_PRODUCTS;
+            setProducts(uniqueByProductId(source));
             setLoading(false);
           },
           (err) => {

@@ -14,16 +14,19 @@ export function PricingTiers({ tiers, basePrice }: PricingTiersProps) {
         const maxLabel = tier.maxQuantity ? `${tier.maxQuantity}` : '+';
         
         return (
-          <div key={idx} className="flex justify-between items-center text-sm p-2 rounded hover:bg-secondary/50 transition">
+          <div
+            key={idx}
+            className="flex flex-col gap-1 rounded-lg p-2 text-sm transition hover:bg-secondary/50 sm:flex-row sm:items-center sm:justify-between"
+          >
             <span className="text-muted-foreground">
-              {tier.minQuantity} - {maxLabel} units
+              {tier.minQuantity} – {maxLabel} units
             </span>
-            <div className="flex items-center gap-3">
-              <span className="text-right min-w-[140px]">
+            <div className="flex items-center justify-between gap-3 sm:justify-end">
+              <span className="font-medium tabular-nums sm:min-w-[120px] sm:text-right">
                 USh {tier.pricePerUnit.toLocaleString('en-UG', { maximumFractionDigits: 0 })}
               </span>
               {discount > 0 && (
-                <span className="text-accent font-semibold text-xs whitespace-nowrap">
+                <span className="text-xs font-semibold whitespace-nowrap text-accent">
                   -{discount.toFixed(0)}%
                 </span>
               )}
