@@ -4,12 +4,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCart } from '@/lib/cart-context';
 import { useAuth } from '@/lib/auth-context';
-import { ShoppingBag, User, Menu, X, ChevronRight } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { ShoppingBag, User, Menu, X, ChevronRight, Heart } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SearchBar } from './search-bar';
 import { BrandLogo } from './brand-logo';
 import { cn } from '@/lib/utils';
+import { getStoredWishlist } from '@/lib/home-merchandising';
 
 const NAV_LINKS = [
   { href: '/shop', label: 'Shop' },
@@ -17,6 +18,8 @@ const NAV_LINKS = [
   { href: '/loyalty', label: 'Rewards' },
   { href: '/wholesale', label: 'Wholesale' },
 ];
+
+const MOBILE_COMPACT_THRESHOLD = 16;
 
 function NavLink({
   href,
@@ -83,7 +86,7 @@ function MobileNavLink({
         href={href}
         onClick={onClick}
         className={cn(
-          'flex items-center justify-between py-4 border-b border-border/40 transition-colors',
+          'flex items-center justify-between border-b border-border/40 py-4 transition-colors',
           isActive ? 'text-primary' : 'text-foreground/85 hover:text-primary'
         )}
       >
@@ -91,11 +94,36 @@ function MobileNavLink({
         <ChevronRight
           className={cn(
             'h-4 w-4 transition-transform',
-            isActive ? 'text-accent' : 'text-muted-foreground/60 group-hover:translate-x-0.5'
+            isActive ? 'text-accent' : 'text-muted-foreground/60'
           )}
         />
       </Link>
     </motion.div>
+  );
+}
+
+function MobileMenuButton({
+  open,
+  onClick,
+  className,
+}: {
+  open: boolean;
+  onClick: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'inline-flex rounded-full p-2.5 text-foreground/80 transition hover:bg-secondary hover:text-primary',
+        className
+      )}
+      aria-expanded={open}
+      aria-label={open ? 'Close menu' : 'Open menu'}
+    >
+      {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+    </button>
   );
 }
 
@@ -104,9 +132,42 @@ export function Header() {
   const { user } = useAuth();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [wishlistCount, setWishlistCount] = useState(0);
+  const [scrollY, setScrollY] = useState(0);
+  const [isPhoneLayout, setIsPhoneLayout] = useState(false);
+  const primaryHeaderRef = useRef<HTMLElement>(null);
+  const mobileSearchBarRef = useRef<HTMLDivElement>(null);
+  const [primaryHeaderHeight, setPrimaryHeaderHeight] = useState(68);
+  const [mobileSearchBarHeight, setMobileSearchBarHeight] = useState(52);
+
+  const wishlistHref = user ? '/account#wishlist' : '/sign-in';
+  const isMobileCompact = isPhoneLayout && scrollY > MOBILE_COMPACT_THRESHOLD;
+  const mobileBarTop = isPhoneLayout
+    ? Math.max(0, primaryHeaderHeight - scrollY)
+    : primaryHeaderHeight;
+  const mobileHeaderOffset = mobileBarTop + mobileSearchBarHeight;
+
+  const toggleMobileMenu = useCallback(() => {
+    setMobileMenuOpen((open) => !open);
+  }, []);
+
+  const closeMobileMenu = useCallback(() => {
+    setMobileMenuOpen(false);
+  }, []);
 
   useEffect(() => {
     setMobileMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    const syncWishlistCount = () => setWishlistCount(getStoredWishlist().length);
+    syncWishlistCount();
+    window.addEventListener('wishlist-updated', syncWishlistCount);
+    window.addEventListener('storage', syncWishlistCount);
+    return () => {
+      window.removeEventListener('wishlist-updated', syncWishlistCount);
+      window.removeEventListener('storage', syncWishlistCount);
+    };
   }, [pathname]);
 
   useEffect(() => {
@@ -128,11 +189,85 @@ export function Header() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  const closeMobileMenu = () => setMobileMenuOpen(false);
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 767px)');
+    const updateLayout = () => setIsPhoneLayout(media.matches);
+    updateLayout();
+    media.addEventListener('change', updateLayout);
+    return () => media.removeEventListener('change', updateLayout);
+  }, []);
+
+  useEffect(() => {
+    let frame = 0;
+
+    const onScroll = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        setScrollY(window.scrollY);
+        frame = 0;
+      });
+    };
+
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  useEffect(() => {
+    const primary = primaryHeaderRef.current;
+    const searchBar = mobileSearchBarRef.current;
+    if (!primary || !searchBar) return;
+
+    const syncHeights = () => {
+      setPrimaryHeaderHeight(primary.offsetHeight);
+      setMobileSearchBarHeight(searchBar.offsetHeight);
+    };
+
+    syncHeights();
+    const observer = new ResizeObserver(syncHeights);
+    observer.observe(primary);
+    observer.observe(searchBar);
+    window.addEventListener('resize', syncHeights);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', syncHeights);
+    };
+  }, [pathname, isMobileCompact]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const media = window.matchMedia('(max-width: 1023px)');
+
+    const syncHeaderVars = () => {
+      if (!media.matches) {
+        root.style.removeProperty('--header-primary-height');
+        root.style.removeProperty('--mobile-header-offset');
+        return;
+      }
+
+      root.style.setProperty('--header-primary-height', `${primaryHeaderHeight}px`);
+      root.style.setProperty('--mobile-header-offset', `${mobileHeaderOffset}px`);
+    };
+
+    syncHeaderVars();
+    media.addEventListener('change', syncHeaderVars);
+    return () => media.removeEventListener('change', syncHeaderVars);
+  }, [primaryHeaderHeight, mobileHeaderOffset]);
 
   return (
     <>
-      <header className="sticky top-0 z-50 border-b border-border/60 bg-background/90 backdrop-blur-md supports-[backdrop-filter]:bg-background/80">
+      {/* Primary header — scrolls away on phone, sticky on tablet+ */}
+      <header
+        ref={primaryHeaderRef}
+        className={cn(
+          'z-40 border-b border-border/60 bg-background/90 backdrop-blur-md supports-[backdrop-filter]:bg-background/80',
+          'max-md:relative md:sticky md:top-0 lg:sticky lg:top-0'
+        )}
+      >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-[4.25rem] items-center justify-between gap-4">
             <BrandLogo variant="header" />
@@ -178,30 +313,74 @@ export function Header() {
                 )}
               </Link>
 
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen((open) => !open)}
-                className="inline-flex rounded-full p-2.5 text-foreground/80 transition hover:bg-secondary hover:text-primary md:hidden"
-                aria-expanded={mobileMenuOpen}
-                aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
-              >
-                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </button>
+              {!isMobileCompact && (
+                <MobileMenuButton
+                  open={mobileMenuOpen}
+                  onClick={toggleMobileMenu}
+                  className="md:hidden"
+                />
+              )}
             </div>
           </div>
         </div>
 
-        {/* Tablet nav — compact row below bar */}
+        {/* Tablet nav */}
         <nav className="hidden border-t border-border/40 md:flex lg:hidden">
           <div className="mx-auto flex w-full max-w-7xl items-center justify-center gap-6 overflow-x-auto px-4 py-2.5 scrollbar-hide">
             {NAV_LINKS.map((link) => (
-              <NavLink key={link.href} href={link.href} label={link.label} className="whitespace-nowrap text-xs" />
+              <NavLink
+                key={link.href}
+                href={link.href}
+                label={link.label}
+                className="whitespace-nowrap text-xs"
+              />
             ))}
           </div>
         </nav>
       </header>
 
-      {/* Mobile luxury drawer */}
+      {/* Mobile search bar — persistent; slides up as the upper header scrolls away */}
+      <div
+        ref={mobileSearchBarRef}
+        className="fixed inset-x-0 z-50 border-b border-border/50 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/90 lg:hidden"
+        style={{ top: mobileBarTop }}
+      >
+        <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-2.5 sm:gap-3 sm:px-6">
+          <AnimatePresence mode="popLayout">
+            {isMobileCompact && (
+              <motion.div
+                key="mobile-menu-trigger"
+                initial={{ opacity: 0, width: 0, marginRight: 0 }}
+                animate={{ opacity: 1, width: 'auto', marginRight: 0 }}
+                exit={{ opacity: 0, width: 0, marginRight: 0 }}
+                transition={{ duration: 0.2 }}
+                className="shrink-0 overflow-hidden md:hidden"
+              >
+                <MobileMenuButton open={mobileMenuOpen} onClick={toggleMobileMenu} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <Link
+            href={wishlistHref}
+            className="relative flex shrink-0 items-center justify-center rounded-full p-2.5 text-foreground/80 transition hover:bg-secondary hover:text-primary"
+            aria-label={`Wishlist${wishlistCount > 0 ? `, ${wishlistCount} items` : ''}`}
+          >
+            <Heart className="h-5 w-5" />
+            {wishlistCount > 0 && (
+              <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                {wishlistCount > 9 ? '9+' : wishlistCount}
+              </span>
+            )}
+          </Link>
+          <SearchBar className="max-w-none flex-1" />
+        </div>
+      </div>
+
+      {/* Reserve space for the fixed mobile search bar */}
+      <div className="lg:hidden" aria-hidden style={{ height: mobileSearchBarHeight }} />
+
+      {/* Mobile drawer */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
@@ -238,12 +417,7 @@ export function Header() {
                 </button>
               </div>
 
-              <div className="border-b border-border/40 px-5 py-5">
-                <p className="mb-3 text-sm font-medium text-muted-foreground">Search</p>
-                <SearchBar />
-              </div>
-
-              <nav className="flex-1 overflow-y-auto px-5 py-2">
+              <nav className="flex-1 overflow-y-auto px-5 py-4">
                 <p className="mb-1 py-3 text-sm font-medium text-muted-foreground">Menu</p>
                 {NAV_LINKS.map((link, index) => (
                   <MobileNavLink

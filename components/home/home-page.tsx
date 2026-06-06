@@ -128,8 +128,9 @@ export function HomePage() {
   );
 
   return (
-    <main className="overflow-x-hidden">
+    <>
       <Header />
+      <main className="overflow-x-hidden">
 
       {/* Hero — products above the fold */}
       <section className="relative overflow-hidden">
@@ -523,5 +524,6 @@ export function HomePage() {
       <Footer />
       <QuickViewModal product={quickViewProduct} onClose={() => setQuickViewProduct(null)} />
     </main>
+    </>
   );
 }

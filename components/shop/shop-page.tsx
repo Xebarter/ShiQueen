@@ -88,8 +88,9 @@ export function ShopPage() {
   };
 
   return (
-    <main className="overflow-x-hidden">
+    <>
       <Header />
+      <main className="overflow-x-hidden">
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-border/50">
@@ -155,7 +156,7 @@ export function ShopPage() {
       </section>
 
       {/* Sticky filter bar */}
-      <div className="sticky top-16 z-40 bg-background/90 backdrop-blur-md border-b border-border/60">
+      <div className="sticky top-[var(--mobile-header-offset,4rem)] z-40 bg-background/90 backdrop-blur-md border-b border-border/60 lg:top-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex flex-col gap-3">
             {/* Category pills */}
@@ -336,5 +337,6 @@ export function ShopPage() {
       <Footer />
       <QuickViewModal product={quickViewProduct} onClose={() => setQuickViewProduct(null)} />
     </main>
+    </>
   );
 }

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Search, X } from 'lucide-react';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 interface SearchResult {
   id: string;
