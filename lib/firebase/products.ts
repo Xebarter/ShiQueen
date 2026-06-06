@@ -6,6 +6,7 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
+  deleteField,
   onSnapshot,
   query,
   orderBy,
@@ -16,6 +17,21 @@ import { getFirebaseDb } from '@/lib/firebase';
 import { COLLECTIONS } from '@/lib/firebase/collections';
 import { toDate } from '@/lib/firebase/timestamp';
 import { Product } from '@/lib/types/database';
+
+function stripUndefined<T extends Record<string, unknown>>(data: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(data).filter(([, value]) => value !== undefined)
+  ) as Partial<T>;
+}
+
+function sanitizeUpdateData(data: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(data).map(([key, value]) => [
+      key,
+      value === undefined ? deleteField() : value,
+    ])
+  );
+}
 
 function mapProduct(id: string, data: Record<string, unknown>): Product {
   return {
@@ -90,7 +106,7 @@ export async function createProduct(
 
   const { id, ...data } = product;
   await setDoc(doc(db, COLLECTIONS.products, id), {
-    ...data,
+    ...stripUndefined(data as Record<string, unknown>),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -108,7 +124,7 @@ export async function updateProduct(id: string, updates: Partial<Product>): Prom
 
   const { id: _id, createdAt, updatedAt, ...data } = updates;
   await updateDoc(doc(db, COLLECTIONS.products, id), {
-    ...data,
+    ...sanitizeUpdateData(data as Record<string, unknown>),
     updatedAt: serverTimestamp(),
   });
 }

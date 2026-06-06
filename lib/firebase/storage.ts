@@ -1,12 +1,7 @@
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { getFirebaseStorage } from '@/lib/firebase';
+import { getFirebaseAuth } from '@/lib/firebase';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-
-function sanitizeFileName(name: string): string {
-  return name.replace(/[^a-zA-Z0-9.-]/g, '_');
-}
 
 export async function uploadProductImage(productId: string, file: File): Promise<string> {
   if (!ALLOWED_TYPES.includes(file.type)) {
@@ -17,18 +12,36 @@ export async function uploadProductImage(productId: string, file: File): Promise
     throw new Error('Each image must be 5MB or smaller.');
   }
 
-  const storage = getFirebaseStorage();
-  if (!storage) {
-    throw new Error('Firebase Storage is not initialized.');
+  const auth = getFirebaseAuth();
+  const user = auth?.currentUser;
+  if (!user) {
+    throw new Error('You must be signed in as an admin to upload images.');
   }
 
-  const storageRef = ref(
-    storage,
-    `products/${productId}/${Date.now()}-${sanitizeFileName(file.name)}`
-  );
+  const idToken = await user.getIdToken(true);
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('productId', productId);
 
-  await uploadBytes(storageRef, file, { contentType: file.type });
-  return getDownloadURL(storageRef);
+  const response = await fetch('/api/admin/upload-product-image', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+    },
+    body: formData,
+  });
+
+  const payload = (await response.json()) as { url?: string; error?: string };
+
+  if (!response.ok) {
+    throw new Error(payload.error ?? 'Failed to upload image.');
+  }
+
+  if (!payload.url) {
+    throw new Error('Upload succeeded but no image URL was returned.');
+  }
+
+  return payload.url;
 }
 
 export async function uploadProductImages(
@@ -36,5 +49,10 @@ export async function uploadProductImages(
   files: File[]
 ): Promise<string[]> {
   if (files.length === 0) return [];
-  return Promise.all(files.map((file) => uploadProductImage(productId, file)));
+
+  const urls: string[] = [];
+  for (const file of files) {
+    urls.push(await uploadProductImage(productId, file));
+  }
+  return urls;
 }

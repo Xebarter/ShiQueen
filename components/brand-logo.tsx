@@ -26,6 +26,7 @@ type BrandLogoProps = {
   className?: string;
   href?: string | null;
   showWordmark?: boolean;
+  onClick?: () => void;
 };
 
 export function BrandLogo({
@@ -33,6 +34,7 @@ export function BrandLogo({
   className,
   href = '/',
   showWordmark = variant !== 'icon',
+  onClick,
 }: BrandLogoProps) {
   const content = (
     <span className={cn('inline-flex items-center gap-2.5', className)}>
@@ -70,7 +72,12 @@ export function BrandLogo({
 
   if (href) {
     return (
-      <Link href={href} className="inline-flex shrink-0" aria-label={`${BRAND_NAME} home`}>
+      <Link
+        href={href}
+        onClick={onClick}
+        className="inline-flex shrink-0"
+        aria-label={`${BRAND_NAME} home`}
+      >
         {content}
       </Link>
     );

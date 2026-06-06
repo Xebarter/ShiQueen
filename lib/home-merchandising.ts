@@ -177,6 +177,9 @@ export function toggleStoredWishlist(productId: string): string[] {
     ? current.filter((id) => id !== productId)
     : [...current, productId];
   localStorage.setItem(WISHLIST_KEY, JSON.stringify(next));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('wishlist-updated'));
+  }
   return next;
 }
 

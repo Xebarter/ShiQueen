@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { BrandLogo } from '@/components/brand-logo';
 import {
@@ -21,8 +21,10 @@ import { useState } from 'react';
 
 export function AdminSidebar() {
   const pathname = usePathname();
-  const { logout } = useAuth();
+  const router = useRouter();
+  const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const isActive = (path: string) =>
     path === '/admin/wholesale'
@@ -40,7 +42,16 @@ export function AdminSidebar() {
   ];
 
   const handleLogout = async () => {
-    await logout();
+    setLoggingOut(true);
+    try {
+      await logout();
+      setIsOpen(false);
+      router.push('/sign-in');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   return (
@@ -66,38 +77,45 @@ export function AdminSidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setIsOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-                  isActive(item.href)
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-foreground hover:bg-secondary'
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-                <span className="text-sm font-medium">{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
+        <nav className="flex-1 overflow-y-auto p-4 flex flex-col">
+          <div className="space-y-2">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setIsOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
+                    isActive(item.href)
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-secondary'
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  <span className="text-sm font-medium">{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-border space-y-2">
-          <Button
-            variant="outline"
-            className="w-full justify-start"
-            onClick={handleLogout}
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Logout
-          </Button>
-        </div>
+          <div className="mt-auto pt-4 border-t border-border space-y-3">
+            {user?.email && (
+              <p className="px-4 text-xs text-muted-foreground truncate" title={user.email}>
+                {user.email}
+              </p>
+            )}
+            <Button
+              variant="outline"
+              className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+              onClick={handleLogout}
+              disabled={loggingOut}
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              {loggingOut ? 'Signing out...' : 'Logout'}
+            </Button>
+          </div>
+        </nav>
       </aside>
 
       {/* Mobile Backdrop */}

@@ -45,7 +45,7 @@ const mockSearchResults: SearchResult[] = [
   },
 ];
 
-export function SearchBar() {
+export function SearchBar({ className }: { className?: string }) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -74,7 +74,7 @@ export function SearchBar() {
   };
 
   return (
-    <div className="relative w-full max-w-md">
+    <div className={cn('relative w-full max-w-md', className)}>
       <div className="relative">
         <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
         <input

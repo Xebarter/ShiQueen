@@ -1,17 +1,29 @@
 rules_version = '2';
 
+// SheQueen — Firebase Storage security rules
+// Product images: public read, admin-only write (max 5MB, images only)
+
 service firebase.storage {
   match /b/{bucket}/o {
+
+    // Admin = signed-in user with role "admin" in Firestore users/{uid}
     function isAdmin() {
       return request.auth != null
+        && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
         && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
+    // Product photos uploaded from /admin/products
     match /products/{productId}/{fileName} {
+      // Anyone can view product images on the storefront
       allow read: if true;
+
+      // Only admins can upload, replace, or delete product images
       allow write: if isAdmin()
         && request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
     }
+
+    // Block everything else by default (implicit deny)
   }
 }
