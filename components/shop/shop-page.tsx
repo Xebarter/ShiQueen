@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ArrowRight, Sparkles, SlidersHorizontal, X, Grid3X3, LayoutGrid } from 'lucide-react';
 import { Header } from '@/components/header';
@@ -18,6 +18,7 @@ import {
   filterByCategory,
   filterByPriceRange,
 } from '@/lib/hooks/use-product-merchandising';
+import { createProductSearchIndex } from '@/lib/product-search';
 
 const CATEGORIES = [
   { id: 'all', label: 'All Products' },
@@ -45,14 +46,18 @@ const PRICE_FILTERS = [
 type ViewMode = 'discover' | 'grid';
 
 export function ShopPage() {
+  const router = useRouter();
   const { products, loading } = useProducts();
   const searchParams = useSearchParams();
+  const searchQuery = searchParams.get('q')?.trim() ?? '';
 
   const [category, setCategory] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [priceRange, setPriceRange] = useState<'all' | 'under-500k' | 'luxury'>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('discover');
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const searchIndex = useMemo(() => createProductSearchIndex(products), [products]);
 
   useEffect(() => {
     const paramCategory = searchParams.get('category');
@@ -61,13 +66,26 @@ export function ShopPage() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    if (searchQuery) {
+      setViewMode('grid');
+    }
+  }, [searchQuery]);
+
+  const searchedProducts = useMemo(() => {
+    if (!searchQuery) return products;
+    return searchIndex.search(searchQuery, 200).map((hit) => hit.product);
+  }, [products, searchQuery, searchIndex]);
+
   const filteredProducts = useMemo(() => {
-    let result = filterByCategory(products, category);
+    let result = searchQuery ? searchedProducts : products;
+    result = filterByCategory(result, category);
     result = filterByPriceRange(result, priceRange);
     return sortProducts(result, sortBy);
-  }, [products, category, priceRange, sortBy]);
+  }, [products, searchQuery, searchedProducts, category, priceRange, sortBy]);
 
-  const isFiltered = category !== 'all' || priceRange !== 'all';
+  const isSearchMode = Boolean(searchQuery);
+  const isFiltered = isSearchMode || category !== 'all' || priceRange !== 'all';
   const displayProducts = isFiltered ? filteredProducts : products;
 
   const {
@@ -85,6 +103,9 @@ export function ShopPage() {
     setCategory('all');
     setPriceRange('all');
     setSortBy('newest');
+    if (isSearchMode) {
+      router.push('/shop');
+    }
   };
 
   return (
@@ -107,7 +128,12 @@ export function ShopPage() {
                 {products.length}+ Products
               </span>
               <h1 className="text-3xl sm:text-4xl md:text-5xl font-light tracking-tight mb-3">
-                {isFiltered ? (
+                {isSearchMode ? (
+                  <>
+                    Results for{' '}
+                    <span className="font-semibold text-primary">&ldquo;{searchQuery}&rdquo;</span>
+                  </>
+                ) : isFiltered ? (
                   <>
                     Shop <span className="font-semibold text-primary">{activeCategoryLabel}</span>
                   </>
@@ -119,9 +145,11 @@ export function ShopPage() {
                 )}
               </h1>
               <p className="text-muted-foreground max-w-lg mb-4">
-                {isFiltered
-                  ? `${filteredProducts.length} curated products matching your selection`
-                  : 'Discover fashion, beauty, wellness, and lifestyle products — browse, compare, and shop with confidence.'}
+                {isSearchMode
+                  ? `${filteredProducts.length} product${filteredProducts.length === 1 ? '' : 's'} matched your search`
+                  : isFiltered
+                    ? `${filteredProducts.length} curated products matching your selection`
+                    : 'Discover fashion, beauty, wellness, and lifestyle products — browse, compare, and shop with confidence.'}
               </p>
               {isFiltered && (
                 <Button variant="outline" size="sm" onClick={clearFilters} className="gap-2">
@@ -268,7 +296,7 @@ export function ShopPage() {
             ))}
           </div>
         </div>
-      ) : viewMode === 'grid' ? (
+      ) : isSearchMode || viewMode === 'grid' ? (
         <section className="py-10 md:py-14">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between mb-6">
@@ -294,8 +322,14 @@ export function ShopPage() {
               onQuickView={setQuickViewProduct}
               emptyMessage={
                 <div className="text-center py-16 col-span-full">
-                  <p className="text-muted-foreground mb-4">No products match your filters</p>
-                  <Button onClick={clearFilters}>Clear all filters</Button>
+                  <p className="text-muted-foreground mb-4">
+                    {isSearchMode
+                      ? `No products found for "${searchQuery}"`
+                      : 'No products match your filters'}
+                  </p>
+                  <Button onClick={clearFilters}>
+                    {isSearchMode ? 'Clear search' : 'Clear all filters'}
+                  </Button>
                 </div>
               }
             />
