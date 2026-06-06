@@ -44,6 +44,11 @@ export async function uploadProductImage(productId: string, file: File): Promise
   return payload.url;
 }
 
+/** Banner images use the same product upload API/path as product photos. */
+export async function uploadMarketingBanner(adId: string, file: File): Promise<string> {
+  return uploadProductImage(`ad-${adId}`, file);
+}
+
 export async function uploadProductImages(
   productId: string,
   files: File[]

@@ -74,3 +74,22 @@ export interface Order {
 }
 
 export type { Package, BulkOrder, WholesaleAccount };
+
+export type MarketingAdPlacement = 'home-hero' | 'shop-hero';
+
+export interface MarketingAd {
+  id: string;
+  placement: MarketingAdPlacement;
+  productId: string;
+  bannerImage: string;
+  headline: string;
+  subheadline: string;
+  ctaLabel: string;
+  badgeText: string;
+  isActive: boolean;
+  priority: number;
+  startsAt: Date | null;
+  endsAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}

@@ -183,6 +183,15 @@ export function toggleStoredWishlist(productId: string): string[] {
   return next;
 }
 
+export function removeFromStoredWishlist(productId: string): string[] {
+  const next = getStoredWishlist().filter((id) => id !== productId);
+  localStorage.setItem(WISHLIST_KEY, JSON.stringify(next));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('wishlist-updated'));
+  }
+  return next;
+}
+
 export function getStoredRecentlyViewed(): string[] {
   if (typeof window === 'undefined') return [];
   try {

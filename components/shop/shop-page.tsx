@@ -19,6 +19,7 @@ import {
   filterByPriceRange,
 } from '@/lib/hooks/use-product-merchandising';
 import { createProductSearchIndex } from '@/lib/product-search';
+import { HeroMarketingSlot } from '@/components/home/hero-marketing-slot';
 
 const CATEGORIES = [
   { id: 'all', label: 'All Products' },
@@ -123,39 +124,36 @@ export function ShopPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/15 text-accent text-xs font-semibold uppercase tracking-widest mb-3">
-                <Sparkles className="w-3.5 h-3.5" />
-                {products.length}+ Products
-              </span>
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-light tracking-tight mb-3">
-                {isSearchMode ? (
-                  <>
-                    Results for{' '}
-                    <span className="font-semibold text-primary">&ldquo;{searchQuery}&rdquo;</span>
-                  </>
-                ) : isFiltered ? (
-                  <>
-                    Shop <span className="font-semibold text-primary">{activeCategoryLabel}</span>
-                  </>
-                ) : (
-                  <>
-                    Explore Our{' '}
-                    <span className="font-semibold text-primary">Full Marketplace</span>
-                  </>
-                )}
-              </h1>
-              <p className="text-muted-foreground max-w-lg mb-4">
-                {isSearchMode
-                  ? `${filteredProducts.length} product${filteredProducts.length === 1 ? '' : 's'} matched your search`
-                  : isFiltered
-                    ? `${filteredProducts.length} curated products matching your selection`
-                    : 'Discover fashion, beauty, wellness, and lifestyle products — browse, compare, and shop with confidence.'}
-              </p>
-              {isFiltered && (
-                <Button variant="outline" size="sm" onClick={clearFilters} className="gap-2">
-                  <X className="w-3.5 h-3.5" />
-                  Clear filters
-                </Button>
+              {isSearchMode || isFiltered ? (
+                <>
+                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/15 text-accent text-xs font-semibold uppercase tracking-widest mb-3">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    {isSearchMode ? 'Search' : activeCategoryLabel}
+                  </span>
+                  <h1 className="text-3xl sm:text-4xl md:text-5xl font-light tracking-tight mb-3">
+                    {isSearchMode ? (
+                      <>
+                        Results for{' '}
+                        <span className="font-semibold text-primary">&ldquo;{searchQuery}&rdquo;</span>
+                      </>
+                    ) : (
+                      <>
+                        Shop <span className="font-semibold text-primary">{activeCategoryLabel}</span>
+                      </>
+                    )}
+                  </h1>
+                  <p className="text-muted-foreground max-w-lg mb-4">
+                    {isSearchMode
+                      ? `${filteredProducts.length} product${filteredProducts.length === 1 ? '' : 's'} matched your search`
+                      : `${filteredProducts.length} curated products matching your selection`}
+                  </p>
+                  <Button variant="outline" size="sm" onClick={clearFilters} className="gap-2">
+                    <X className="w-3.5 h-3.5" />
+                    {isSearchMode ? 'Clear search' : 'Clear filters'}
+                  </Button>
+                </>
+              ) : (
+                <HeroMarketingSlot placement="shop-hero" compact />
               )}
             </motion.div>
 

@@ -23,6 +23,46 @@ type ProductFormProps = {
   onSaved?: () => void;
 };
 
+function emptyForm() {
+  return {
+    name: '',
+    sku: '',
+    category: 'Clothing',
+    price: '',
+    originalPrice: '',
+    stock: '',
+    description: '',
+    sizes: '',
+    colors: '',
+    details: '',
+    isWholesaleEnabled: true,
+    minOrderQuantity: '10',
+  };
+}
+
+function productToFormState(product: Product) {
+  return {
+    name: product.name,
+    sku: product.sku,
+    category: product.category,
+    price: String(product.price),
+    originalPrice: product.originalPrice ? String(product.originalPrice) : '',
+    stock: String(product.stock),
+    description: product.description,
+    sizes: product.sizes.join(', '),
+    colors: product.colors.join(', '),
+    details: product.details.join('\n'),
+    isWholesaleEnabled: product.isWholesaleEnabled,
+    minOrderQuantity: String(product.minOrderQuantity),
+  };
+}
+
+function productToImageUrls(product: Product): string[] {
+  if (product.images.length > 0) return product.images;
+  if (product.image) return [product.image];
+  return [];
+}
+
 function parseCommaList(value: string): string[] {
   return value
     .split(',')
@@ -43,28 +83,15 @@ function computeStatus(stock: number): Product['status'] {
   return 'Active';
 }
 
-function emptyForm() {
-  return {
-    name: '',
-    sku: '',
-    category: 'Clothing',
-    price: '',
-    originalPrice: '',
-    stock: '',
-    description: '',
-    sizes: '',
-    colors: '',
-    details: '',
-    isWholesaleEnabled: true,
-    minOrderQuantity: '10',
-  };
-}
-
 export function ProductForm({ mode, productId, initialProduct, onSaved }: ProductFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState(emptyForm);
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [formData, setFormData] = useState(() =>
+    initialProduct ? productToFormState(initialProduct) : emptyForm()
+  );
+  const [imageUrls, setImageUrls] = useState<string[]>(() =>
+    initialProduct ? productToImageUrls(initialProduct) : []
+  );
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
   const pendingPreviews = useMemo(
@@ -77,33 +104,6 @@ export function ProductForm({ mode, productId, initialProduct, onSaved }: Produc
       pendingPreviews.forEach((url) => URL.revokeObjectURL(url));
     };
   }, [pendingPreviews]);
-
-  useEffect(() => {
-    if (!initialProduct) return;
-
-    setFormData({
-      name: initialProduct.name,
-      sku: initialProduct.sku,
-      category: initialProduct.category,
-      price: String(initialProduct.price),
-      originalPrice: initialProduct.originalPrice ? String(initialProduct.originalPrice) : '',
-      stock: String(initialProduct.stock),
-      description: initialProduct.description,
-      sizes: initialProduct.sizes.join(', '),
-      colors: initialProduct.colors.join(', '),
-      details: initialProduct.details.join('\n'),
-      isWholesaleEnabled: initialProduct.isWholesaleEnabled,
-      minOrderQuantity: String(initialProduct.minOrderQuantity),
-    });
-
-    const existingImages =
-      initialProduct.images.length > 0
-        ? initialProduct.images
-        : initialProduct.image
-          ? [initialProduct.image]
-          : [];
-    setImageUrls(existingImages);
-  }, [initialProduct]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -218,7 +218,7 @@ export function ProductForm({ mode, productId, initialProduct, onSaved }: Produc
       <div className="mb-8">
         <Link
           href="/admin/products"
-          className="flex items-center gap-2 text-primary hover:underline mb-4"
+          className="mb-4 flex items-center gap-2 text-primary hover:underline"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Products

@@ -6,4 +6,5 @@ export const COLLECTIONS = {
   bulkOrders: 'bulkOrders',
   wholesaleAccounts: 'wholesaleAccounts',
   settings: 'settings',
+  marketingAds: 'marketingAds',
 } as const;

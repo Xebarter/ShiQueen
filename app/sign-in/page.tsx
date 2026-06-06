@@ -3,33 +3,62 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Header } from '@/components/header';
-import { Footer } from '@/components/footer';
-import { BrandLogo } from '@/components/brand-logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth-context';
+import { getAuthErrorMessage } from '@/lib/auth-errors';
+import { AuthShell } from '@/components/auth/auth-shell';
+import { AuthGuestOnly } from '@/components/auth/auth-guest-only';
+import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
 import toast from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
 
+type Step = 'identify' | 'password';
+
 export default function SignIn() {
+  const [step, setStep] = useState<Step>('identify');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const { signIn, signInWithGoogle } = useAuth();
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const isBusy = loading || googleLoading;
+  const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    try {
+      await signInWithGoogle();
+      router.push('/account');
+    } catch (error) {
+      toast.error(getAuthErrorMessage(error));
+      console.error(error);
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleIdentify = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailIsValid) {
+      toast.error('Enter a valid email address');
+      return;
+    }
+    setStep('password');
+  };
+
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      await signIn(email, password);
-      toast.success('Signed in successfully!');
+      await signIn(email.trim(), password);
       router.push('/account');
     } catch (error) {
-      toast.error('Failed to sign in. Please check your credentials.');
+      toast.error(getAuthErrorMessage(error));
       console.error(error);
     } finally {
       setLoading(false);
@@ -37,70 +66,119 @@ export default function SignIn() {
   };
 
   return (
-    <main>
-      <Header />
+    <AuthShell heading="Sign in">
+      <AuthGuestOnly>
+      <div className="space-y-5">
+        <GoogleSignInButton
+          loading={googleLoading}
+          disabled={isBusy}
+          onClick={handleGoogleSignIn}
+        />
 
-      <section className="min-h-[calc(100vh-8rem)] flex items-center justify-center py-12 px-4">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <BrandLogo variant="auth" href="/" className="justify-center mb-6" />
-            <h1 className="text-3xl font-light tracking-tight mb-2">Welcome Back</h1>
-            <p className="text-muted-foreground">Sign in to your SheQueen account</p>
+        <div className="relative py-1">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-border" />
           </div>
+          <div className="relative flex justify-center">
+            <span className="bg-card px-3 text-xs text-muted-foreground">or</span>
+          </div>
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
+        {step === 'identify' ? (
+          <form onSubmit={handleIdentify} className="space-y-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-sm font-normal text-foreground">
+                Email
+              </Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="you@example.com"
+                autoComplete="username email"
+                placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className="h-11 rounded-md text-base md:text-sm"
                 required
+                disabled={isBusy}
+                autoFocus
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+            <div className="flex flex-col-reverse items-stretch justify-between gap-3 pt-2 sm:flex-row sm:items-center">
+              <Link
+                href="/sign-up"
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                Create account
+              </Link>
+              <Button type="submit" className="h-10 min-w-[88px] px-6" disabled={isBusy || !emailIsValid}>
+                Next
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={handleSignIn} className="space-y-5">
+            <div className="rounded-md border border-border bg-muted/20 px-3 py-2.5">
+              <p className="text-xs text-muted-foreground">Signing in as</p>
+              <div className="mt-0.5 flex items-center justify-between gap-3">
+                <p className="truncate text-sm font-medium text-foreground">{email}</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep('identify');
+                    setPassword('');
+                  }}
+                  className="shrink-0 text-sm font-medium text-primary hover:underline"
+                  disabled={isBusy}
+                >
+                  Change
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="password" className="text-sm font-normal text-foreground">
+                  Enter your password
+                </Label>
+              </div>
               <Input
                 id="password"
                 type="password"
-                placeholder="••••••••"
+                autoComplete="current-password"
+                placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                className="h-11 rounded-md text-base md:text-sm"
                 required
+                disabled={isBusy}
+                autoFocus
               />
+              <p className="text-xs text-muted-foreground">Forgot password? Contact support.</p>
             </div>
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loading}
-            >
-              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {loading ? 'Signing in...' : 'Sign In'}
-            </Button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-muted-foreground text-sm">
-              Don&apos;t have an account?{' '}
-              <Link href="/sign-up" className="text-primary hover:underline font-semibold">
-                Create one
+            <div className="flex flex-col-reverse items-stretch justify-between gap-3 pt-2 sm:flex-row sm:items-center">
+              <Link
+                href="/sign-up"
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                Create account
               </Link>
-            </p>
-          </div>
-
-          <div className="mt-6 pt-6 border-t border-border">
-            <Link href="/" className="text-sm text-muted-foreground hover:text-foreground text-center block">
-              ← Back to home
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <Footer />
-    </main>
+              <Button type="submit" className="h-10 min-w-[88px] px-6" disabled={isBusy || !password}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in
+                  </>
+                ) : (
+                  'Sign in'
+                )}
+              </Button>
+            </div>
+          </form>
+        )}
+      </div>
+      </AuthGuestOnly>
+    </AuthShell>
   );
 }

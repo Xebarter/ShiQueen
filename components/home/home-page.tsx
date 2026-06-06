@@ -40,6 +40,7 @@ import {
 } from '@/lib/home-merchandising';
 import { formatUGX } from '@/lib/wholesale-data';
 import { Product } from '@/lib/types/database';
+import { HeroMarketingSlot } from '@/components/home/hero-marketing-slot';
 
 const CATEGORY_GRADIENTS = [
   'bg-gradient-to-br from-rose-50 to-pink-100 dark:from-rose-950/30 dark:to-pink-950/20',
@@ -143,33 +144,8 @@ export function HomePage() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/15 text-accent text-xs font-semibold uppercase tracking-widest mb-4">
-                <Sparkles className="w-3.5 h-3.5" />
-                Trending in Kampala
-              </span>
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-light tracking-tight leading-[1.1] mb-4">
-                Discover{' '}
-                <span className="font-semibold text-primary">Premium Products</span>{' '}
-                You&apos;ll Love
-              </h1>
-              <p className="text-muted-foreground text-base md:text-lg mb-6 max-w-lg">
-                Curated fashion, beauty, and lifestyle essentials — shop thousands of desirable
-                products with fast delivery across Uganda.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Link href="/shop">
-                  <Button size="lg" className="gap-2 shadow-lg">
-                    Shop Now
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </Link>
-                <Link href="/wholesale">
-                  <Button size="lg" variant="outline">
-                    Wholesale Deals
-                  </Button>
-                </Link>
-              </div>
-              <div className="flex gap-6 mt-8 text-sm text-muted-foreground">
+              <HeroMarketingSlot placement="home-hero" />
+              <div className="mt-6 flex flex-wrap gap-4 text-sm text-muted-foreground">
                 <span>{products.length}+ Products</span>
                 <span>Free shipping over USh 500K</span>
                 <span>18% VAT included</span>

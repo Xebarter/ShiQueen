@@ -123,8 +123,21 @@ export async function updateProduct(id: string, updates: Partial<Product>): Prom
   if (!db) throw new Error('Firebase not initialized');
 
   const { id: _id, createdAt, updatedAt, ...data } = updates;
-  await updateDoc(doc(db, COLLECTIONS.products, id), {
+  const ref = doc(db, COLLECTIONS.products, id);
+  const payload = {
     ...sanitizeUpdateData(data as Record<string, unknown>),
+    updatedAt: serverTimestamp(),
+  };
+
+  const snap = await getDoc(ref);
+  if (snap.exists()) {
+    await updateDoc(ref, payload);
+    return;
+  }
+
+  await setDoc(ref, {
+    ...stripUndefined(data as Record<string, unknown>),
+    createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
 }

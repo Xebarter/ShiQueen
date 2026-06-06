@@ -5,6 +5,7 @@ import './globals.css'
 import { AuthProvider } from '@/lib/auth-context'
 import { CartProvider } from '@/lib/cart-context'
 import { ProductsProvider } from '@/lib/products-context'
+import { MarketingAdsProvider } from '@/lib/marketing-ads-context'
 import { WholesaleProvider } from '@/lib/wholesale-context'
 import { BRAND_ASSETS, BRAND_NAME, BRAND_TAGLINE, BRAND_THEME } from '@/lib/brand'
 import { Toaster } from 'react-hot-toast'
@@ -58,12 +59,14 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <AuthProvider>
           <ProductsProvider>
+            <MarketingAdsProvider>
             <CartProvider>
               <WholesaleProvider>
                 {children}
                 <Toaster />
               </WholesaleProvider>
             </CartProvider>
+            </MarketingAdsProvider>
           </ProductsProvider>
         </AuthProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}

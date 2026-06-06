@@ -13,12 +13,20 @@ service firebase.storage {
         && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Product photos uploaded from /admin/products
+    // Product photos + marketing banners (admin/products, admin/ads)
     match /products/{productId}/{fileName} {
       // Anyone can view product images on the storefront
       allow read: if true;
 
       // Only admins can upload, replace, or delete product images
+      allow write: if isAdmin()
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Marketing banner images uploaded from /admin/ads
+    match /ads/{adId}/{fileName} {
+      allow read: if true;
       allow write: if isAdmin()
         && request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');

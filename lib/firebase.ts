@@ -19,6 +19,7 @@ const firebaseConfig = {
 };
 
 let firestoreInstance: Firestore | null = null;
+let authInstance: Auth | null = null;
 
 export function isFirebaseConfigured(): boolean {
   return Boolean(
@@ -39,7 +40,13 @@ function getFirebaseApp(): FirebaseApp | null {
 
 export function getFirebaseAuth(): Auth | null {
   const app = getFirebaseApp();
-  return app ? getAuth(app) : null;
+  if (!app) return null;
+
+  if (!authInstance) {
+    authInstance = getAuth(app);
+  }
+
+  return authInstance;
 }
 
 export function getFirebaseDb(): Firestore | null {
@@ -68,14 +75,3 @@ export function getFirebaseStorage(): FirebaseStorage | null {
   const app = getFirebaseApp();
   return app ? getStorage(app) : null;
 }
-
-/** @deprecated Use getFirebaseAuth() */
-export const auth = typeof window !== 'undefined' ? getFirebaseAuth() : null;
-
-/** @deprecated Use getFirebaseDb() */
-export const db = typeof window !== 'undefined' ? getFirebaseDb() : null;
-
-/** @deprecated Use getFirebaseStorage() */
-export const storage = typeof window !== 'undefined' ? getFirebaseStorage() : null;
-
-export default getFirebaseApp();

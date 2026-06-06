@@ -4,11 +4,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCart } from '@/lib/cart-context';
 import { useAuth } from '@/lib/auth-context';
-import { ShoppingBag, User, Menu, X, ChevronRight, Heart } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, ChevronRight, Heart } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SearchBar } from './search-bar';
 import { BrandLogo } from './brand-logo';
+import { HeaderAccountMenu } from '@/components/header/account-menu';
 import { cn } from '@/lib/utils';
 import { getStoredWishlist } from '@/lib/home-merchandising';
 
@@ -18,8 +19,6 @@ const NAV_LINKS = [
   { href: '/loyalty', label: 'Rewards' },
   { href: '/wholesale', label: 'Wholesale' },
 ];
-
-const MOBILE_COMPACT_THRESHOLD = 16;
 
 function NavLink({
   href,
@@ -116,7 +115,7 @@ function MobileMenuButton({
       type="button"
       onClick={onClick}
       className={cn(
-        'inline-flex rounded-full p-2.5 text-foreground/80 transition hover:bg-secondary hover:text-primary',
+        'inline-flex rounded-full p-2.5 text-foreground/80 transition-colors hover:bg-secondary hover:text-primary',
         className
       )}
       aria-expanded={open}
@@ -133,19 +132,16 @@ export function Header() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [wishlistCount, setWishlistCount] = useState(0);
-  const [scrollY, setScrollY] = useState(0);
   const [isPhoneLayout, setIsPhoneLayout] = useState(false);
+  const [primaryHeaderVisible, setPrimaryHeaderVisible] = useState(true);
   const primaryHeaderRef = useRef<HTMLElement>(null);
   const mobileSearchBarRef = useRef<HTMLDivElement>(null);
   const [primaryHeaderHeight, setPrimaryHeaderHeight] = useState(68);
   const [mobileSearchBarHeight, setMobileSearchBarHeight] = useState(52);
 
   const wishlistHref = user ? '/account#wishlist' : '/sign-in';
-  const isMobileCompact = isPhoneLayout && scrollY > MOBILE_COMPACT_THRESHOLD;
-  const mobileBarTop = isPhoneLayout
-    ? Math.max(0, primaryHeaderHeight - scrollY)
-    : primaryHeaderHeight;
-  const mobileHeaderOffset = mobileBarTop + mobileSearchBarHeight;
+  const showMenuInPrimary = isPhoneLayout && primaryHeaderVisible;
+  const showMenuInSearchBar = isPhoneLayout && !primaryHeaderVisible;
 
   const toggleMobileMenu = useCallback(() => {
     setMobileMenuOpen((open) => !open);
@@ -198,23 +194,22 @@ export function Header() {
   }, []);
 
   useEffect(() => {
-    let frame = 0;
+    if (!isPhoneLayout) {
+      setPrimaryHeaderVisible(true);
+      return;
+    }
 
-    const onScroll = () => {
-      if (frame) return;
-      frame = window.requestAnimationFrame(() => {
-        setScrollY(window.scrollY);
-        frame = 0;
-      });
-    };
+    const header = primaryHeaderRef.current;
+    if (!header) return;
 
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      if (frame) window.cancelAnimationFrame(frame);
-    };
-  }, []);
+    const observer = new IntersectionObserver(
+      ([entry]) => setPrimaryHeaderVisible(entry.isIntersecting),
+      { threshold: 0 }
+    );
+
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, [isPhoneLayout, pathname]);
 
   useEffect(() => {
     const primary = primaryHeaderRef.current;
@@ -236,7 +231,7 @@ export function Header() {
       observer.disconnect();
       window.removeEventListener('resize', syncHeights);
     };
-  }, [pathname, isMobileCompact]);
+  }, [pathname]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -245,18 +240,29 @@ export function Header() {
     const syncHeaderVars = () => {
       if (!media.matches) {
         root.style.removeProperty('--header-primary-height');
+        root.style.removeProperty('--mobile-search-height');
         root.style.removeProperty('--mobile-header-offset');
         return;
       }
 
       root.style.setProperty('--header-primary-height', `${primaryHeaderHeight}px`);
-      root.style.setProperty('--mobile-header-offset', `${mobileHeaderOffset}px`);
+      root.style.setProperty('--mobile-search-height', `${mobileSearchBarHeight}px`);
+      root.style.setProperty(
+        '--mobile-header-offset',
+        media.matches && window.matchMedia('(max-width: 767px)').matches
+          ? `${mobileSearchBarHeight}px`
+          : `${primaryHeaderHeight + mobileSearchBarHeight}px`
+      );
     };
 
     syncHeaderVars();
     media.addEventListener('change', syncHeaderVars);
-    return () => media.removeEventListener('change', syncHeaderVars);
-  }, [primaryHeaderHeight, mobileHeaderOffset]);
+    window.addEventListener('resize', syncHeaderVars);
+    return () => {
+      media.removeEventListener('change', syncHeaderVars);
+      window.removeEventListener('resize', syncHeaderVars);
+    };
+  }, [primaryHeaderHeight, mobileSearchBarHeight]);
 
   return (
     <>
@@ -264,8 +270,9 @@ export function Header() {
       <header
         ref={primaryHeaderRef}
         className={cn(
-          'z-40 border-b border-border/60 bg-background/90 backdrop-blur-md supports-[backdrop-filter]:bg-background/80',
-          'max-md:relative md:sticky md:top-0 lg:sticky lg:top-0'
+          'z-40 border-b border-border/60 bg-background max-md:relative',
+          'md:sticky md:top-0 md:bg-background/90 md:backdrop-blur-md md:supports-[backdrop-filter]:bg-background/80',
+          'lg:sticky lg:top-0'
         )}
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -283,29 +290,27 @@ export function Header() {
             </div>
 
             <div className="flex items-center gap-1 sm:gap-2">
-              {user ? (
-                <Link
-                  href="/account"
-                  className="hidden rounded-full p-2.5 text-foreground/80 transition hover:bg-secondary hover:text-primary sm:inline-flex"
-                  aria-label="Account"
-                >
-                  <User className="h-5 w-5" />
-                </Link>
-              ) : (
-                <Link
-                  href="/sign-in"
-                  className="hidden text-sm font-medium tracking-wide text-foreground/80 transition hover:text-primary sm:inline-flex"
-                >
-                  Sign In
-                </Link>
-              )}
+              <HeaderAccountMenu />
+
+              <Link
+                href={wishlistHref}
+                className="relative inline-flex rounded-full p-2.5 text-foreground/80 transition-colors hover:bg-secondary hover:text-primary lg:hidden"
+                aria-label={`Wishlist${wishlistCount > 0 ? `, ${wishlistCount} items` : ''}`}
+              >
+                <Heart className="h-5 w-5" />
+                {wishlistCount > 0 && (
+                  <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                    {wishlistCount > 9 ? '9+' : wishlistCount}
+                  </span>
+                )}
+              </Link>
 
               <Link
                 href="/cart"
-                className="relative rounded-full p-2.5 text-foreground/80 transition hover:bg-secondary hover:text-primary"
+                className="relative hidden rounded-full p-2.5 text-foreground/80 transition-colors hover:bg-secondary hover:text-primary lg:inline-flex"
                 aria-label={`Cart${itemCount > 0 ? `, ${itemCount} items` : ''}`}
               >
-                <ShoppingBag className="h-5 w-5" />
+                <ShoppingCart className="h-5 w-5" />
                 {itemCount > 0 && (
                   <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-semibold text-accent-foreground">
                     {itemCount > 9 ? '9+' : itemCount}
@@ -313,7 +318,7 @@ export function Header() {
                 )}
               </Link>
 
-              {!isMobileCompact && (
+              {showMenuInPrimary && (
                 <MobileMenuButton
                   open={mobileMenuOpen}
                   onClick={toggleMobileMenu}
@@ -339,46 +344,47 @@ export function Header() {
         </nav>
       </header>
 
-      {/* Mobile search bar — persistent; slides up as the upper header scrolls away */}
+      {/* Mobile search bar — sticky (native scroll, no JS position updates) */}
       <div
         ref={mobileSearchBarRef}
-        className="fixed inset-x-0 z-50 border-b border-border/50 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/90 lg:hidden"
-        style={{ top: mobileBarTop }}
+        className={cn(
+          'z-50 border-b border-border/50 bg-background lg:hidden',
+          'max-md:sticky max-md:top-0',
+          'md:sticky md:bg-background/95 md:backdrop-blur-md md:supports-[backdrop-filter]:bg-background/90',
+          'md:top-[var(--header-primary-height,4.25rem)]'
+        )}
       >
         <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-2.5 sm:gap-3 sm:px-6">
-          <AnimatePresence mode="popLayout">
-            {isMobileCompact && (
-              <motion.div
-                key="mobile-menu-trigger"
-                initial={{ opacity: 0, width: 0, marginRight: 0 }}
-                animate={{ opacity: 1, width: 'auto', marginRight: 0 }}
-                exit={{ opacity: 0, width: 0, marginRight: 0 }}
-                transition={{ duration: 0.2 }}
-                className="shrink-0 overflow-hidden md:hidden"
-              >
-                <MobileMenuButton open={mobileMenuOpen} onClick={toggleMobileMenu} />
-              </motion.div>
+          <div
+            className={cn(
+              'shrink-0 overflow-hidden transition-[width,opacity] duration-200 ease-out md:hidden',
+              showMenuInSearchBar ? 'w-10 opacity-100' : 'w-0 opacity-0'
             )}
-          </AnimatePresence>
+            aria-hidden={!showMenuInSearchBar}
+          >
+            <MobileMenuButton
+              open={mobileMenuOpen}
+              onClick={toggleMobileMenu}
+              className={cn(!showMenuInSearchBar && 'pointer-events-none')}
+            />
+          </div>
+
+          <SearchBar className="max-w-none flex-1" />
 
           <Link
-            href={wishlistHref}
-            className="relative flex shrink-0 items-center justify-center rounded-full p-2.5 text-foreground/80 transition hover:bg-secondary hover:text-primary"
-            aria-label={`Wishlist${wishlistCount > 0 ? `, ${wishlistCount} items` : ''}`}
+            href="/cart"
+            className="relative flex shrink-0 items-center justify-center rounded-full p-2.5 text-foreground/80 transition-colors hover:bg-secondary hover:text-primary lg:hidden"
+            aria-label={`Cart${itemCount > 0 ? `, ${itemCount} items` : ''}`}
           >
-            <Heart className="h-5 w-5" />
-            {wishlistCount > 0 && (
-              <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
-                {wishlistCount > 9 ? '9+' : wishlistCount}
+            <ShoppingCart className="h-5 w-5" />
+            {itemCount > 0 && (
+              <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-semibold text-accent-foreground">
+                {itemCount > 9 ? '9+' : itemCount}
               </span>
             )}
           </Link>
-          <SearchBar className="max-w-none flex-1" />
         </div>
       </div>
-
-      {/* Reserve space for the fixed mobile search bar */}
-      <div className="lg:hidden" aria-hidden style={{ height: mobileSearchBarHeight }} />
 
       {/* Mobile drawer */}
       <AnimatePresence>
@@ -410,7 +416,7 @@ export function Header() {
                 <button
                   type="button"
                   onClick={closeMobileMenu}
-                  className="rounded-full p-2 text-foreground/70 transition hover:bg-secondary hover:text-primary"
+                  className="rounded-full p-2 text-foreground/70 transition-colors hover:bg-secondary hover:text-primary"
                   aria-label="Close menu"
                 >
                   <X className="h-5 w-5" />

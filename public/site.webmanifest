@@ -1,7 +1,6 @@
 {
-  "name": "SheQueen",
-  "short_name": "SheQueen",
-  "description": "Discover curated collections of premium fashion, wellness, and lifestyle products.",
+  "name": "MyWebSite",
+  "short_name": "MySite",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",
@@ -16,8 +15,7 @@
       "purpose": "maskable"
     }
   ],
-  "theme_color": "#5B2850",
-  "background_color": "#FAF5F4",
-  "display": "standalone",
-  "start_url": "/"
+  "theme_color": "#ffffff",
+  "background_color": "#ffffff",
+  "display": "standalone"
 }

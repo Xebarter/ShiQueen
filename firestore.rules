@@ -65,5 +65,10 @@ service cloud.firestore {
       allow create: if !exists(/databases/$(database)/documents/settings/$(docId));
       allow update: if isAdmin();
     }
+
+    match /marketingAds/{adId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
   }
 }

@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   Building2,
+  Megaphone,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -34,6 +35,7 @@ export function AdminSidebar() {
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/admin' },
     { icon: Package, label: 'Products', href: '/admin/products' },
+    { icon: Megaphone, label: 'Ads', href: '/admin/ads' },
     { icon: ShoppingCart, label: 'Orders', href: '/admin/orders' },
     { icon: Users, label: 'Customers', href: '/admin/customers' },
     { icon: Building2, label: 'Wholesale', href: '/admin/wholesale' },

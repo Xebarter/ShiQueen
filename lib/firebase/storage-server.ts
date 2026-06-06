@@ -71,7 +71,7 @@ async function verifyAdmin(idToken: string, uid: string, email: string): Promise
     }
   }
 
-  throw new Error('Admin access is required to upload product images.');
+  throw new Error('Admin access is required to upload images.');
 }
 
 /** Storage rules read Firestore role — sync admin role before upload when email is allowlisted. */
@@ -156,6 +156,77 @@ function buildDownloadUrl(bucket: string, objectName: string, downloadToken: str
   return `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(objectName)}?alt=media&token=${downloadToken}`;
 }
 
+async function uploadImageToStorage(
+  idToken: string,
+  objectPath: string,
+  contentType: string,
+  fileBuffer: Buffer,
+  logLabel: string
+): Promise<string> {
+  const bucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
+  if (!bucket) {
+    throw new Error('Firebase Storage bucket is not configured.');
+  }
+
+  const uploadUrl = new URL(`https://firebasestorage.googleapis.com/v0/b/${bucket}/o`);
+  uploadUrl.searchParams.set('uploadType', 'media');
+  uploadUrl.searchParams.set('name', objectPath);
+
+  let lastErrorText = '';
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const uploadResponse = await fetch(uploadUrl.toString(), {
+      method: 'POST',
+      headers: {
+        Authorization: `Firebase ${idToken}`,
+        'Content-Type': contentType,
+      },
+      body: fileBuffer,
+    });
+
+    if (uploadResponse.ok) {
+      const metadata = (await uploadResponse.json()) as {
+        name?: string;
+        downloadTokens?: string;
+      };
+
+      if (!metadata.name || !metadata.downloadTokens) {
+        throw new Error('Upload succeeded but no download URL was returned.');
+      }
+
+      return buildDownloadUrl(bucket, metadata.name, metadata.downloadTokens);
+    }
+
+    lastErrorText = await uploadResponse.text();
+    console.error(
+      `[SheQueen] ${logLabel} upload failed (attempt ${attempt + 1}):`,
+      uploadResponse.status,
+      lastErrorText
+    );
+
+    if (uploadResponse.status === 403 && attempt < 2) {
+      await new Promise((resolve) => setTimeout(resolve, 600 * (attempt + 1)));
+      continue;
+    }
+
+    if (uploadResponse.status === 403) {
+      throw new Error(
+        'Storage permission denied. Sign out and back in, confirm Firestore users/{your-uid} has role "admin", then run: firebase deploy --only storage'
+      );
+    }
+
+    if (uploadResponse.status === 404) {
+      throw new Error(
+        'Storage bucket not found. Enable Firebase Storage in the Firebase Console for this project.'
+      );
+    }
+
+    throw new Error(`Failed to upload image to Firebase Storage (${uploadResponse.status}).`);
+  }
+
+  throw new Error(`Failed to upload image to Firebase Storage. ${lastErrorText}`);
+}
+
 export async function uploadProductImageServer(
   idToken: string,
   productId: string,
@@ -171,55 +242,9 @@ export async function uploadProductImageServer(
     throw new Error('Each image must be 5MB or smaller.');
   }
 
-  const bucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
-  if (!bucket) {
-    throw new Error('Firebase Storage bucket is not configured.');
-  }
-
   const { uid, email } = await verifyFirebaseToken(idToken);
   await verifyAdmin(idToken, uid, email);
 
   const objectPath = `products/${productId}/${Date.now()}-${sanitizeFileName(fileName)}`;
-  const uploadUrl = new URL(`https://firebasestorage.googleapis.com/v0/b/${bucket}/o`);
-  uploadUrl.searchParams.set('uploadType', 'media');
-  uploadUrl.searchParams.set('name', objectPath);
-
-  const uploadResponse = await fetch(uploadUrl.toString(), {
-    method: 'POST',
-    headers: {
-      Authorization: `Firebase ${idToken}`,
-      'Content-Type': contentType,
-    },
-    body: fileBuffer,
-  });
-
-  if (!uploadResponse.ok) {
-    const errorText = await uploadResponse.text();
-    console.error('[SheQueen] Storage upload failed:', uploadResponse.status, errorText);
-
-    if (uploadResponse.status === 403) {
-      throw new Error(
-        'Storage permission denied. Enable Firebase Storage in the Console, deploy rules (firebase deploy --only storage), sign out/in, and ensure your Firestore users doc has role "admin".'
-      );
-    }
-
-    if (uploadResponse.status === 404) {
-      throw new Error(
-        'Storage bucket not found. Enable Firebase Storage in the Firebase Console for this project.'
-      );
-    }
-
-    throw new Error('Failed to upload image to Firebase Storage.');
-  }
-
-  const metadata = (await uploadResponse.json()) as {
-    name?: string;
-    downloadTokens?: string;
-  };
-
-  if (!metadata.name || !metadata.downloadTokens) {
-    throw new Error('Upload succeeded but no download URL was returned.');
-  }
-
-  return buildDownloadUrl(bucket, metadata.name, metadata.downloadTokens);
+  return uploadImageToStorage(idToken, objectPath, contentType, fileBuffer, 'Product image');
 }
