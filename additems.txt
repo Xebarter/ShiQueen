@@ -1,0 +1,187 @@
+Redesign and enhance the existing Home Page to feel like a premium, high-converting shopping destination that immediately communicates abundance, variety, and value. Do not create a traditional corporate landing page. Instead, transform the homepage into a visually rich product discovery experience that showcases products throughout the page in a way that feels curated, elegant, and conversion-focused.
+
+### Core Objective
+
+The homepage should make visitors feel like they have entered a premium shopping marketplace with thousands of desirable products. The design should encourage browsing, discovery, impulse purchases, and increased average order value while maintaining a luxury, modern aesthetic.
+
+### Product-First Experience
+
+Make products the hero of the homepage.
+
+Instead of large empty sections, intelligently surface products throughout the entire page using a variety of layouts such as:
+
+* Dynamic product grids
+* Editorial product showcases
+* Horizontal product carousels
+* Masonry-style collections
+* Category-driven product displays
+* Trending product strips
+* Flash sale sections
+* Recently added products
+* Best-selling products
+* Most wishlisted products
+* Recommended products
+
+Products should feel naturally woven into the page rather than isolated in a single "Products" section.
+
+### Premium Visual Merchandising
+
+Design the homepage like a professional retail storefront.
+
+Use:
+
+* Large, high-quality product imagery
+* Layered layouts
+* Editorial-style sections
+* Luxury spacing
+* Elegant typography
+* Sophisticated shadows
+* Glassmorphism where appropriate
+* Smooth animations
+* Premium hover interactions
+* Rich micro-interactions
+
+Take inspiration from leading fashion, beauty, and luxury e-commerce brands.
+
+### Intelligent Product Discovery
+
+Create multiple pathways for users to discover products.
+
+Examples:
+
+* Trending This Week
+* New Arrivals
+* Beauty Essentials
+* Wig Collection
+* Customer Favorites
+* Staff Picks
+* Complete the Look
+* Frequently Bought Together
+* Under UGX 50,000
+* Luxury Collection
+* Wholesale Deals
+* Bundle & Save
+* Limited Stock
+* Flash Deals
+
+These sections should be generated dynamically from product data rather than hardcoded.
+
+### Conversion-Focused Merchandising
+
+Strategically encourage impulse purchases.
+
+Include intelligent components such as:
+
+* "Customers are buying this now"
+* "Selling fast"
+* "Only a few left"
+* "Recently viewed by others"
+* "Trending in Kampala"
+* "Bundle and save"
+* "Frequently bought together"
+* "Complete your routine"
+* "You may also like"
+
+Use these subtly and professionally without making the site feel spammy.
+
+### Dynamic Product Exposure
+
+Ensure that a large percentage of the homepage contains actual products.
+
+Products should appear throughout the user journey:
+
+* Above the fold
+* Between promotional sections
+* Between category showcases
+* Within editorial content
+* Inside recommendation sections
+
+Avoid long stretches of content without products.
+
+### Category Showcase Experience
+
+Create visually distinct category sections that immediately lead into products.
+
+For example:
+
+Beauty Collection
+→ Featured products directly underneath
+
+Wigs & Hair
+→ Trending wigs immediately underneath
+
+Fashion & Accessories
+→ Curated products immediately underneath
+
+Lingerie & Essentials
+→ Featured items immediately underneath
+
+This creates a seamless browsing experience.
+
+### Premium Impulse Purchase Features
+
+Include:
+
+* Quick Add to Cart
+* Quick View
+* Wishlist
+* Product Comparison
+* Hover image swap
+* Product badges
+* Discount indicators
+* Savings highlights
+
+Allow users to take action without leaving the homepage.
+
+### Personalization
+
+Where data is available, personalize homepage content based on:
+
+* Browsing history
+* Wishlist activity
+* Purchase history
+* Popular products
+* Trending products
+
+Fallback gracefully when no user data exists.
+
+### Motion & Interactions
+
+Use Framer Motion strategically.
+
+Implement:
+
+* Smooth entrance animations
+* Product reveal animations
+* Scroll-triggered effects
+* Subtle hover transformations
+* Animated category transitions
+
+Animations should feel premium and never distract from shopping.
+
+### Mobile Experience
+
+The homepage must be exceptionally optimized for mobile commerce.
+
+Prioritize:
+
+* Thumb-friendly interactions
+* Fast loading
+* Swipeable product collections
+* Mobile-first product discovery
+* Reduced friction purchasing
+
+### Performance Requirements
+
+Despite the rich product presentation:
+
+* Maintain Lighthouse score above 90
+* Lazy load products and images
+* Optimize image delivery
+* Use skeleton loaders
+* Prevent layout shifts
+* Ensure excellent Core Web Vitals
+
+### Expected Outcome
+
+The final homepage should feel like a blend of a luxury fashion marketplace, beauty retailer, and modern e-commerce platform. Visitors should immediately see products, discover new items continuously while scrolling, and feel encouraged to browse, add items to their cart, and make impulse purchases. Every major section should contribute directly to product discovery, engagement, and conversion.

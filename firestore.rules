@@ -1,0 +1,69 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isGuestCustomer(customerId) {
+      return customerId is string && customerId.matches('guest.*');
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow create: if isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    match /orders/{orderId} {
+      allow read: if isAdmin()
+        || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if request.resource.data.userId == null
+        || (isSignedIn() && request.resource.data.userId == request.auth.uid);
+      allow update: if isAdmin();
+    }
+
+    match /packages/{packageId} {
+      allow read: if true;
+      allow create: if !exists(/databases/$(database)/documents/packages/$(packageId));
+      allow update, delete: if isAdmin();
+    }
+
+    match /bulkOrders/{orderId} {
+      allow read: if isAdmin()
+        || (isSignedIn() && resource.data.customerId == request.auth.uid);
+      allow create: if isSignedIn() || isGuestCustomer(request.resource.data.customerId);
+      allow update: if isAdmin();
+    }
+
+    match /wholesaleAccounts/{accountId} {
+      allow read: if isAdmin()
+        || (isSignedIn() && resource.data.customerId == request.auth.uid);
+      allow create: if isSignedIn() || isGuestCustomer(request.resource.data.customerId);
+      allow update: if isAdmin();
+    }
+
+    match /settings/{docId} {
+      allow read: if true;
+      allow create: if !exists(/databases/$(database)/documents/settings/$(docId));
+      allow update: if isAdmin();
+    }
+  }
+}
