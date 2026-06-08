@@ -130,15 +130,11 @@ export default function Cart() {
                     <span className="text-muted-foreground">Shipping</span>
                     <span className="text-accent font-semibold">FREE</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tax (18%)</span>
-                    <span>USh {Math.round(total * 0.18).toLocaleString('en-UG', { maximumFractionDigits: 0 })}</span>
-                  </div>
                 </div>
 
                 <div className="flex justify-between font-semibold mb-6 text-lg">
                   <span>Total</span>
-                  <span>USh {Math.round(total * 1.18).toLocaleString('en-UG', { maximumFractionDigits: 0 })}</span>
+                  <span>USh {total.toLocaleString('en-UG', { maximumFractionDigits: 0 })}</span>
                 </div>
 
                 <Link href="/checkout" className="w-full">

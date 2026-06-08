@@ -3,7 +3,17 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, CreditCard, Loader2, ShoppingBag, Smartphone } from 'lucide-react';
+import {
+  ArrowLeft,
+  Check,
+  CreditCard,
+  Loader2,
+  MapPin,
+  ShoppingBag,
+  Smartphone,
+  Sparkles,
+  User,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
@@ -13,12 +23,7 @@ import { Label } from '@/components/ui/label';
 import { useCart } from '@/lib/cart-context';
 import { useAuth } from '@/lib/auth-context';
 import { createOrder, generateOrderId } from '@/lib/firebase/orders';
-import {
-  calculateTax,
-  calculateTotalWithTax,
-  formatUGX,
-  WHOLESALE_TAX_RATE,
-} from '@/lib/wholesale-data';
+import { formatUGX } from '@/lib/wholesale-data';
 import type { ShippingAddress } from '@/lib/types/database';
 import { cn } from '@/lib/utils';
 
@@ -27,11 +32,97 @@ type PaymentMethod = 'mobile_money' | 'cash_on_delivery';
 const PAYMENT_OPTIONS: {
   id: PaymentMethod;
   label: string;
+  hint: string;
   icon: typeof Smartphone;
 }[] = [
-  { id: 'mobile_money', label: 'Mobile Money', icon: Smartphone },
-  { id: 'cash_on_delivery', label: 'Cash on delivery', icon: CreditCard },
+  {
+    id: 'mobile_money',
+    label: 'Mobile Money',
+    hint: 'MTN or Airtel',
+    icon: Smartphone,
+  },
+  {
+    id: 'cash_on_delivery',
+    label: 'Cash on delivery',
+    hint: 'Pay when it arrives',
+    icon: CreditCard,
+  },
 ];
+
+const fieldClass =
+  'h-12 rounded-xl border-border/80 bg-background px-4 text-base shadow-sm transition-all placeholder:text-muted-foreground/70 focus-visible:border-primary/40 focus-visible:ring-4 focus-visible:ring-primary/10 md:text-base';
+
+function SectionCard({
+  icon: Icon,
+  title,
+  subtitle,
+  children,
+}: {
+  icon: typeof User;
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm shadow-primary/5">
+      <div className="border-b border-border/50 bg-gradient-to-r from-primary/[0.06] to-transparent px-6 py-5">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <Icon className="h-5 w-5" />
+          </span>
+          <div>
+            <h2 className="text-lg font-medium tracking-tight text-foreground">{title}</h2>
+            {subtitle && (
+              <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="p-6">{children}</div>
+    </div>
+  );
+}
+
+function FormField({
+  id,
+  name,
+  label,
+  type = 'text',
+  value,
+  onChange,
+  placeholder,
+  autoComplete,
+  className,
+}: {
+  id: string;
+  name: string;
+  label: string;
+  type?: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder: string;
+  autoComplete?: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn('space-y-2', className)}>
+      <Label htmlFor={id} className="text-sm font-medium text-foreground">
+        {label}
+      </Label>
+      <Input
+        id={id}
+        name={name}
+        type={type}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        required
+        className={fieldClass}
+      />
+    </div>
+  );
+}
 
 function splitFullName(fullName: string): { firstName: string; lastName: string } {
   const trimmed = fullName.trim();
@@ -68,13 +159,13 @@ function EmptyCheckout() {
   return (
     <main>
       <Header />
-      <section className="min-h-[calc(100vh-8rem)] bg-muted/20 py-16">
+      <section className="min-h-[calc(100vh-8rem)] bg-gradient-to-b from-secondary/40 to-background py-16">
         <div className="mx-auto max-w-md px-4 text-center">
-          <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <ShoppingBag className="h-6 w-6" />
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <ShoppingBag className="h-7 w-7" />
           </div>
-          <h1 className="text-2xl font-light tracking-tight">Your cart is empty</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <h1 className="text-3xl font-light tracking-tight">Your cart is empty</h1>
+          <p className="mt-3 text-base text-muted-foreground">
             Add items before checking out.
           </p>
           <Link href="/shop" className="mt-6 inline-block">
@@ -108,8 +199,7 @@ export function CheckoutPage() {
     return <EmptyCheckout />;
   }
 
-  const tax = calculateTax(total);
-  const orderTotal = calculateTotalWithTax(total);
+  const orderTotal = total;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -149,7 +239,7 @@ export function CheckoutPage() {
               phone: form.phone,
               items: orderItems,
               subtotal: total,
-              tax,
+              tax: 0,
               total: orderTotal,
               shippingAddress,
               orderType,
@@ -197,7 +287,7 @@ export function CheckoutPage() {
             email: form.email,
             items: orderItems,
             subtotal: total,
-            tax,
+            tax: 0,
             total: orderTotal,
             shippingAddress,
             status: 'pending',
@@ -251,7 +341,7 @@ export function CheckoutPage() {
         email: form.email,
         items: orderItems,
         subtotal: total,
-        tax,
+        tax: 0,
         total: orderTotal,
         shippingAddress,
         status: 'pending',
@@ -281,117 +371,121 @@ export function CheckoutPage() {
         : `Place order · ${formatUGX(orderTotal)}`;
 
   return (
-    <main className="pb-24 md:pb-0">
+    <main className="pb-28 md:pb-0">
       <Header />
 
-      <section className="bg-muted/20 py-8 sm:py-12">
-        <div className="mx-auto max-w-lg px-4 sm:max-w-xl">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-light tracking-tight sm:text-3xl">Checkout</h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {itemCount} {itemCount === 1 ? 'item' : 'items'} · {formatUGX(orderTotal)}
-              </p>
-            </div>
+      <section className="relative overflow-hidden bg-gradient-to-b from-secondary/40 via-background to-background py-10 sm:py-14">
+        <div
+          className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/8 blur-3xl"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute -left-16 bottom-0 h-48 w-48 rounded-full bg-accent/15 blur-3xl"
+          aria-hidden
+        />
+
+        <div className="relative mx-auto max-w-xl px-4 sm:max-w-2xl">
+          <div className="mb-10">
             <Link
               href="/cart"
-              className="text-sm text-muted-foreground transition hover:text-foreground"
+              className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition hover:text-primary"
             >
               <ArrowLeft className="h-4 w-4" />
+              Back to cart
             </Link>
+
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary/80">
+                  Secure checkout
+                </p>
+                <h1 className="mt-2 text-3xl font-light tracking-tight text-foreground sm:text-4xl">
+                  Complete your order
+                </h1>
+                <p className="mt-2 text-base text-muted-foreground">
+                  {itemCount} {itemCount === 1 ? 'item' : 'items'} in your bag
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-primary/15 bg-card px-5 py-4 shadow-sm">
+                <p className="text-sm text-muted-foreground">Order total</p>
+                <p className="text-2xl font-semibold tracking-tight text-primary">
+                  {formatUGX(orderTotal)}
+                </p>
+              </div>
+            </div>
           </div>
 
           <form id="checkout-form" onSubmit={handleSubmit} className="space-y-6">
-            <div className="rounded-xl border border-border/70 bg-card p-5 sm:p-6">
-              <h2 className="text-sm font-medium text-foreground">Your details</h2>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Only what we need to deliver and contact you.
-              </p>
+            <SectionCard
+              icon={User}
+              title="Your details"
+              subtitle="We only ask for what we need to deliver your order."
+            >
+              <div className="space-y-5">
+                <FormField
+                  id="fullName"
+                  name="fullName"
+                  label="Full name"
+                  value={form.fullName}
+                  onChange={handleChange}
+                  placeholder="Jane Nakato"
+                  autoComplete="name"
+                />
 
-              <div className="mt-5 space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="fullName" className="text-xs">
-                    Full name
-                  </Label>
-                  <Input
-                    id="fullName"
-                    name="fullName"
-                    value={form.fullName}
-                    onChange={handleChange}
-                    placeholder="Jane Nakato"
-                    autoComplete="name"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="phone" className="text-xs">
-                    Phone
-                  </Label>
-                  <Input
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <FormField
                     id="phone"
                     name="phone"
+                    label="Phone number"
                     type="tel"
                     value={form.phone}
                     onChange={handleChange}
                     placeholder="07XX XXX XXX"
                     autoComplete="tel"
-                    required
                   />
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="email" className="text-xs">
-                    Email
-                  </Label>
-                  <Input
+                  <FormField
                     id="email"
                     name="email"
+                    label="Email address"
                     type="email"
                     value={form.email}
                     onChange={handleChange}
                     placeholder="you@example.com"
                     autoComplete="email"
-                    required
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="address" className="text-xs">
-                    Delivery address
-                  </Label>
-                  <Input
-                    id="address"
-                    name="address"
-                    value={form.address}
-                    onChange={handleChange}
-                    placeholder="Street, building, area"
-                    autoComplete="street-address"
-                    required
-                  />
-                </div>
+                <FormField
+                  id="address"
+                  name="address"
+                  label="Delivery address"
+                  value={form.address}
+                  onChange={handleChange}
+                  placeholder="Street, building, area"
+                  autoComplete="street-address"
+                />
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="city" className="text-xs">
-                    City
-                  </Label>
-                  <Input
-                    id="city"
-                    name="city"
-                    value={form.city}
-                    onChange={handleChange}
-                    placeholder="Kampala"
-                    autoComplete="address-level2"
-                    required
-                  />
-                </div>
+                <FormField
+                  id="city"
+                  name="city"
+                  label="City"
+                  value={form.city}
+                  onChange={handleChange}
+                  placeholder="Kampala"
+                  autoComplete="address-level2"
+                  className="sm:max-w-xs"
+                />
               </div>
-            </div>
+            </SectionCard>
 
-            <div className="rounded-xl border border-border/70 bg-card p-5 sm:p-6">
-              <h2 className="text-sm font-medium">Payment</h2>
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                {PAYMENT_OPTIONS.map(({ id, label, icon: Icon }) => {
+            <SectionCard
+              icon={Sparkles}
+              title="How would you like to pay?"
+              subtitle="Choose the option that works best for you."
+            >
+              <div className="grid gap-3 sm:grid-cols-2">
+                {PAYMENT_OPTIONS.map(({ id, label, hint, icon: Icon }) => {
                   const selected = paymentMethod === id;
                   return (
                     <button
@@ -399,64 +493,110 @@ export function CheckoutPage() {
                       type="button"
                       onClick={() => setPaymentMethod(id)}
                       className={cn(
-                        'flex items-center justify-center gap-2 rounded-lg border px-3 py-3 text-sm font-medium transition-colors',
+                        'group relative flex flex-col items-start rounded-2xl border-2 p-5 text-left transition-all duration-200',
                         selected
-                          ? 'border-primary bg-primary/5 text-primary'
-                          : 'border-border/70 text-muted-foreground hover:border-primary/30 hover:text-foreground'
+                          ? 'border-primary bg-primary/[0.07] shadow-md shadow-primary/10'
+                          : 'border-border/70 bg-background hover:border-primary/30 hover:bg-muted/30'
                       )}
                     >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      <span className="truncate">{label}</span>
+                      <div className="flex w-full items-start justify-between gap-3">
+                        <span
+                          className={cn(
+                            'flex h-11 w-11 items-center justify-center rounded-xl transition-colors',
+                            selected
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'
+                          )}
+                        >
+                          <Icon className="h-5 w-5" />
+                        </span>
+                        <span
+                          className={cn(
+                            'flex h-6 w-6 items-center justify-center rounded-full border-2 transition-colors',
+                            selected
+                              ? 'border-primary bg-primary text-primary-foreground'
+                              : 'border-border bg-background'
+                          )}
+                        >
+                          {selected && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+                        </span>
+                      </div>
+                      <p className="mt-4 text-base font-semibold text-foreground">{label}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{hint}</p>
                     </button>
                   );
                 })}
               </div>
-            </div>
+            </SectionCard>
 
-            <div className="rounded-xl border border-border/70 bg-card p-5 sm:p-6">
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Subtotal</span>
-                  <span>{formatUGX(total)}</span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Shipping</span>
-                  <span className="text-emerald-600">Free</span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Tax ({Math.round(WHOLESALE_TAX_RATE * 100)}%)</span>
-                  <span>{formatUGX(tax)}</span>
-                </div>
-                <div className="flex justify-between border-t border-border/60 pt-3 text-base font-semibold">
-                  <span>Total</span>
-                  <span>{formatUGX(orderTotal)}</span>
+            <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm shadow-primary/5">
+              <div className="border-b border-border/50 bg-gradient-to-r from-primary/[0.06] to-transparent px-6 py-5">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <MapPin className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h2 className="text-lg font-medium tracking-tight">Order summary</h2>
+                    <p className="text-sm text-muted-foreground">
+                      <Link href="/cart" className="font-medium text-primary hover:underline">
+                        Edit cart
+                      </Link>
+                      {' · '}
+                      {items.length} {items.length === 1 ? 'item' : 'items'}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <p className="mt-4 text-center text-xs text-muted-foreground">
-                {items.length} {items.length === 1 ? 'item' : 'items'} ·{' '}
-                <Link href="/cart" className="text-primary hover:underline">
-                  Edit cart
-                </Link>
-              </p>
+              <div className="space-y-3 px-6 py-5 text-base">
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Subtotal</span>
+                  <span className="font-medium text-foreground">{formatUGX(total)}</span>
+                </div>
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Shipping</span>
+                  <span className="font-medium text-emerald-600">Free</span>
+                </div>
+              </div>
 
-              <Button
-                type="submit"
-                className="mt-5 hidden w-full sm:inline-flex"
-                disabled={loading}
-                size="lg"
-              >
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {submitLabel}
-              </Button>
+              <div className="mx-6 mb-6 rounded-2xl bg-primary px-5 py-4 text-primary-foreground">
+                <div className="flex items-center justify-between">
+                  <span className="text-base font-medium opacity-90">Total due</span>
+                  <span className="text-2xl font-semibold tracking-tight">
+                    {formatUGX(orderTotal)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="hidden px-6 pb-6 sm:block">
+                <Button
+                  type="submit"
+                  className="h-12 w-full rounded-xl text-base font-semibold shadow-lg shadow-primary/20"
+                  disabled={loading}
+                  size="lg"
+                >
+                  {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                  {submitLabel}
+                </Button>
+              </div>
             </div>
           </form>
         </div>
       </section>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-background/95 p-4 backdrop-blur sm:hidden">
-        <Button type="submit" form="checkout-form" className="w-full" disabled={loading} size="lg">
-          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-background/95 px-4 py-4 backdrop-blur-md sm:hidden">
+        <div className="mb-3 flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">Total</span>
+          <span className="text-lg font-semibold text-primary">{formatUGX(orderTotal)}</span>
+        </div>
+        <Button
+          type="submit"
+          form="checkout-form"
+          className="h-12 w-full rounded-xl text-base font-semibold shadow-lg shadow-primary/20"
+          disabled={loading}
+          size="lg"
+        >
+          {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
           {submitLabel}
         </Button>
       </div>
