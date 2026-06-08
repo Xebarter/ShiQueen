@@ -28,7 +28,7 @@ export function WholesaleBenefitsBanner({ catalogSize, className }: WholesaleBen
         </div>
 
         <Link
-          href="/wholesale/bundles"
+          href="/packages"
           className="inline-flex shrink-0 items-center gap-2 self-start rounded-xl border border-border/70 bg-card px-4 py-2.5 text-sm font-semibold shadow-sm transition hover:border-primary/30 hover:shadow-md sm:self-center"
         >
           Bundle deals

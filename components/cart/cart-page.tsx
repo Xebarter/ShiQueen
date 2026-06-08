@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   ArrowLeft,
+  Boxes,
   Minus,
   Package,
   Plus,
@@ -20,8 +21,14 @@ import { BulkQuantityStepper } from '@/components/wholesale/bulk-quantity-steppe
 import { isRemoteProductImage } from '@/components/product-image';
 import { useCart, type CartItem } from '@/lib/cart-context';
 import { useProducts } from '@/lib/products-context';
+import { useWholesale } from '@/lib/wholesale-context';
 import { getWholesaleDiscountForItem, getWholesaleSavings } from '@/lib/wholesale-cart';
-import { formatUGX } from '@/lib/wholesale-data';
+import { formatUGX, getRetailPricesMap, productsToCatalog } from '@/lib/wholesale-data';
+import {
+  getPackageImage,
+  isPackageCartItem,
+  resolvePackageSavings,
+} from '@/lib/package-utils';
 import { cn } from '@/lib/utils';
 
 function cartItemKey(item: CartItem): string {
@@ -30,12 +37,13 @@ function cartItemKey(item: CartItem): string {
     .join('-');
 }
 
-function CartItemImage({ item }: { item: CartItem }) {
-  if (isRemoteProductImage(item.image)) {
+function CartItemImage({ item, imageSrc }: { item: CartItem; imageSrc?: string }) {
+  const src = imageSrc ?? item.image;
+  if (isRemoteProductImage(src)) {
     return (
       <div className="relative h-full w-full overflow-hidden rounded-xl bg-muted">
         <Image
-          src={item.image}
+          src={src}
           alt={item.name}
           fill
           sizes="96px"
@@ -47,7 +55,11 @@ function CartItemImage({ item }: { item: CartItem }) {
 
   return (
     <div className="flex h-full w-full items-center justify-center rounded-xl bg-gradient-to-br from-primary/5 via-muted to-accent/10">
-      <ShoppingBag className="h-7 w-7 text-primary/30" />
+      {isPackageCartItem(item) ? (
+        <Boxes className="h-7 w-7 text-primary/30" />
+      ) : (
+        <ShoppingBag className="h-7 w-7 text-primary/30" />
+      )}
     </div>
   );
 }
@@ -90,16 +102,27 @@ function CartItemCard({
   item,
   onRemove,
   onUpdateQuantity,
+  packageItemCount,
+  packageRetailValue,
+  imageSrc,
 }: {
   item: CartItem;
   onRemove: () => void;
   onUpdateQuantity: (quantity: number) => void;
+  packageItemCount?: number;
+  packageRetailValue?: number;
+  imageSrc?: string;
 }) {
   const lineTotal = item.price * item.quantity;
   const isWholesale = Boolean(item.wholesale);
+  const isPackage = isPackageCartItem(item);
   const savingsPerUnit = isWholesale
     ? item.wholesale!.basePrice - item.price
     : 0;
+  const packageSavings =
+    isPackage && packageRetailValue
+      ? Math.max(0, packageRetailValue - item.price) * item.quantity
+      : 0;
   const discountPercent = getWholesaleDiscountForItem(item);
 
   return (
@@ -111,6 +134,20 @@ function CartItemCard({
           : 'border-border/60 shadow-primary/5'
       )}
     >
+      {isPackage && (
+        <div className="flex items-center gap-2 border-b border-accent/20 bg-accent/[0.07] px-4 py-2.5 sm:px-5">
+          <Boxes className="h-4 w-4 shrink-0 text-accent" />
+          <span className="text-xs font-semibold uppercase tracking-widest text-accent">
+            Package
+          </span>
+          {packageItemCount !== undefined && (
+            <span className="ml-auto text-[11px] font-medium text-muted-foreground">
+              Includes {packageItemCount} products
+            </span>
+          )}
+        </div>
+      )}
+
       {isWholesale && (
         <div className="flex items-center gap-2 border-b border-primary/20 bg-primary/[0.07] px-4 py-2.5 sm:px-5">
           <Package className="h-4 w-4 shrink-0 text-primary" />
@@ -127,7 +164,7 @@ function CartItemCard({
 
       <div className="flex gap-4 p-4 sm:gap-5 sm:p-5">
         <div className="relative h-24 w-24 shrink-0 sm:h-28 sm:w-28">
-          <CartItemImage item={item} />
+          <CartItemImage item={item} imageSrc={imageSrc} />
           {isWholesale && (
             <span className="absolute -left-1 -top-1 rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground shadow-sm">
               B2B
@@ -183,8 +220,22 @@ function CartItemCard({
                     {formatUGX(item.price)} / unit
                   </p>
                 </>
+              ) : isPackage ? (
+                <>
+                  {packageRetailValue !== undefined && packageRetailValue > item.price && (
+                    <p className="text-sm text-muted-foreground line-through">
+                      {formatUGX(packageRetailValue)} retail value
+                    </p>
+                  )}
+                  <p className="text-sm text-muted-foreground">{formatUGX(item.price)} per package</p>
+                </>
               ) : (
                 <p className="text-sm text-muted-foreground">{formatUGX(item.price)} each</p>
+              )}
+              {packageSavings > 0 && (
+                <p className="text-xs font-medium text-accent">
+                  Save {formatUGX(packageSavings)} on this package
+                </p>
               )}
               {savingsPerUnit > 0 && (
                 <p className="text-xs font-medium text-accent">
@@ -301,6 +352,7 @@ function CartItemsSection({
   items,
   onRemove,
   onUpdateQuantity,
+  getPackageMeta,
 }: {
   title: string;
   description: string;
@@ -308,6 +360,11 @@ function CartItemsSection({
   items: CartItem[];
   onRemove: (item: CartItem) => void;
   onUpdateQuantity: (item: CartItem, quantity: number) => void;
+  getPackageMeta?: (item: CartItem) => {
+    itemCount?: number;
+    retailValue?: number;
+    imageSrc?: string;
+  };
 }) {
   if (items.length === 0) return null;
 
@@ -323,14 +380,20 @@ function CartItemsSection({
         </div>
       </div>
       <div className="space-y-4">
-        {items.map((item) => (
-          <CartItemCard
-            key={cartItemKey(item)}
-            item={item}
-            onRemove={() => onRemove(item)}
-            onUpdateQuantity={(quantity) => onUpdateQuantity(item, quantity)}
-          />
-        ))}
+        {items.map((item) => {
+          const meta = getPackageMeta?.(item) ?? {};
+          return (
+            <CartItemCard
+              key={cartItemKey(item)}
+              item={item}
+              onRemove={() => onRemove(item)}
+              onUpdateQuantity={(quantity) => onUpdateQuantity(item, quantity)}
+              packageItemCount={meta.itemCount}
+              packageRetailValue={meta.retailValue}
+              imageSrc={meta.imageSrc}
+            />
+          );
+        })}
       </div>
     </section>
   );
@@ -360,16 +423,38 @@ function EmptyCart() {
 
 export function CartPage() {
   const { items, removeItem, updateQuantity, total, clearCart, itemCount } = useCart();
-  const { getProductById } = useProducts();
+  const { getProductById, products } = useProducts();
+  const { packages } = useWholesale();
+  const retailPrices = useMemo(
+    () => getRetailPricesMap(productsToCatalog(products)),
+    [products]
+  );
   const wholesaleSavings = getWholesaleSavings(items);
+  const packageItems = useMemo(
+    () => items.filter((item) => isPackageCartItem(item)),
+    [items]
+  );
   const wholesaleItems = useMemo(
     () => items.filter((item) => item.wholesale),
     [items]
   );
   const retailItems = useMemo(
-    () => items.filter((item) => !item.wholesale),
+    () => items.filter((item) => !item.wholesale && !isPackageCartItem(item)),
     [items]
   );
+
+  const getPackageMeta = (item: CartItem) => {
+    const pkg = packages.find((p) => p.id === item.id);
+    if (!pkg) {
+      return { imageSrc: item.image || undefined };
+    }
+    const { retailTotal } = resolvePackageSavings(pkg, retailPrices);
+    return {
+      itemCount: pkg.items.length,
+      retailValue: retailTotal,
+      imageSrc: item.image || getPackageImage(pkg, products),
+    };
+  };
 
   if (items.length === 0) {
     return (
@@ -412,6 +497,18 @@ export function CartPage() {
 
           <div className="grid gap-8 py-8 lg:grid-cols-[1fr_380px] lg:gap-10 lg:py-10">
             <div className="space-y-8">
+              <CartItemsSection
+                title="Packages"
+                description="Curated bundles from /packages"
+                icon={Boxes}
+                items={packageItems}
+                onRemove={(item) => removeItem(item.id, { wholesale: false })}
+                onUpdateQuantity={(item, quantity) =>
+                  updateQuantity(item.id, quantity, undefined, { wholesale: false })
+                }
+                getPackageMeta={getPackageMeta}
+              />
+
               <CartItemsSection
                 title="Wholesale items"
                 description="Bulk order lines with volume-tier pricing from /wholesale"

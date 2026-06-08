@@ -8,16 +8,36 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { AdminPage, AdminPageHeader } from '@/components/admin/admin-page';
 import {
-  AdminWholesaleBackLink,
   PackageActiveBadge,
   packageRuleLabel,
   StatCard,
 } from '@/components/admin/admin-wholesale-shared';
+import { PackageCoverDisplay } from '@/components/packages/package-cover-display';
+import { useProducts } from '@/lib/products-context';
 import { useWholesale } from '@/lib/wholesale-context';
+import { getPackageCoverImages } from '@/lib/package-utils';
 import { formatUGX } from '@/lib/wholesale-data';
+import type { Product } from '@/lib/types/database';
+import type { Package } from '@/lib/types/wholesale';
+
+function AdminPackageCoverThumb({ pkg, products }: { pkg: Package; products: Product[] }) {
+  const coverImages = getPackageCoverImages(pkg, products);
+
+  return (
+    <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border/70 bg-muted">
+      <PackageCoverDisplay
+        images={coverImages}
+        alt={pkg.name}
+        sizes="56px"
+        fallbackClassName="text-lg"
+      />
+    </div>
+  );
+}
 
 export function AdminWholesalePackagesPage() {
   const { packages, deletePackage, loading } = useWholesale();
+  const { products } = useProducts();
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredPackages = useMemo(() => {
@@ -52,13 +72,11 @@ export function AdminWholesalePackagesPage() {
 
   return (
     <AdminPage>
-      <AdminWholesaleBackLink href="/admin/wholesale" label="Back to wholesale" />
-
       <AdminPageHeader
         title="Packages"
-        description="Create and manage wholesale bundles"
+        description="Create and manage curated product packages"
         action={
-          <Link href="/admin/wholesale/packages/new">
+          <Link href="/admin/packages/new">
             <Button className="gap-2">
               <Plus className="h-4 w-4" />
               Create package
@@ -111,7 +129,7 @@ export function AdminWholesalePackagesPage() {
                   <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
                     Create your first wholesale bundle to offer bulk pricing.
                   </p>
-                  <Link href="/admin/wholesale/packages/new">
+                  <Link href="/admin/packages/new">
                     <Button className="mt-4 gap-2">
                       <Plus className="h-4 w-4" />
                       Create package
@@ -133,6 +151,7 @@ export function AdminWholesalePackagesPage() {
                         key={pkg.id}
                         className="flex items-center gap-3 border-b border-border/60 px-4 py-3 last:border-0"
                       >
+                        <AdminPackageCoverThumb pkg={pkg} products={products} />
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="truncate font-medium">{pkg.name}</p>
@@ -149,7 +168,7 @@ export function AdminWholesalePackagesPage() {
                           </p>
                         </div>
                         <div className="flex shrink-0 gap-1">
-                          <Link href={`/admin/wholesale/packages/${pkg.id}`}>
+                          <Link href={`/admin/packages/${pkg.id}`}>
                             <Button variant="ghost" size="sm" className="h-8 w-8 p-0" aria-label="Edit package">
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -185,7 +204,7 @@ export function AdminWholesalePackagesPage() {
                             Retail
                           </th>
                           <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                            Wholesale
+                            Price
                           </th>
                           <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                             Status
@@ -202,10 +221,15 @@ export function AdminWholesalePackagesPage() {
                             className="border-b border-border/60 transition-colors last:border-0 hover:bg-muted/30"
                           >
                             <td className="px-5 py-3.5">
-                              <p className="font-medium">{pkg.name}</p>
-                              <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
-                                {pkg.description}
-                              </p>
+                              <div className="flex items-center gap-3">
+                                <AdminPackageCoverThumb pkg={pkg} products={products} />
+                                <div className="min-w-0">
+                                  <p className="font-medium">{pkg.name}</p>
+                                  <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                                    {pkg.description}
+                                  </p>
+                                </div>
+                              </div>
                             </td>
                             <td className="px-5 py-3.5 text-muted-foreground">
                               {packageRuleLabel(pkg.rule)}
@@ -225,7 +249,7 @@ export function AdminWholesalePackagesPage() {
                             </td>
                             <td className="px-5 py-3.5">
                               <div className="flex justify-end gap-1">
-                                <Link href={`/admin/wholesale/packages/${pkg.id}`}>
+                                <Link href={`/admin/packages/${pkg.id}`}>
                                   <Button variant="ghost" size="sm" className="h-8 gap-1.5 px-2">
                                     <Edit className="h-4 w-4" />
                                     Edit

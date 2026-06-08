@@ -43,6 +43,7 @@ export interface OrderItem {
   size?: string;
   color?: string;
   image?: string;
+  packageId?: string;
 }
 
 export interface ShippingAddress {

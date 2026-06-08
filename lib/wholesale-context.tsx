@@ -92,7 +92,9 @@ export function WholesaleProvider({ children }: { children: ReactNode }) {
 
   const updatePackage = async (id: string, updates: Partial<Package>) => {
     const existing = packages.find((pkg) => pkg.id === id);
-    if (!existing) return;
+    if (!existing) {
+      throw new Error('Package not found in local state. Refresh and try again.');
+    }
     await savePackage({ ...existing, ...updates, id });
   };
 

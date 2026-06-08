@@ -350,12 +350,12 @@ export function HomePage() {
         </ProductSection>
       )}
 
-      {/* Bundle & Save / Wholesale */}
+      {/* Package Deals */}
       {!loading && (sections?.wholesale.length ?? 0) > 0 && (
         <ProductSection
-          title="Wholesale Deals"
-          subtitle="Volume discounts up to 25% — perfect for resellers"
-          href="/wholesale"
+          title="Package Deals"
+          subtitle="Curated bundles at special prices — save more together"
+          href="/packages"
           className="bg-primary/5"
         >
           {renderGrid(sections!.wholesale, 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6', 'compact')}
@@ -364,7 +364,7 @@ export function HomePage() {
               {packages.slice(0, 3).map((pkg) => (
                 <Link
                   key={pkg.id}
-                  href={`/wholesale/bundles/${pkg.id}`}
+                  href={`/packages/${pkg.id}`}
                   className="group p-5 rounded-2xl border border-border bg-card/80 backdrop-blur hover:shadow-lg transition"
                 >
                   <div className="flex items-start gap-3">

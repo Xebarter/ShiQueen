@@ -578,7 +578,7 @@ export function AccountDashboard() {
                       <CardContent className="space-y-2">
                         {[
                           { label: 'Browse new arrivals', href: '/shop', icon: ShoppingBag },
-                          { label: 'SheQueen Rewards', href: '/loyalty', icon: Crown },
+                          { label: 'Browse packages', href: '/packages', icon: Crown },
                           { label: 'Wholesale program', href: '/wholesale', icon: Truck },
                         ].map(({ label, href, icon: Icon }) => (
                           <Link

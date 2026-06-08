@@ -259,7 +259,7 @@ export function BulkOrderSummary({
                   View full cart
                 </Button>
               </Link>
-              <Link href="/wholesale/bundles" className="block">
+              <Link href="/packages" className="block">
                 <Button variant="outline" className="h-11 w-full rounded-xl text-sm font-medium">
                   Bundle deals
                 </Button>

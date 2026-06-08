@@ -68,7 +68,7 @@ export function AdminWholesalePage() {
         title="Wholesale"
         description="Packages, bulk orders, and B2B accounts"
         action={
-          <Link href="/admin/wholesale/packages/new">
+          <Link href="/admin/packages/new">
             <Button className="gap-2">
               <Plus className="h-4 w-4" />
               New package
@@ -112,7 +112,7 @@ export function AdminWholesalePage() {
 
           <div className="mb-6 grid gap-3 sm:grid-cols-3">
             <QuickNavCard
-              href="/admin/wholesale/packages"
+              href="/admin/packages"
               title="Packages"
               description="Create and edit wholesale bundles"
               icon={Package}
@@ -148,7 +148,7 @@ export function AdminWholesalePage() {
                         : `${packages.length} package${packages.length === 1 ? '' : 's'} in catalogue`}
                     </CardDescription>
                   </div>
-                  <Link href="/admin/wholesale/packages">
+                  <Link href="/admin/packages">
                     <Button variant="outline" size="sm">
                       View all
                     </Button>
@@ -163,7 +163,7 @@ export function AdminWholesalePage() {
                     <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
                       Create your first wholesale bundle to start selling in bulk.
                     </p>
-                    <Link href="/admin/wholesale/packages/new">
+                    <Link href="/admin/packages/new">
                       <Button className="mt-4 gap-2">
                         <Plus className="h-4 w-4" />
                         Create package
@@ -194,7 +194,7 @@ export function AdminWholesalePage() {
                             </p>
                           </div>
                           <div className="flex shrink-0 gap-1">
-                            <Link href={`/admin/wholesale/packages/${pkg.id}`}>
+                            <Link href={`/admin/packages/${pkg.id}`}>
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -270,7 +270,7 @@ export function AdminWholesalePage() {
                               </td>
                               <td className="px-5 py-3.5">
                                 <div className="flex justify-end gap-1">
-                                  <Link href={`/admin/wholesale/packages/${pkg.id}`}>
+                                  <Link href={`/admin/packages/${pkg.id}`}>
                                     <Button variant="ghost" size="sm" className="h-8 gap-1.5 px-2">
                                       <Edit className="h-4 w-4" />
                                       Edit

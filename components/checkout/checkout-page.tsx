@@ -22,7 +22,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCart } from '@/lib/cart-context';
 import { useAuth } from '@/lib/auth-context';
+import { useProducts } from '@/lib/products-context';
+import { useWholesale } from '@/lib/wholesale-context';
 import { createOrder, generateOrderId } from '@/lib/firebase/orders';
+import { expandPackageCartItems } from '@/lib/package-utils';
 import { formatUGX } from '@/lib/wholesale-data';
 import type { ShippingAddress } from '@/lib/types/database';
 import { cn } from '@/lib/utils';
@@ -184,6 +187,8 @@ function EmptyCheckout() {
 export function CheckoutPage() {
   const { items, total, clearCart, itemCount } = useCart();
   const { user } = useAuth();
+  const { products } = useProducts();
+  const { packages } = useWholesale();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('mobile_money');
@@ -215,15 +220,7 @@ export function CheckoutPage() {
     const isWholesaleOrder = items.some((item) => item.quantity >= 10);
     const isPackageOrder = items.some((item) => item.id.startsWith('pkg-'));
     const orderType = isPackageOrder ? 'package' : isWholesaleOrder ? 'wholesale' : 'retail';
-    const orderItems = items.map((item) => ({
-      productId: item.id,
-      name: item.name,
-      price: item.price,
-      quantity: item.quantity,
-      size: item.size,
-      color: item.color,
-      image: item.image,
-    }));
+    const orderItems = expandPackageCartItems(items, packages, products);
 
     try {
       if (paymentMethod === 'mobile_money') {

@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteField,
   doc,
   getDoc,
   setDoc,
@@ -13,8 +14,18 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { COLLECTIONS } from '@/lib/firebase/collections';
+import { stripUndefined } from '@/lib/firebase/sanitize';
 import { toDate } from '@/lib/firebase/timestamp';
 import { Package, BulkOrder, WholesaleAccount } from '@/lib/types/wholesale';
+
+function sanitizePackageUpdateData(data: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(data).map(([key, value]) => [
+      key,
+      value === undefined ? deleteField() : stripUndefined(value),
+    ])
+  );
+}
 
 function mapPackage(id: string, data: Record<string, unknown>): Package {
   return {
@@ -23,10 +34,15 @@ function mapPackage(id: string, data: Record<string, unknown>): Package {
     description: String(data.description ?? ''),
     items: Array.isArray(data.items) ? data.items : [],
     rule: data.rule as Package['rule'],
+    pricingMode: data.pricingMode === 'auto' ? 'auto' : 'custom',
     basePrice: Number(data.basePrice ?? 0),
     discountedPrice: Number(data.discountedPrice ?? 0),
     savingsPercentage: Number(data.savingsPercentage ?? 0),
+    coverMode: data.coverMode === 'products' ? 'products' : data.coverMode === 'upload' ? 'upload' : undefined,
     image: data.image ? String(data.image) : undefined,
+    coverProductIds: Array.isArray(data.coverProductIds)
+      ? data.coverProductIds.map(String).slice(0, 4)
+      : undefined,
     isActive: Boolean(data.isActive ?? true),
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
@@ -90,12 +106,16 @@ export async function savePackage(
   const { id, createdAt, updatedAt, ...data } = pkg;
   const ref = doc(db, COLLECTIONS.packages, id);
   const existing = await getDoc(ref);
+  const payload = data as Record<string, unknown>;
 
   if (existing.exists()) {
-    await updateDoc(ref, { ...data, updatedAt: serverTimestamp() });
+    await updateDoc(ref, {
+      ...sanitizePackageUpdateData(payload),
+      updatedAt: serverTimestamp(),
+    });
   } else {
     await setDoc(ref, {
-      ...data,
+      ...stripUndefined(payload),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });

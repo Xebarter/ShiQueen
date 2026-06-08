@@ -49,6 +49,10 @@ export async function uploadMarketingBanner(adId: string, file: File): Promise<s
   return uploadProductImage(`ad-${adId}`, file);
 }
 
+export async function uploadPackageImage(packageId: string, file: File): Promise<string> {
+  return uploadProductImage(`package-${packageId}`, file);
+}
+
 export async function uploadProductImages(
   productId: string,
   files: File[]

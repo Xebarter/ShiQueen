@@ -1,3 +1,5 @@
+import type { CartItem } from '@/lib/cart-context';
+import type { OrderItem, Product } from '@/lib/types/database';
 import { Package, PackageItem, PricingTier } from '@/lib/types/wholesale';
 
 /**
@@ -102,4 +104,209 @@ export function validateWholesaleQuantity(
   }
 
   return { valid: true };
+}
+
+export function computePackageRetailTotal(
+  items: PackageItem[],
+  retailPrices: Record<string, number>
+): number {
+  return items.reduce((sum, item) => {
+    return sum + (retailPrices[item.productId] || 0) * item.quantity;
+  }, 0);
+}
+
+export function computePackageItemTotal(
+  items: PackageItem[],
+  retailPrices: Record<string, number>
+): number {
+  return items.reduce((sum, item) => {
+    const unitPrice = item.price ?? retailPrices[item.productId] ?? 0;
+    return sum + unitPrice * item.quantity;
+  }, 0);
+}
+
+export function resolvePackagePrice(
+  pkg: Package,
+  retailPrices: Record<string, number>
+): number {
+  if (pkg.pricingMode === 'auto') {
+    return computePackageItemTotal(pkg.items, retailPrices);
+  }
+  return pkg.discountedPrice;
+}
+
+export function resolvePackageRetailValue(
+  pkg: Package,
+  retailPrices: Record<string, number>
+): number {
+  return computePackageRetailTotal(pkg.items, retailPrices);
+}
+
+export function resolvePackageSavings(
+  pkg: Package,
+  retailPrices: Record<string, number>
+): { retailTotal: number; packagePrice: number; savingsAmount: number; savingsPercentage: number } {
+  const retailTotal = resolvePackageRetailValue(pkg, retailPrices);
+  const packagePrice = resolvePackagePrice(pkg, retailPrices);
+  const savingsAmount = Math.max(0, retailTotal - packagePrice);
+  const savingsPercentage = retailTotal > 0 ? (savingsAmount / retailTotal) * 100 : 0;
+
+  return { retailTotal, packagePrice, savingsAmount, savingsPercentage };
+}
+
+export function resolvePackageCoverMode(pkg: Package): 'upload' | 'products' {
+  if (pkg.coverMode) return pkg.coverMode;
+  if (pkg.image) return 'upload';
+  if (pkg.coverProductIds && pkg.coverProductIds.length > 0) return 'products';
+  return 'products';
+}
+
+export function getUniquePackageProductIds(items: PackageItem[]): string[] {
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  for (const item of items) {
+    if (!seen.has(item.productId)) {
+      seen.add(item.productId);
+      ids.push(item.productId);
+    }
+  }
+  return ids;
+}
+
+/** Up to 4 product IDs for a collage — explicit picks first, then fills from package items. */
+export function resolveCoverProductIds(
+  pkg: Pick<Package, 'items' | 'coverProductIds' | 'coverMode'>
+): string[] {
+  const fromItems = getUniquePackageProductIds(pkg.items);
+  const limit = Math.min(4, fromItems.length);
+
+  if (pkg.coverMode === 'upload') return [];
+
+  const explicit = (pkg.coverProductIds ?? []).filter((id) => fromItems.includes(id));
+  const merged: string[] = [];
+
+  for (const id of explicit) {
+    if (merged.length >= limit) break;
+    if (!merged.includes(id)) merged.push(id);
+  }
+
+  for (const id of fromItems) {
+    if (merged.length >= limit) break;
+    if (!merged.includes(id)) merged.push(id);
+  }
+
+  return merged.slice(0, 4);
+}
+
+export function getPackageCoverImages(pkg: Package, products: Product[]): string[] {
+  const mode = resolvePackageCoverMode(pkg);
+
+  if (mode === 'upload' && pkg.image) {
+    return [pkg.image];
+  }
+
+  const productMap = new Map(products.map((p) => [p.id, p]));
+  const priorityIds = resolveCoverProductIds(pkg);
+  const allItemIds = getUniquePackageProductIds(pkg.items);
+  const idQueue = [...priorityIds];
+  for (const id of allItemIds) {
+    if (!idQueue.includes(id)) idQueue.push(id);
+  }
+
+  const images: string[] = [];
+  for (const productId of idQueue) {
+    if (images.length >= 4) break;
+    const image = productMap.get(productId)?.image;
+    if (image) images.push(image);
+  }
+
+  if (images.length > 0) return images;
+
+  if (pkg.image) return [pkg.image];
+
+  return images;
+}
+
+export function getPackageImage(pkg: Package, products: Product[]): string {
+  return getPackageCoverImages(pkg, products)[0] ?? '';
+}
+
+export function isPackageCartItem(item: { id: string }): boolean {
+  return item.id.startsWith('pkg-');
+}
+
+export function getPackageTypeLabel(type: string): string {
+  if (type === 'fixed') return 'Fixed Package';
+  if (type === 'customizable') return 'Customizable';
+  return 'Mix & Match';
+}
+
+export function expandPackageCartItems(
+  cartItems: CartItem[],
+  packages: Package[],
+  products: Product[]
+): OrderItem[] {
+  const result: OrderItem[] = [];
+  const productMap = new Map(products.map((p) => [p.id, p]));
+
+  for (const cartItem of cartItems) {
+    if (!isPackageCartItem(cartItem)) {
+      result.push({
+        productId: cartItem.id,
+        name: cartItem.name,
+        price: cartItem.price,
+        quantity: cartItem.quantity,
+        size: cartItem.size,
+        color: cartItem.color,
+        image: cartItem.image,
+      });
+      continue;
+    }
+
+    const pkg = packages.find((p) => p.id === cartItem.id);
+    if (!pkg) {
+      result.push({
+        productId: cartItem.id,
+        name: cartItem.name,
+        price: cartItem.price,
+        quantity: cartItem.quantity,
+        image: cartItem.image,
+        packageId: cartItem.id,
+      });
+      continue;
+    }
+
+    const retailPrices: Record<string, number> = {};
+    for (const product of products) {
+      retailPrices[product.id] = product.price;
+    }
+
+    const packageUnitPrice = resolvePackagePrice(pkg, retailPrices);
+    const totalPackageValue = packageUnitPrice * cartItem.quantity;
+    const weights = pkg.items.map((item) => {
+      const retail = retailPrices[item.productId] || 0;
+      return retail * item.quantity;
+    });
+    const weightSum = weights.reduce((a, b) => a + b, 0) || 1;
+
+    pkg.items.forEach((pkgItem, index) => {
+      const product = productMap.get(pkgItem.productId);
+      const lineRetailWeight = weights[index];
+      const allocatedTotal =
+        Math.round((lineRetailWeight / weightSum) * totalPackageValue) || 0;
+      const lineQty = pkgItem.quantity * cartItem.quantity;
+      const unitPrice = lineQty > 0 ? Math.round(allocatedTotal / lineQty) : 0;
+
+      result.push({
+        productId: pkgItem.productId,
+        name: product?.name ?? `Product ${pkgItem.productId}`,
+        price: unitPrice,
+        quantity: lineQty,
+        image: product?.image,
+        packageId: index === 0 ? pkg.id : undefined,
+      });
+    });
+  }
+
+  return result;
 }

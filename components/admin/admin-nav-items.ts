@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   Package,
+  Boxes,
   ShoppingCart,
   Users,
   BarChart3,
@@ -19,6 +20,7 @@ export type AdminNavItem = {
 export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/admin' },
   { icon: Package, label: 'Products', href: '/admin/products' },
+  { icon: Boxes, label: 'Packages', href: '/admin/packages' },
   { icon: Megaphone, label: 'Ads', href: '/admin/ads' },
   { icon: ShoppingCart, label: 'Orders', href: '/admin/orders' },
   { icon: Users, label: 'Customers', href: '/admin/customers' },
@@ -28,7 +30,12 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
 ];
 
 export function isAdminNavActive(pathname: string, path: string): boolean {
-  if (path === '/admin/wholesale') return pathname.startsWith('/admin/wholesale');
+  if (path === '/admin/wholesale') {
+    return (
+      pathname.startsWith('/admin/wholesale') &&
+      !pathname.startsWith('/admin/wholesale/packages')
+    );
+  }
   if (path === '/admin') return pathname === '/admin';
   return pathname === path || pathname.startsWith(`${path}/`);
 }

@@ -29,16 +29,22 @@ export interface PackageRule {
   requireAll?: boolean; // must include all items
 }
 
+export type PackagePricingMode = 'auto' | 'custom';
+export type PackageCoverMode = 'upload' | 'products';
+
 export interface Package {
   id: string;
   name: string;
   description: string;
   items: PackageItem[];
   rule: PackageRule;
+  pricingMode: PackagePricingMode;
   basePrice: number;
   discountedPrice: number;
   savingsPercentage: number;
+  coverMode?: PackageCoverMode;
   image?: string;
+  coverProductIds?: string[];
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
