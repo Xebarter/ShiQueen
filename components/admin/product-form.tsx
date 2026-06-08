@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { AdminPage } from '@/components/admin/admin-page';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -214,8 +215,8 @@ export function ProductForm({ mode, productId, initialProduct, onSaved }: Produc
   ];
 
   return (
-    <div className="p-6 md:p-8">
-      <div className="mb-8">
+    <AdminPage>
+      <div className="mb-6 sm:mb-8">
         <Link
           href="/admin/products"
           className="mb-4 flex items-center gap-2 text-primary hover:underline"
@@ -223,7 +224,7 @@ export function ProductForm({ mode, productId, initialProduct, onSaved }: Produc
           <ArrowLeft className="w-4 h-4" />
           Back to Products
         </Link>
-        <h1 className="text-3xl font-bold">
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
           {mode === 'create' ? 'Create Product' : 'Edit Product'}
         </h1>
         <p className="text-muted-foreground mt-1">
@@ -533,6 +534,6 @@ export function ProductForm({ mode, productId, initialProduct, onSaved }: Produc
           )}
         </div>
       </div>
-    </div>
+    </AdminPage>
   );
 }

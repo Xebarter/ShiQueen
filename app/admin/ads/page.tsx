@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { AdminPage, AdminPageHeader } from '@/components/admin/admin-page';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useProducts } from '@/lib/products-context';
@@ -46,33 +47,29 @@ export default function AdminAdsPage() {
   };
 
   return (
-    <div className="p-6 md:p-8">
-      <div className="mb-8">
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold">Ads</h1>
-            <p className="mt-1 text-muted-foreground">
-              Manage hero marketing banners and featured product promotions
-            </p>
-          </div>
+    <AdminPage>
+      <AdminPageHeader
+        title="Ads"
+        description="Manage hero marketing banners and featured product promotions"
+        action={
           <Link href="/admin/ads/new">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              New Ad
+            <Button className="min-h-11 gap-2">
+              <Plus className="h-4 w-4" />
+              New ad
             </Button>
           </Link>
-        </div>
+        }
+      />
 
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search ads or products…"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded-lg border border-border bg-background py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-        </div>
+      <div className="relative mb-6 max-w-md">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <input
+          type="search"
+          placeholder="Search ads or products…"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full rounded-lg border border-border bg-background py-2.5 pl-10 pr-4 text-base focus:outline-none focus:ring-2 focus:ring-primary sm:text-sm"
+        />
       </div>
 
       <Card>
@@ -164,6 +161,6 @@ export default function AdminAdsPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </AdminPage>
   );
 }

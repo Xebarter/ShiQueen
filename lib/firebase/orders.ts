@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { COLLECTIONS } from '@/lib/firebase/collections';
+import { stripUndefined } from '@/lib/firebase/sanitize';
 import { toDate } from '@/lib/firebase/timestamp';
 import { Order, ShippingAddress, OrderItem } from '@/lib/types/database';
 
@@ -30,6 +31,10 @@ function mapOrder(id: string, data: Record<string, unknown>): Order {
     shippingAddress: data.shippingAddress as ShippingAddress,
     status: (data.status as Order['status']) ?? 'pending',
     orderType: (data.orderType as Order['orderType']) ?? 'retail',
+    paymentMethod: data.paymentMethod as Order['paymentMethod'],
+    paymentStatus: data.paymentStatus as Order['paymentStatus'],
+    paytotaPurchaseId: data.paytotaPurchaseId ? String(data.paytotaPurchaseId) : undefined,
+    paytotaReference: data.paytotaReference ? String(data.paytotaReference) : undefined,
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
   };
@@ -43,7 +48,7 @@ export async function createOrder(
 
   const { id, ...data } = order;
   await setDoc(doc(db, COLLECTIONS.orders, id), {
-    ...data,
+    ...stripUndefined(data),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -136,6 +141,4 @@ export async function updateOrderStatus(
   });
 }
 
-export function generateOrderId(): string {
-  return `ORD-${Date.now()}`;
-}
+export { generateOrderId } from '@/lib/order-utils';

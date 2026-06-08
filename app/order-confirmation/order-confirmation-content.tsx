@@ -14,6 +14,9 @@ import { CheckCircle, Package, Truck, Loader2 } from 'lucide-react';
 export default function OrderConfirmationContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
+  const paymentParam = searchParams.get('payment');
+  const paymentPending = paymentParam === 'pending';
+  const paymentOffline = paymentParam === 'offline';
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(Boolean(orderId));
 
@@ -41,8 +44,20 @@ export default function OrderConfirmationContent() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent/20 mb-4">
               <CheckCircle className="w-8 h-8 text-accent" />
             </div>
-            <h1 className="text-4xl font-light tracking-tight mb-2">Thank You!</h1>
-            <p className="text-lg text-muted-foreground">Your order has been successfully placed</p>
+            <h1 className="text-4xl font-light tracking-tight mb-2">
+              {paymentOffline
+                ? 'Order received'
+                : paymentPending || order?.paymentStatus === 'awaiting_payment'
+                  ? 'Almost there!'
+                  : 'Thank You!'}
+            </h1>
+            <p className="text-lg text-muted-foreground">
+              {paymentOffline
+                ? 'Paytota was unavailable, but your order is saved. Our team will contact you to complete mobile money payment.'
+                : paymentPending || order?.paymentStatus === 'awaiting_payment'
+                  ? 'Approve the Paytota prompt on your phone to complete payment.'
+                  : 'Your order has been successfully placed'}
+            </p>
           </div>
 
           <div className="bg-secondary rounded-lg p-8 mb-8">
@@ -53,7 +68,14 @@ export default function OrderConfirmationContent() {
               <p className="text-2xl font-semibold font-mono">{order?.id ?? orderId ?? '—'}</p>
             )}
             {order && (
-              <p className="text-sm text-muted-foreground mt-2">Total: {formatUGX(order.total)}</p>
+              <>
+                <p className="text-sm text-muted-foreground mt-2">Total: {formatUGX(order.total)}</p>
+                {order.paymentMethod === 'mobile_money' && (
+                  <p className="text-xs text-muted-foreground mt-1 capitalize">
+                    Payment: {order.paymentStatus?.replace('_', ' ') ?? 'processing'}
+                  </p>
+                )}
+              </>
             )}
           </div>
 

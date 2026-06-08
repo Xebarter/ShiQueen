@@ -57,6 +57,15 @@ export interface ShippingAddress {
   country: string;
 }
 
+export type PaymentMethod = 'mobile_money' | 'cash_on_delivery';
+
+export type PaymentStatus =
+  | 'awaiting_payment'
+  | 'paid'
+  | 'failed'
+  | 'cancelled'
+  | 'cod_pending';
+
 export interface Order {
   id: string;
   userId: string | null;
@@ -69,6 +78,10 @@ export interface Order {
   shippingAddress: ShippingAddress;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   orderType: 'retail' | 'wholesale' | 'package';
+  paymentMethod?: PaymentMethod;
+  paymentStatus?: PaymentStatus;
+  paytotaPurchaseId?: string;
+  paytotaReference?: string;
   createdAt: Date;
   updatedAt: Date;
 }

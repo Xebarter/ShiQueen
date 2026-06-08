@@ -47,7 +47,7 @@ const PAYMENT_OPTIONS: {
   {
     id: 'mobile_money',
     label: 'Mobile Money',
-    description: 'MTN or Airtel — pay after order confirmation',
+    description: 'MTN or Airtel via Paytota — pay securely on your phone',
     icon: Smartphone,
   },
   {
@@ -218,37 +218,163 @@ export function CheckoutPage() {
     setLoading(true);
 
     try {
-      const orderId = generateOrderId();
       const isWholesaleOrder = items.some((item) => item.quantity >= 10);
       const isPackageOrder = items.some((item) => item.id.startsWith('pkg-'));
+      const orderType = isPackageOrder ? 'package' : isWholesaleOrder ? 'wholesale' : 'retail';
+      const customerName = `${formData.firstName} ${formData.lastName}`.trim();
+      const orderItems = items.map((item) => ({
+        productId: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        size: item.size,
+        color: item.color,
+        image: item.image,
+      }));
 
+      if (paymentMethod === 'mobile_money') {
+        let response: Response;
+        try {
+          response = await fetch('/api/payments/paytota/initiate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: user?.uid ?? null,
+              customerName,
+              email: formData.email,
+              phone: formData.phone,
+              items: orderItems,
+              subtotal: total,
+              tax,
+              total: orderTotal,
+              shippingAddress: formData,
+              orderType,
+              useStkPush: true,
+              allowOfflineFallback: true,
+            }),
+          });
+        } catch {
+          throw new Error(
+            'Could not reach the payment server. Make sure the dev server is running and try again.'
+          );
+        }
+
+        let data: {
+          error?: string;
+          checkoutUrl?: string;
+          orderId?: string;
+          purchaseId?: string;
+          requiresClientOrder?: boolean;
+          offlineFallback?: boolean;
+          message?: string;
+          stk?: { status?: string; details?: { message?: string } };
+        };
+
+        try {
+          data = await response.json();
+        } catch {
+          throw new Error('Payment server returned an invalid response. Please try again.');
+        }
+
+        if (!response.ok) {
+          const paytotaUnreachable = data.error?.includes('Could not reach Paytota');
+          throw new Error(
+            paytotaUnreachable
+              ? `${data.error} You can switch to Cash on Delivery below, or retry in a moment.`
+              : (data.error ?? 'Failed to start payment')
+          );
+        }
+
+        if (data.offlineFallback && data.orderId) {
+          if (data.requiresClientOrder) {
+            await createOrder({
+              id: data.orderId,
+              userId: user?.uid ?? null,
+              customerName,
+              email: formData.email,
+              items: orderItems,
+              subtotal: total,
+              tax,
+              total: orderTotal,
+              shippingAddress: formData,
+              status: 'pending',
+              orderType,
+              paymentMethod: 'mobile_money',
+              paymentStatus: 'awaiting_payment',
+            });
+          }
+          toast.success(
+            data.message ??
+              'Order saved. We will contact you to complete mobile money payment.'
+          );
+          clearCart();
+          router.push(`/order-confirmation?orderId=${data.orderId}&payment=offline`);
+          return;
+        }
+
+        if (data.requiresClientOrder && data.orderId) {
+          await createOrder({
+            id: data.orderId,
+            userId: user?.uid ?? null,
+            customerName,
+            email: formData.email,
+            items: orderItems,
+            subtotal: total,
+            tax,
+            total: orderTotal,
+            shippingAddress: formData,
+            status: 'pending',
+            orderType,
+            paymentMethod: 'mobile_money',
+            paymentStatus: 'awaiting_payment',
+            paytotaPurchaseId: data.purchaseId,
+            paytotaReference: data.orderId,
+          });
+        }
+
+        if (data.stk?.status === 'pending' && data.orderId) {
+          toast.success(data.stk.details?.message ?? 'Check your phone to approve the payment.');
+          router.push(`/order-confirmation?orderId=${data.orderId}&payment=pending`);
+          return;
+        }
+
+        if (data.checkoutUrl) {
+          window.location.href = data.checkoutUrl;
+          return;
+        }
+
+        if (data.orderId) {
+          router.push(`/order-confirmation?orderId=${data.orderId}&payment=pending`);
+          return;
+        }
+
+        throw new Error('No payment URL returned from Paytota');
+      }
+
+      const orderId = generateOrderId();
       await createOrder({
         id: orderId,
         userId: user?.uid ?? null,
-        customerName: `${formData.firstName} ${formData.lastName}`.trim(),
+        customerName,
         email: formData.email,
-        items: items.map((item) => ({
-          productId: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          size: item.size,
-          color: item.color,
-          image: item.image,
-        })),
+        items: orderItems,
         subtotal: total,
         tax,
         total: orderTotal,
         shippingAddress: formData,
         status: 'pending',
-        orderType: isPackageOrder ? 'package' : isWholesaleOrder ? 'wholesale' : 'retail',
+        orderType,
+        paymentMethod: 'cash_on_delivery',
+        paymentStatus: 'cod_pending',
       });
 
       toast.success('Order placed successfully!');
       clearCart();
       router.push(`/order-confirmation?orderId=${orderId}`);
     } catch (error) {
-      toast.error('Failed to process order. Please try again.');
+      const message =
+        error instanceof Error ? error.message : 'Failed to process order. Please try again.';
+      toast.error(message);
       console.error(error);
     } finally {
       setLoading(false);
@@ -458,15 +584,19 @@ export function CheckoutPage() {
                     })}
                   </div>
                   <p className="mt-4 rounded-lg bg-muted/60 px-3 py-2.5 text-xs leading-relaxed text-muted-foreground">
-                    Card payments via Stripe will be available soon. For now, our team will confirm payment
-                    details after you place your order.
+                    Mobile money payments are processed securely by Paytota (MTN &amp; Airtel). Cash on
+                    delivery is available for Kampala deliveries.
                   </p>
                 </CardContent>
               </Card>
 
               <Button type="submit" className="w-full sm:hidden" disabled={loading} size="lg">
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {loading ? 'Processing…' : `Place order · ${formatUGX(orderTotal)}`}
+                {loading
+                  ? 'Processing…'
+                  : paymentMethod === 'mobile_money'
+                    ? `Pay · ${formatUGX(orderTotal)}`
+                    : `Place order · ${formatUGX(orderTotal)}`}
               </Button>
             </form>
 
@@ -530,7 +660,11 @@ export function CheckoutPage() {
                     size="lg"
                   >
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {loading ? 'Processing…' : 'Place order'}
+                    {loading
+                      ? 'Processing…'
+                      : paymentMethod === 'mobile_money'
+                        ? `Pay ${formatUGX(orderTotal)}`
+                        : 'Place order'}
                   </Button>
 
                   <div className="mt-6 grid gap-2.5 rounded-xl bg-muted/40 p-4">
