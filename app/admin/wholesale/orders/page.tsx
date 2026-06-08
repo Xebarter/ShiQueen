@@ -2,6 +2,6 @@
 
 import { AdminWholesaleOrdersPage } from '@/components/admin/admin-wholesale-orders-page';
 
-export default function AdminWholesaleOrdersPage() {
+export default function WholesaleOrdersRoute() {
   return <AdminWholesaleOrdersPage />;
 }

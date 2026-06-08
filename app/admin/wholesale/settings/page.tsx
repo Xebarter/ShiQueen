@@ -2,6 +2,6 @@
 
 import { AdminWholesaleSettingsPage } from '@/components/admin/admin-wholesale-settings-page';
 
-export default function AdminWholesaleSettingsPage() {
+export default function WholesaleSettingsRoute() {
   return <AdminWholesaleSettingsPage />;
 }
