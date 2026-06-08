@@ -112,12 +112,23 @@ export function pickActiveMarketingAd(
   placement: MarketingAdPlacement,
   now = new Date()
 ): MarketingAd | null {
-  return (
-    ads
-      .filter((ad) => ad.placement === placement && isMarketingAdLive(ad, now))
-      .sort((a, b) => b.priority - a.priority || b.updatedAt.getTime() - a.updatedAt.getTime())[0] ??
-    null
-  );
+  return pickActiveMarketingAdForPlacements(ads, [placement], now);
+}
+
+export function pickActiveMarketingAdForPlacements(
+  ads: MarketingAd[],
+  placements: MarketingAdPlacement[],
+  now = new Date()
+): MarketingAd | null {
+  for (const placement of placements) {
+    const match =
+      ads
+        .filter((ad) => ad.placement === placement && isMarketingAdLive(ad, now))
+        .sort((a, b) => b.priority - a.priority || b.updatedAt.getTime() - a.updatedAt.getTime())[0] ??
+      null;
+    if (match) return match;
+  }
+  return null;
 }
 
 export async function getMarketingAds(): Promise<MarketingAd[]> {

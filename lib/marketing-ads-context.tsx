@@ -2,13 +2,18 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
 import { MarketingAd, MarketingAdPlacement } from '@/lib/types/database';
-import { pickActiveMarketingAd, subscribeMarketingAds } from '@/lib/firebase/marketing-ads';
+import {
+  pickActiveMarketingAd,
+  pickActiveMarketingAdForPlacements,
+  subscribeMarketingAds,
+} from '@/lib/firebase/marketing-ads';
 
 interface MarketingAdsContextType {
   ads: MarketingAd[];
   loading: boolean;
   error: string | null;
   getActiveAd: (placement: MarketingAdPlacement) => MarketingAd | null;
+  getActiveAdForPlacements: (placements: MarketingAdPlacement[]) => MarketingAd | null;
 }
 
 const MarketingAdsContext = createContext<MarketingAdsContextType | undefined>(undefined);
@@ -44,8 +49,13 @@ export function MarketingAdsProvider({ children }: { children: ReactNode }) {
     [ads]
   );
 
+  const getActiveAdForPlacements = useCallback(
+    (placements: MarketingAdPlacement[]) => pickActiveMarketingAdForPlacements(ads, placements),
+    [ads]
+  );
+
   return (
-    <MarketingAdsContext.Provider value={{ ads, loading, error, getActiveAd }}>
+    <MarketingAdsContext.Provider value={{ ads, loading, error, getActiveAd, getActiveAdForPlacements }}>
       {children}
     </MarketingAdsContext.Provider>
   );

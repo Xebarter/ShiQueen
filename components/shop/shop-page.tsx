@@ -153,7 +153,11 @@ export function ShopPage() {
                   </Button>
                 </>
               ) : (
-                <HeroMarketingSlot placement="shop-hero" compact />
+                <HeroMarketingSlot
+                  placement="shop-hero"
+                  fallbackPlacements={['home-hero']}
+                  compact
+                />
               )}
             </motion.div>
 

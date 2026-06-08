@@ -23,7 +23,7 @@ const PLACEMENTS: { value: MarketingAdPlacement; label: string; description: str
   {
     value: 'home-hero',
     label: 'Home Page Hero',
-    description: 'Large marketing card on the home page hero (left column).',
+    description: 'Home page hero and shop page (when no shop-specific ad is set).',
   },
   {
     value: 'shop-hero',

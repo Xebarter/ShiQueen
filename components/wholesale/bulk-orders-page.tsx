@@ -31,7 +31,6 @@ import {
   validateWholesaleCartItems,
 } from '@/lib/wholesale-cart';
 import { Product } from '@/lib/types/database';
-import { formatUGX } from '@/lib/wholesale-data';
 import { Search, SlidersHorizontal, ShoppingCart, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
@@ -178,7 +177,7 @@ export function BulkOrdersPage() {
     <main className="min-h-screen bg-background">
       <Header />
 
-      <section className="pb-28 lg:pb-16">
+      <section className="pb-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="py-8 sm:py-10">
             <WholesaleBenefitsBanner catalogSize={wholesaleProducts.length} />
@@ -294,9 +293,8 @@ export function BulkOrdersPage() {
               )}
             </div>
 
-            <aside className="hidden lg:block">
-              <div className="sticky top-24">
-                <BulkOrderSummary
+            <aside className="hidden lg:block lg:self-start">
+              <BulkOrderSummary
                   id={SUMMARY_SECTION_ID}
                   items={items}
                   subtotal={total}
@@ -308,11 +306,16 @@ export function BulkOrdersPage() {
                   }}
                   checkoutLoading={checkoutLoading}
                 />
-              </div>
             </aside>
           </div>
 
-          <div className="lg:hidden" id={SUMMARY_SECTION_ID}>
+          <div className="border-t border-border/60 pt-8 lg:hidden" id={SUMMARY_SECTION_ID}>
+            <div className="mb-5">
+              <h2 className="text-2xl font-light tracking-tight">Your order</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Review line items and checkout when you are ready
+              </p>
+            </div>
             <BulkOrderSummary
               items={items}
               subtotal={total}
@@ -323,6 +326,7 @@ export function BulkOrdersPage() {
                 if (confirm('Clear your entire cart?')) clearCart();
               }}
               checkoutLoading={checkoutLoading}
+              className="shadow-md shadow-primary/10"
             />
           </div>
         </div>
@@ -333,43 +337,13 @@ export function BulkOrdersPage() {
           type="button"
           onClick={() => setDrawerOpen(true)}
           aria-label={`Open cart with ${items.length} items`}
-          className="fixed bottom-24 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition hover:scale-105 active:scale-95 sm:bottom-8 lg:bottom-8"
+          className="fixed bottom-6 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition hover:scale-105 active:scale-95 lg:bottom-8"
         >
           <ShoppingCart className="h-6 w-6" />
           <span className="absolute -right-1 -top-1 flex h-6 min-w-6 items-center justify-center rounded-full bg-accent px-1.5 text-xs font-bold text-accent-foreground">
             {itemCount > 99 ? '99+' : itemCount}
           </span>
         </button>
-      )}
-
-      {items.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border/80 bg-background/95 px-4 py-4 backdrop-blur-md lg:hidden">
-          <div className="mb-3 flex items-center justify-between">
-            <div>
-              <p className="text-xs text-muted-foreground">
-                {totalUnits} units · {items.length} lines
-              </p>
-              <p className="text-xl font-semibold text-primary">{formatUGX(total)}</p>
-            </div>
-            {totalSavings > 0 && (
-              <p className="text-xs font-semibold text-accent">
-                Saving {formatUGX(totalSavings)}
-              </p>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" className="h-11 rounded-xl" onClick={() => setDrawerOpen(true)}>
-              View cart
-            </Button>
-            <Button
-              className="h-11 rounded-xl font-semibold"
-              disabled={checkoutLoading}
-              onClick={handleCheckout}
-            >
-              Checkout
-            </Button>
-          </div>
-        </div>
       )}
 
       <BulkCartDrawer

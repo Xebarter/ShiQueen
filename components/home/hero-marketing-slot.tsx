@@ -7,14 +7,20 @@ import { MarketingPromoCard, MarketingPromoFallback } from '@/components/home/ma
 
 type HeroMarketingSlotProps = {
   placement: MarketingAdPlacement;
+  /** Tried in order after `placement` when no live ad is set for the primary slot. */
+  fallbackPlacements?: MarketingAdPlacement[];
   compact?: boolean;
 };
 
-export function HeroMarketingSlot({ placement, compact }: HeroMarketingSlotProps) {
-  const { getActiveAd, loading: adsLoading } = useMarketingAds();
+export function HeroMarketingSlot({
+  placement,
+  fallbackPlacements = [],
+  compact,
+}: HeroMarketingSlotProps) {
+  const { getActiveAdForPlacements, loading: adsLoading } = useMarketingAds();
   const { getProductById, loading: productsLoading } = useProducts();
 
-  const ad = getActiveAd(placement);
+  const ad = getActiveAdForPlacements([placement, ...fallbackPlacements]);
   const product = ad ? getProductById(ad.productId) : undefined;
 
   if (adsLoading || productsLoading) {

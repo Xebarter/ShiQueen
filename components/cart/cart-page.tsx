@@ -1,13 +1,16 @@
 'use client';
 
+import { useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
   ArrowLeft,
   Minus,
+  Package,
   Plus,
   ShoppingBag,
   Sparkles,
+  Store,
   Trash2,
 } from 'lucide-react';
 import { Header } from '@/components/header';
@@ -17,7 +20,7 @@ import { BulkQuantityStepper } from '@/components/wholesale/bulk-quantity-steppe
 import { isRemoteProductImage } from '@/components/product-image';
 import { useCart, type CartItem } from '@/lib/cart-context';
 import { useProducts } from '@/lib/products-context';
-import { getWholesaleSavings } from '@/lib/wholesale-cart';
+import { getWholesaleDiscountForItem, getWholesaleSavings } from '@/lib/wholesale-cart';
 import { formatUGX } from '@/lib/wholesale-data';
 import { cn } from '@/lib/utils';
 
@@ -97,27 +100,52 @@ function CartItemCard({
   const savingsPerUnit = isWholesale
     ? item.wholesale!.basePrice - item.price
     : 0;
+  const discountPercent = getWholesaleDiscountForItem(item);
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm shadow-primary/5">
+    <article
+      className={cn(
+        'overflow-hidden rounded-2xl border bg-card shadow-sm',
+        isWholesale
+          ? 'border-primary/35 shadow-primary/10 ring-1 ring-primary/10'
+          : 'border-border/60 shadow-primary/5'
+      )}
+    >
+      {isWholesale && (
+        <div className="flex items-center gap-2 border-b border-primary/20 bg-primary/[0.07] px-4 py-2.5 sm:px-5">
+          <Package className="h-4 w-4 shrink-0 text-primary" />
+          <span className="text-xs font-semibold uppercase tracking-widest text-primary">
+            Wholesale item
+          </span>
+          {discountPercent > 0 && (
+            <span className="ml-auto rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">
+              {discountPercent}% volume discount
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="flex gap-4 p-4 sm:gap-5 sm:p-5">
         <div className="relative h-24 w-24 shrink-0 sm:h-28 sm:w-28">
           <CartItemImage item={item} />
+          {isWholesale && (
+            <span className="absolute -left-1 -top-1 rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground shadow-sm">
+              B2B
+            </span>
+          )}
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="line-clamp-2 text-base font-semibold leading-snug tracking-tight sm:text-lg">
-                  {item.name}
-                </h3>
-                {isWholesale && (
-                  <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-primary">
-                    Wholesale
-                  </span>
-                )}
-              </div>
+              <h3 className="line-clamp-2 text-base font-semibold leading-snug tracking-tight sm:text-lg">
+                {item.name}
+              </h3>
+              {isWholesale && (
+                <p className="mt-1 text-xs font-medium text-primary">
+                  Wholesale pricing · min. {item.wholesale!.minOrderQuantity} units
+                </p>
+              )}
               <div className="mt-1.5 flex flex-wrap gap-2">
                 {item.size && (
                   <span className="rounded-md bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
@@ -143,12 +171,21 @@ function CartItemCard({
 
           <div className="mt-auto flex flex-wrap items-end justify-between gap-3 pt-4">
             <div>
-              {isWholesale && (
-                <p className="text-sm text-muted-foreground line-through">
-                  {formatUGX(item.wholesale!.basePrice)} retail
-                </p>
+              {isWholesale ? (
+                <>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Wholesale unit price
+                  </p>
+                  <p className="text-sm text-muted-foreground line-through">
+                    {formatUGX(item.wholesale!.basePrice)} retail
+                  </p>
+                  <p className="text-sm font-medium text-foreground">
+                    {formatUGX(item.price)} / unit
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">{formatUGX(item.price)} each</p>
               )}
-              <p className="text-sm text-muted-foreground">{formatUGX(item.price)} each</p>
               {savingsPerUnit > 0 && (
                 <p className="text-xs font-medium text-accent">
                   Save {formatUGX(savingsPerUnit)} per unit
@@ -257,6 +294,48 @@ function OrderSummaryCard({
   );
 }
 
+function CartItemsSection({
+  title,
+  description,
+  icon: Icon,
+  items,
+  onRemove,
+  onUpdateQuantity,
+}: {
+  title: string;
+  description: string;
+  icon: typeof Package;
+  items: CartItem[];
+  onRemove: (item: CartItem) => void;
+  onUpdateQuantity: (item: CartItem, quantity: number) => void;
+}) {
+  if (items.length === 0) return null;
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+          <Icon className="h-5 w-5" />
+        </span>
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+          <p className="text-sm text-muted-foreground">{description}</p>
+        </div>
+      </div>
+      <div className="space-y-4">
+        {items.map((item) => (
+          <CartItemCard
+            key={cartItemKey(item)}
+            item={item}
+            onRemove={() => onRemove(item)}
+            onUpdateQuantity={(quantity) => onUpdateQuantity(item, quantity)}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function EmptyCart() {
   return (
     <section className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center px-4 py-16 sm:py-24">
@@ -283,6 +362,14 @@ export function CartPage() {
   const { items, removeItem, updateQuantity, total, clearCart, itemCount } = useCart();
   const { getProductById } = useProducts();
   const wholesaleSavings = getWholesaleSavings(items);
+  const wholesaleItems = useMemo(
+    () => items.filter((item) => item.wholesale),
+    [items]
+  );
+  const retailItems = useMemo(
+    () => items.filter((item) => !item.wholesale),
+    [items]
+  );
 
   if (items.length === 0) {
     return (
@@ -311,26 +398,51 @@ export function CartPage() {
             <h1 className="text-3xl font-light tracking-tight sm:text-4xl">Shopping cart</h1>
             <p className="mt-2 text-base text-muted-foreground">
               {itemCount} {itemCount === 1 ? 'item' : 'items'} ready for checkout
+              {wholesaleItems.length > 0 && retailItems.length > 0 && (
+                <>
+                  {' '}
+                  · {wholesaleItems.length} wholesale, {retailItems.length} retail
+                </>
+              )}
+              {wholesaleItems.length > 0 && retailItems.length === 0 && (
+                <> · wholesale order</>
+              )}
             </p>
           </div>
 
           <div className="grid gap-8 py-8 lg:grid-cols-[1fr_380px] lg:gap-10 lg:py-10">
-            <div className="space-y-4">
-              {items.map((item) => {
-                const product = getProductById(item.id);
-                const lineOptions = { wholesale: !!item.wholesale };
+            <div className="space-y-8">
+              <CartItemsSection
+                title="Wholesale items"
+                description="Bulk order lines with volume-tier pricing from /wholesale"
+                icon={Package}
+                items={wholesaleItems}
+                onRemove={(item) => removeItem(item.id, { wholesale: true })}
+                onUpdateQuantity={(item, quantity) =>
+                  updateQuantity(
+                    item.id,
+                    quantity,
+                    getProductById(item.id) ?? undefined,
+                    { wholesale: true }
+                  )
+                }
+              />
 
-                return (
-                  <CartItemCard
-                    key={cartItemKey(item)}
-                    item={item}
-                    onRemove={() => removeItem(item.id, lineOptions)}
-                    onUpdateQuantity={(quantity) =>
-                      updateQuantity(item.id, quantity, product ?? undefined, lineOptions)
-                    }
-                  />
-                );
-              })}
+              <CartItemsSection
+                title="Retail items"
+                description="Standard shop purchases"
+                icon={Store}
+                items={retailItems}
+                onRemove={(item) => removeItem(item.id, { wholesale: false })}
+                onUpdateQuantity={(item, quantity) =>
+                  updateQuantity(
+                    item.id,
+                    quantity,
+                    getProductById(item.id) ?? undefined,
+                    { wholesale: false }
+                  )
+                }
+              />
 
               <button
                 type="button"
