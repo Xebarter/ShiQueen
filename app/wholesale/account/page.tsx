@@ -65,10 +65,7 @@ export default function WholesaleAccountPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link href="/wholesale">
-                <Button>Back to Wholesale</Button>
-              </Link>
-              <Link href="/wholesale/bulk-orders">
-                <Button variant="outline">Start Bulk Order</Button>
+                <Button>Start Bulk Order</Button>
               </Link>
             </div>
           </div>

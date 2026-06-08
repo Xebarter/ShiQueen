@@ -201,7 +201,7 @@ export default function BundleDetailPage() {
                 <Button onClick={handleAddToCart} className="w-full mb-3 py-6 text-lg">
                   Add to Cart
                 </Button>
-                <Link href="/wholesale/bulk-orders">
+                <Link href="/wholesale">
                   <Button variant="outline" className="w-full">
                     Create Custom Order
                   </Button>

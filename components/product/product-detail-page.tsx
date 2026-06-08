@@ -300,7 +300,7 @@ export function ProductDetailPage() {
                     Wholesale pricing available
                   </h3>
                   <PricingTiers tiers={wholesaleTiers} basePrice={product.price} />
-                  <Link href="/wholesale/bulk-orders" className="mt-4 block">
+                  <Link href="/wholesale" className="mt-4 block">
                     <Button variant="outline" className="w-full" size="sm">
                       Place bulk order
                     </Button>

@@ -1,4 +1,14 @@
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  onSnapshot,
+  setDoc,
+  updateDoc,
+  serverTimestamp,
+  type Unsubscribe,
+} from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { COLLECTIONS } from '@/lib/firebase/collections';
 import { toDate } from '@/lib/firebase/timestamp';
@@ -128,4 +138,83 @@ export async function updateUserRole(uid: string, role: UserRole): Promise<void>
 export async function isUserAdmin(uid: string): Promise<boolean> {
   const profile = await getUserProfile(uid);
   return profile?.role === 'admin';
+}
+
+export function subscribeUsers(
+  onData: (users: UserProfile[]) => void,
+  onError?: (error: Error) => void
+): Unsubscribe {
+  const db = getFirebaseDb();
+  if (!db) {
+    onData([]);
+    return () => {};
+  }
+
+  return onSnapshot(
+    collection(db, COLLECTIONS.users),
+    (snapshot) => {
+      onData(snapshot.docs.map((docSnap) => mapUserProfile(docSnap.id, docSnap.data())));
+    },
+    (error) => onError?.(error)
+  );
+}
+
+export function generateUserId(): string {
+  const db = getFirebaseDb();
+  if (!db) throw new Error('Firebase not initialized');
+  return doc(collection(db, COLLECTIONS.users)).id;
+}
+
+export async function createCustomerProfile(data: {
+  email: string;
+  displayName?: string;
+}): Promise<UserProfile> {
+  const db = getFirebaseDb();
+  if (!db) throw new Error('Firebase not initialized');
+
+  const uid = generateUserId();
+  const email = data.email.trim().toLowerCase();
+  const displayName = data.displayName?.trim() || undefined;
+
+  const profile: Omit<UserProfile, 'createdAt' | 'updatedAt'> = {
+    uid,
+    email,
+    displayName,
+    role: 'customer',
+  };
+
+  await setDoc(doc(db, COLLECTIONS.users, uid), {
+    ...profile,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  return { ...profile, createdAt: new Date(), updatedAt: new Date() };
+}
+
+export async function updateUserProfile(
+  uid: string,
+  updates: Partial<Pick<UserProfile, 'displayName' | 'email' | 'role'>>
+): Promise<void> {
+  const db = getFirebaseDb();
+  if (!db) throw new Error('Firebase not initialized');
+
+  const payload: Record<string, unknown> = { updatedAt: serverTimestamp() };
+  if (updates.displayName !== undefined) {
+    payload.displayName = updates.displayName.trim() || null;
+  }
+  if (updates.email !== undefined) {
+    payload.email = updates.email.trim().toLowerCase();
+  }
+  if (updates.role !== undefined) {
+    payload.role = updates.role;
+  }
+
+  await updateDoc(doc(db, COLLECTIONS.users, uid), payload);
+}
+
+export async function deleteUserProfile(uid: string): Promise<void> {
+  const db = getFirebaseDb();
+  if (!db) throw new Error('Firebase not initialized');
+  await deleteDoc(doc(db, COLLECTIONS.users, uid));
 }
