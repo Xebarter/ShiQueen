@@ -12,13 +12,9 @@ import { BrandLogo } from './brand-logo';
 import { HeaderAccountMenu } from '@/components/header/account-menu';
 import { cn } from '@/lib/utils';
 import { getStoredWishlist } from '@/lib/home-merchandising';
+import { MAIN_NAV_LINKS } from '@/lib/site-nav';
 
-const NAV_LINKS = [
-  { href: '/shop', label: 'Shop' },
-  { href: '/packages', label: 'Packages' },
-  { href: '/services', label: 'Services' },
-  { href: '/wholesale', label: 'Wholesale' },
-];
+const NAV_LINKS = MAIN_NAV_LINKS;
 
 function NavLink({
   href,
