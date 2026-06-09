@@ -15,7 +15,7 @@ import { getStoredWishlist } from '@/lib/home-merchandising';
 
 const NAV_LINKS = [
   { href: '/shop', label: 'Shop' },
-  { href: '/collections', label: 'Collections' },
+  { href: '/services', label: 'Services' },
   { href: '/packages', label: 'Packages' },
   { href: '/wholesale', label: 'Wholesale' },
 ];
@@ -42,16 +42,16 @@ function NavLink({
       href={href}
       onClick={onClick}
       className={cn(
-        'group relative text-sm font-medium tracking-wide transition-colors',
-        isActive ? 'text-primary' : 'text-foreground/75 hover:text-primary',
+        'group relative text-sm font-medium tracking-wide transition-colors duration-200',
+        isActive ? 'text-primary' : 'text-foreground/70 hover:text-primary',
         className
       )}
     >
       {label}
       <span
         className={cn(
-          'absolute -bottom-1 left-0 h-px bg-accent transition-all duration-300',
-          isActive ? 'w-full' : 'w-0 group-hover:w-full'
+          'absolute -bottom-1 left-0 h-0.5 rounded-full bg-gradient-to-r from-primary via-accent to-primary/40 transition-all duration-300',
+          isActive ? 'w-full opacity-100' : 'w-0 opacity-0 group-hover:w-full group-hover:opacity-100'
         )}
       />
     </Link>
@@ -115,7 +115,8 @@ function MobileMenuButton({
       type="button"
       onClick={onClick}
       className={cn(
-        'inline-flex rounded-full p-2.5 text-foreground/80 transition-colors hover:bg-secondary hover:text-primary',
+        'inline-flex rounded-full border border-transparent p-2.5 text-foreground/75 transition-all duration-200',
+        'hover:border-border/60 hover:bg-secondary/80 hover:text-primary hover:shadow-sm',
         className
       )}
       aria-expanded={open}
@@ -270,18 +271,23 @@ export function Header() {
       <header
         ref={primaryHeaderRef}
         className={cn(
-          'z-40 border-b border-border/60 bg-background max-md:relative',
-          'md:sticky md:top-0 md:bg-background/90 md:backdrop-blur-md md:supports-[backdrop-filter]:bg-background/80',
+          'z-40 border-b border-border/50 bg-background/95 shadow-sm shadow-primary/[0.03] max-md:relative',
+          'md:sticky md:top-0 md:backdrop-blur-xl md:supports-[backdrop-filter]:bg-background/85',
           'lg:sticky lg:top-0'
         )}
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-[4.25rem] items-center justify-between gap-4">
+          <div className="flex h-[4.25rem] items-center justify-between gap-4 lg:h-[4.5rem]">
             <BrandLogo variant="header" />
 
-            <nav className="hidden items-center gap-7 lg:flex xl:gap-8">
+            <nav className="hidden items-center gap-1 lg:flex xl:gap-2">
               {NAV_LINKS.map((link) => (
-                <NavLink key={link.href} href={link.href} label={link.label} />
+                <NavLink
+                  key={link.href}
+                  href={link.href}
+                  label={link.label}
+                  className="rounded-lg px-3 py-2"
+                />
               ))}
             </nav>
 
@@ -289,12 +295,12 @@ export function Header() {
               <SearchBar />
             </div>
 
-            <div className="flex items-center gap-1 sm:gap-2">
+            <div className="flex items-center gap-0.5 sm:gap-1">
               <HeaderAccountMenu />
 
               <Link
                 href={wishlistHref}
-                className="relative inline-flex rounded-full p-2.5 text-foreground/80 transition-colors hover:bg-secondary hover:text-primary lg:hidden"
+                className="relative inline-flex rounded-full border border-transparent p-2.5 text-foreground/75 transition-all duration-200 hover:border-border/60 hover:bg-secondary/80 hover:text-primary hover:shadow-sm lg:hidden"
                 aria-label={`Wishlist${wishlistCount > 0 ? `, ${wishlistCount} items` : ''}`}
               >
                 <Heart className="h-5 w-5" />
@@ -307,7 +313,7 @@ export function Header() {
 
               <Link
                 href="/cart"
-                className="relative hidden rounded-full p-2.5 text-foreground/80 transition-colors hover:bg-secondary hover:text-primary lg:inline-flex"
+                className="relative hidden rounded-full border border-transparent p-2.5 text-foreground/75 transition-all duration-200 hover:border-border/60 hover:bg-secondary/80 hover:text-primary hover:shadow-sm lg:inline-flex"
                 aria-label={`Cart${itemCount > 0 ? `, ${itemCount} items` : ''}`}
               >
                 <ShoppingCart className="h-5 w-5" />
@@ -330,14 +336,14 @@ export function Header() {
         </div>
 
         {/* Tablet nav */}
-        <nav className="hidden border-t border-border/40 md:flex lg:hidden">
-          <div className="mx-auto flex w-full max-w-7xl items-center justify-center gap-6 overflow-x-auto px-4 py-2.5 scrollbar-hide">
+        <nav className="hidden border-t border-border/40 bg-muted/20 md:flex lg:hidden">
+          <div className="mx-auto flex w-full max-w-7xl items-center justify-center gap-2 overflow-x-auto px-4 py-2 scrollbar-hide">
             {NAV_LINKS.map((link) => (
               <NavLink
                 key={link.href}
                 href={link.href}
                 label={link.label}
-                className="whitespace-nowrap text-xs"
+                className="whitespace-nowrap rounded-lg px-3 py-1.5 text-xs"
               />
             ))}
           </div>
@@ -348,9 +354,9 @@ export function Header() {
       <div
         ref={mobileSearchBarRef}
         className={cn(
-          'z-50 border-b border-border/50 bg-background lg:hidden',
+          'z-50 border-b border-border/50 bg-background/95 shadow-sm shadow-primary/[0.02] lg:hidden',
           'max-md:sticky max-md:top-0',
-          'md:sticky md:bg-background/95 md:backdrop-blur-md md:supports-[backdrop-filter]:bg-background/90',
+          'md:sticky md:backdrop-blur-xl md:supports-[backdrop-filter]:bg-background/90',
           'md:top-[var(--header-primary-height,4.25rem)]'
         )}
       >
@@ -373,7 +379,7 @@ export function Header() {
 
           <Link
             href="/cart"
-            className="relative flex shrink-0 items-center justify-center rounded-full p-2.5 text-foreground/80 transition-colors hover:bg-secondary hover:text-primary lg:hidden"
+            className="relative flex shrink-0 items-center justify-center rounded-full border border-transparent p-2.5 text-foreground/75 transition-all duration-200 hover:border-border/60 hover:bg-secondary/80 hover:text-primary hover:shadow-sm lg:hidden"
             aria-label={`Cart${itemCount > 0 ? `, ${itemCount} items` : ''}`}
           >
             <ShoppingCart className="h-5 w-5" />
@@ -406,12 +412,12 @@ export function Header() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 280 }}
-              className="fixed inset-y-0 right-0 z-[70] flex w-1/2 min-w-[17.5rem] max-w-[22rem] flex-col border-l border-border/50 bg-gradient-to-b from-background via-background to-secondary/30 shadow-[-12px_0_40px_rgba(0,0,0,0.12)] md:hidden"
+              className="fixed inset-y-0 right-0 z-[70] flex w-1/2 min-w-[17.5rem] max-w-[22rem] flex-col border-l border-border/50 bg-gradient-to-b from-background via-background to-secondary/40 shadow-[-16px_0_48px_rgba(0,0,0,0.14)] md:hidden"
               role="dialog"
               aria-modal="true"
               aria-label="Navigation menu"
             >
-              <div className="flex items-center justify-between border-b border-border/50 px-5 py-5">
+              <div className="flex items-center justify-between border-b border-border/50 bg-muted/20 px-5 py-5">
                 <BrandLogo variant="header" href="/" onClick={closeMobileMenu} />
                 <button
                   type="button"

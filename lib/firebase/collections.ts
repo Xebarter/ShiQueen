@@ -8,4 +8,10 @@ export const COLLECTIONS = {
   settings: 'settings',
   marketingAds: 'marketingAds',
   sharedCheckouts: 'sharedCheckouts',
+  serviceCategories: 'serviceCategories',
+  serviceProviders: 'serviceProviders',
+  services: 'services',
+  serviceBookings: 'serviceBookings',
+  serviceReviews: 'serviceReviews',
+  providerAvailability: 'providerAvailability',
 } as const;

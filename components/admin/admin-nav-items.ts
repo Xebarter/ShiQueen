@@ -8,6 +8,7 @@ import {
   Settings,
   Building2,
   Megaphone,
+  Scissors,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -22,6 +23,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { icon: Package, label: 'Products', href: '/admin/products' },
   { icon: Boxes, label: 'Packages', href: '/admin/packages' },
   { icon: Megaphone, label: 'Ads', href: '/admin/ads' },
+  { icon: Scissors, label: 'Services', href: '/admin/services' },
   { icon: ShoppingCart, label: 'Orders', href: '/admin/orders' },
   { icon: Users, label: 'Customers', href: '/admin/customers' },
   { icon: Building2, label: 'Wholesale', href: '/admin/wholesale' },

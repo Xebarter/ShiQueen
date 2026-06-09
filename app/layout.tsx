@@ -1,12 +1,13 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Geist, Geist_Mono, Playfair_Display } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/lib/auth-context'
 import { CartProvider } from '@/lib/cart-context'
 import { ProductsProvider } from '@/lib/products-context'
 import { MarketingAdsProvider } from '@/lib/marketing-ads-context'
 import { WholesaleProvider } from '@/lib/wholesale-context'
+import { ServicesProvider } from '@/lib/services-context'
 import { BRAND_ASSETS, BRAND_NAME, BRAND_TAGLINE, BRAND_THEME } from '@/lib/brand'
 import { getDefaultOgImageUrl } from '@/lib/metadata/resolve-og-image'
 import { getSiteUrl } from '@/lib/site-url'
@@ -20,6 +21,13 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 })
 
+const brandDisplay = Playfair_Display({
+  variable: '--font-brand-display',
+  subsets: ['latin'],
+  weight: ['500', '600', '700'],
+  style: ['normal', 'italic'],
+})
+
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: {
@@ -27,7 +35,7 @@ export const metadata: Metadata = {
     template: `%s | ${BRAND_NAME}`,
   },
   description:
-    'Discover curated collections of premium fashion, wellness, and lifestyle products.',
+    'Shop premium products, packages, and book trusted beauty, wellness, and lifestyle services.',
   applicationName: BRAND_NAME,
   manifest: BRAND_ASSETS.manifest,
   icons: {
@@ -52,7 +60,7 @@ export const metadata: Metadata = {
     title: `${BRAND_NAME} - ${BRAND_TAGLINE}`,
     siteName: BRAND_NAME,
     description:
-      'Discover curated collections of premium fashion, wellness, and lifestyle products.',
+      'Shop premium products, packages, and book trusted beauty, wellness, and lifestyle services.',
     type: 'website',
     images: [{ url: defaultOgImage, alt: BRAND_NAME }],
   },
@@ -60,7 +68,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: `${BRAND_NAME} - ${BRAND_TAGLINE}`,
     description:
-      'Discover curated collections of premium fashion, wellness, and lifestyle products.',
+      'Shop premium products, packages, and book trusted beauty, wellness, and lifestyle services.',
     images: [defaultOgImage],
   },
 }
@@ -75,15 +83,17 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} bg-background`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${brandDisplay.variable} bg-background`}>
       <body className="font-sans antialiased">
         <AuthProvider>
           <ProductsProvider>
             <MarketingAdsProvider>
             <CartProvider>
               <WholesaleProvider>
-                {children}
-                <Toaster />
+                <ServicesProvider>
+                  {children}
+                  <Toaster />
+                </ServicesProvider>
               </WholesaleProvider>
             </CartProvider>
             </MarketingAdsProvider>

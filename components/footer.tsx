@@ -58,7 +58,7 @@ export function Footer() {
           <div>
             <BrandLogo variant="footer" className="mb-4" />
             <p className="text-sm text-muted-foreground">
-              Curated collections for the modern, sophisticated woman.
+              Products, packages, and trusted services for the modern woman.
             </p>
             <div className="mt-5 flex items-center gap-2">
               {SOCIAL_LINKS.map(({ label, href, icon: Icon }) => (
@@ -86,8 +86,8 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/collections" className="hover:text-foreground transition">
-                  Collections
+                <Link href="/services" className="hover:text-foreground transition">
+                  Services
                 </Link>
               </li>
               <li>

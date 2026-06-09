@@ -132,26 +132,27 @@ export function SendPaymentLinkCard({
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm shadow-primary/5',
+        'overflow-hidden rounded-2xl border border-accent/25 bg-gradient-to-br from-accent/[0.07] via-card to-card shadow-sm shadow-accent/5 ring-1 ring-accent/10',
         className
       )}
     >
-      <div className="border-b border-border/50 bg-gradient-to-r from-accent/10 to-transparent px-6 py-5">
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/15 text-accent">
+      <div className="border-b border-accent/15 bg-gradient-to-r from-accent/12 to-transparent px-5 py-5 sm:px-6">
+        <div className="flex items-start gap-3.5">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/20 text-accent ring-1 ring-accent/20">
             <Gift className="h-5 w-5" />
           </span>
           <div>
-            <h2 className="text-lg font-medium tracking-tight">Someone else paying?</h2>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              Send a link so a friend or family member can pay for this order. Delivery stays on
-              your details above.
+            <p className="text-[10px] font-bold uppercase tracking-widest text-accent">Gift pay</p>
+            <h2 className="text-lg font-semibold tracking-tight">Someone else paying?</h2>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+              Send a secure link so a friend or family member can cover this order. Your delivery
+              details stay as entered above.
             </p>
           </div>
         </div>
       </div>
 
-      <div className="space-y-4 p-6">
+      <div className="space-y-4 p-5 sm:p-6">
         <div className="space-y-2">
           <Label htmlFor="gift-message" className="text-sm font-medium">
             Optional message
@@ -170,7 +171,7 @@ export function SendPaymentLinkCard({
           <Button
             type="button"
             variant="outline"
-            className="h-11 w-full gap-2 rounded-xl"
+            className="h-11 w-full gap-2 rounded-xl border-accent/30 bg-background/80 hover:border-accent/50 hover:bg-accent/5"
             disabled={!canCreate || loading}
             onClick={handleCreateLink}
           >
@@ -182,8 +183,8 @@ export function SendPaymentLinkCard({
             Create payment link
           </Button>
         ) : (
-          <div className="space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
-            <p className="text-sm font-medium text-foreground">Payment link ready</p>
+          <div className="space-y-3 rounded-xl border border-accent/25 bg-accent/[0.08] p-4">
+            <p className="text-sm font-semibold text-foreground">Payment link ready ✓</p>
             <p className="break-all text-xs text-muted-foreground">{shareUrl}</p>
             {expiresAt && (
               <p className="text-xs text-muted-foreground">

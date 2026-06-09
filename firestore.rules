@@ -72,6 +72,44 @@ service cloud.firestore {
     }
 
     // Token in the URL is the secret; rules limit what clients can change.
+    match /serviceCategories/{categoryId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /serviceProviders/{providerId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /services/{serviceId} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount', 'updatedAt'])
+        || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bookingCount', 'updatedAt']);
+    }
+
+    match /providerAvailability/{availabilityId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /serviceBookings/{bookingId} {
+      allow read: if isAdmin()
+        || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if request.resource.data.customerName is string
+        && request.resource.data.customerPhone is string
+        && request.resource.data.status == 'pending';
+      allow update: if isAdmin();
+    }
+
+    match /serviceReviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn() || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
     match /sharedCheckouts/{token} {
       allow read: if true;
       allow create: if request.resource.data.status == 'pending';

@@ -4,19 +4,11 @@ import { BRAND_ASSETS, BRAND_NAME } from '@/lib/brand';
 import { cn } from '@/lib/utils';
 
 const MARK_SIZES = {
-  header: 'size-9',
+  header: 'size-10',
   footer: 'size-10',
   auth: 'size-14',
   admin: 'size-9',
   icon: 'size-8',
-} as const;
-
-const WORDMARK_SIZES = {
-  header: 'text-xl',
-  footer: 'text-xl',
-  auth: 'text-2xl',
-  admin: 'text-lg font-semibold',
-  icon: '',
 } as const;
 
 type BrandLogoVariant = keyof typeof MARK_SIZES;
@@ -29,6 +21,77 @@ type BrandLogoProps = {
   onClick?: () => void;
 };
 
+const WORDMARK_SCALE = {
+  header: {
+    she: 'text-[1.4rem]',
+    queen: 'text-[1.75rem]',
+    underline: 'mt-1.5 h-[2px] w-full',
+  },
+  footer: {
+    she: 'text-[1.25rem]',
+    queen: 'text-[1.55rem]',
+    underline: 'mt-1.5 h-[2px] w-full',
+  },
+  auth: {
+    she: 'text-[2.1rem]',
+    queen: 'text-[2.65rem]',
+    underline: 'mt-2.5 h-[2px] w-32',
+  },
+  admin: null,
+  icon: null,
+} as const;
+
+function SheQueenWordmark({
+  variant,
+  className,
+}: {
+  variant: BrandLogoVariant;
+  className?: string;
+}) {
+  const scale = WORDMARK_SCALE[variant];
+  if (!scale) return null;
+
+  const isFooter = variant === 'footer';
+  const isAuth = variant === 'auth';
+
+  return (
+    <span
+      className={cn('font-brand inline-flex flex-col leading-[0.95]', isAuth && 'items-center', className)}
+    >
+      <span className="inline-flex items-baseline whitespace-nowrap select-none" aria-hidden>
+        <span
+          className={cn(
+            'relative -mr-px italic font-semibold text-primary',
+            scale.she
+          )}
+        >
+          She
+        </span>
+        <span
+          className={cn(
+            'relative font-bold tracking-[0.04em] text-primary [text-shadow:0_1px_0_oklch(1_0_0/0.25)]',
+            scale.queen
+          )}
+        >
+          Queen
+        </span>
+      </span>
+      <span
+        className={cn(
+          'block rounded-full bg-gradient-to-r from-primary/25 via-accent to-primary/25',
+          scale.underline
+        )}
+        aria-hidden
+      />
+      {isFooter && (
+        <span className="mt-1.5 text-[9px] font-semibold uppercase tracking-[0.32em] text-muted-foreground/90">
+          Lifestyle
+        </span>
+      )}
+    </span>
+  );
+}
+
 export function BrandLogo({
   variant = 'header',
   className,
@@ -36,12 +99,17 @@ export function BrandLogo({
   showWordmark = variant !== 'icon',
   onClick,
 }: BrandLogoProps) {
+  const isHeader = variant === 'header';
+
   const content = (
-    <span className={cn('inline-flex items-center gap-2.5', className)}>
+    <span className={cn('inline-flex items-center gap-3', className)}>
       <span
         className={cn(
-          'relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-lg bg-primary',
-          MARK_SIZES[variant],
+          'relative inline-flex shrink-0 items-center justify-center overflow-hidden bg-gradient-to-br from-primary via-primary to-primary/80',
+          isHeader
+            ? 'rounded-xl shadow-md shadow-primary/25 ring-1 ring-white/30 ring-inset'
+            : 'rounded-lg',
+          MARK_SIZES[variant]
         )}
       >
         <Image
@@ -53,20 +121,17 @@ export function BrandLogo({
           priority={variant === 'header' || variant === 'auth'}
         />
       </span>
-      {showWordmark && (
-        <span className={cn('font-light tracking-wider text-primary', WORDMARK_SIZES[variant])}>
-          {variant === 'admin' ? (
-            <>
-              {BRAND_NAME}
-              <span className="mt-0.5 block text-xs font-normal tracking-normal text-muted-foreground">
-                Admin
-              </span>
-            </>
-          ) : (
-            BRAND_NAME
-          )}
-        </span>
-      )}
+      {showWordmark &&
+        (variant === 'admin' ? (
+          <span className="font-brand text-lg font-bold tracking-wide text-primary">
+            {BRAND_NAME}
+            <span className="mt-0.5 block font-sans text-xs font-normal tracking-normal text-muted-foreground">
+              Admin
+            </span>
+          </span>
+        ) : (
+          <SheQueenWordmark variant={variant} />
+        ))}
     </span>
   );
 
@@ -75,7 +140,7 @@ export function BrandLogo({
       <Link
         href={href}
         onClick={onClick}
-        className="inline-flex shrink-0"
+        className="inline-flex shrink-0 transition-opacity hover:opacity-90"
         aria-label={`${BRAND_NAME} home`}
       >
         {content}

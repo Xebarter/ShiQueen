@@ -77,7 +77,7 @@ export function HeaderAccountMenu() {
     return (
       <Link
         href="/sign-in"
-        className="inline-flex rounded-full p-2.5 text-foreground/80 transition-colors hover:bg-secondary hover:text-primary"
+        className="inline-flex rounded-full border border-transparent p-2.5 text-foreground/75 transition-all duration-200 hover:border-border/60 hover:bg-secondary/80 hover:text-primary hover:shadow-sm"
         aria-label="Sign in"
       >
         <User className="h-5 w-5" />

@@ -146,7 +146,6 @@ export function HomePage() {
               <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
                 <span>{products.length}+ Products</span>
                 <span>Free shipping over USh 500K</span>
-                <span>18% VAT included</span>
                 <Link
                   href="/packages"
                   className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline"
