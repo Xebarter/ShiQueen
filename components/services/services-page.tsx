@@ -55,7 +55,7 @@ export function ServicesPage() {
   const showCategoryGrid = !search.hasActiveFilters && !loading;
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-muted/20 via-background to-background">
+    <main className="min-h-screen bg-gradient-to-b from-muted/20 via-background to-background overflow-x-clip mobile-scroll-optimize">
       <Header />
 
       <ServicesHero

@@ -267,7 +267,7 @@ export function Header() {
       <header
         ref={primaryHeaderRef}
         className={cn(
-          'z-40 border-b border-border/50 bg-background/95 shadow-sm shadow-primary/[0.03] max-md:relative',
+          'z-40 border-b border-border/50 bg-background/95 shadow-sm shadow-primary/[0.03] max-md:relative max-md:bg-background',
           'md:sticky md:top-0 md:backdrop-blur-xl md:supports-[backdrop-filter]:bg-background/85',
           'lg:sticky lg:top-0'
         )}
@@ -350,9 +350,8 @@ export function Header() {
       <div
         ref={mobileSearchBarRef}
         className={cn(
-          'z-50 border-b border-border/50 bg-background/95 shadow-sm shadow-primary/[0.02] lg:hidden',
-          'max-md:sticky max-md:top-0',
-          'md:sticky md:backdrop-blur-xl md:supports-[backdrop-filter]:bg-background/90',
+          'z-50 border-b border-border/50 bg-background max-md:sticky max-md:top-0 max-md:bg-background lg:hidden',
+          'md:sticky md:bg-background/95 md:backdrop-blur-xl md:supports-[backdrop-filter]:bg-background/90',
           'md:top-[var(--header-primary-height,4.25rem)]'
         )}
       >

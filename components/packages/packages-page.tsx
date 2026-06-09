@@ -314,7 +314,7 @@ export function PackagesPage() {
   return (
     <>
       <Header />
-      <main className="overflow-x-hidden bg-background pb-20 sm:pb-0">
+      <main className="overflow-x-clip mobile-scroll-optimize bg-background pb-20 sm:pb-0">
         <PackageHeroCarousel
           packages={heroPackages}
           products={products}

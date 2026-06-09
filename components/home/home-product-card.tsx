@@ -16,6 +16,7 @@ import { formatUGX } from '@/lib/wholesale-data';
 import { Button } from '@/components/ui/button';
 import { ProductImage } from '@/components/product-image';
 import { ShareProductButton } from '@/components/shared/share-button';
+import { useLightScroll } from '@/lib/hooks/use-light-scroll';
 import toast from 'react-hot-toast';
 
 export type ProductBadge = 'sale' | 'new' | 'selling-fast' | 'limited' | 'trending';
@@ -57,6 +58,7 @@ export function HomeProductCard({
   onWishlistChange,
 }: HomeProductCardProps) {
   const { addItem } = useCart();
+  const lightScroll = useLightScroll();
   const [hovered, setHovered] = useState(false);
   const isWishlisted = wishlistIds.includes(product.id);
   const discount = getDiscountPercent(product);
@@ -87,16 +89,8 @@ export function HomeProductCard({
     toast.success(isWishlisted ? 'Removed from wishlist' : 'Saved to wishlist');
   };
 
-  return (
-    <motion.article
-      initial={{ opacity: 0, y: 16 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: 0.4, delay: index * 0.05 }}
-      className="group relative"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
+  const cardContent = (
+    <>
       <Link href={`/products/${product.id}`} className="block">
         <div
           className={`relative ${imageHeight} overflow-hidden rounded-2xl bg-secondary shadow-sm ring-1 ring-border/50 transition-shadow duration-300 group-hover:shadow-xl`}
@@ -104,7 +98,7 @@ export function HomeProductCard({
           <ProductImage
             product={product}
             className="absolute inset-0"
-            imageClassName={`transition-transform duration-500 ${hovered ? 'scale-105' : ''}`}
+            imageClassName={`transition-transform duration-500 ${hovered && !lightScroll ? 'scale-105' : ''}`}
             sizes="(max-width: 768px) 50vw, 25vw"
           />
 
@@ -133,7 +127,7 @@ export function HomeProductCard({
             <ShareProductButton product={product} />
             <button
               onClick={handleWishlist}
-              className="rounded-full border border-border/50 bg-background/70 p-2 backdrop-blur-md transition hover:bg-background"
+              className="rounded-full border border-border/50 bg-background/70 p-2 max-md:backdrop-blur-none md:backdrop-blur-md transition hover:bg-background"
               aria-label="Toggle wishlist"
             >
               <Heart
@@ -142,34 +136,36 @@ export function HomeProductCard({
             </button>
           </div>
 
-          <motion.div
-            initial={false}
-            animate={{ opacity: hovered ? 1 : 0, y: hovered ? 0 : 8 }}
-            className="absolute bottom-3 inset-x-3 flex gap-2 z-10"
-          >
-            <Button
-              size="sm"
-              className="flex-1 h-9 text-xs backdrop-blur-md bg-primary/90 hover:bg-primary shadow-lg"
-              onClick={handleQuickAdd}
+          {!lightScroll && (
+            <motion.div
+              initial={false}
+              animate={{ opacity: hovered ? 1 : 0, y: hovered ? 0 : 8 }}
+              className="absolute bottom-3 inset-x-3 hidden gap-2 z-10 md:flex"
             >
-              <ShoppingBag className="w-3.5 h-3.5 mr-1.5" />
-              Quick Add
-            </Button>
-            {onQuickView && (
               <Button
                 size="sm"
-                variant="outline"
-                className="h-9 px-3 backdrop-blur-md bg-background/80"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onQuickView(product);
-                }}
+                className="flex-1 h-9 text-xs backdrop-blur-md bg-primary/90 hover:bg-primary shadow-lg"
+                onClick={handleQuickAdd}
               >
-                <Eye className="w-3.5 h-3.5" />
+                <ShoppingBag className="w-3.5 h-3.5 mr-1.5" />
+                Quick Add
               </Button>
-            )}
-          </motion.div>
+              {onQuickView && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-9 px-3 backdrop-blur-md bg-background/80"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onQuickView(product);
+                  }}
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                </Button>
+              )}
+            </motion.div>
+          )}
         </div>
 
         <div className={`pt-3 ${variant === 'compact' ? 'space-y-0.5' : 'space-y-1'}`}>
@@ -196,6 +192,28 @@ export function HomeProductCard({
           )}
         </div>
       </Link>
+    </>
+  );
+
+  if (lightScroll) {
+    return (
+      <article className="group relative">
+        {cardContent}
+      </article>
+    );
+  }
+
+  return (
+    <motion.article
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-40px' }}
+      transition={{ duration: 0.35, delay: Math.min(index, 3) * 0.04 }}
+      className="group relative"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {cardContent}
     </motion.article>
   );
 }

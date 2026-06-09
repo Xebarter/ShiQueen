@@ -113,7 +113,7 @@ export function ContactPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-muted/25 via-background to-background">
+    <main className="min-h-screen bg-gradient-to-b from-muted/25 via-background to-background overflow-x-clip mobile-scroll-optimize">
       <Header />
 
       {/* Hero */}

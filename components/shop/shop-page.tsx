@@ -132,7 +132,7 @@ export function ShopPage() {
   return (
     <>
       <Header />
-      <main className="overflow-x-hidden">
+      <main className="overflow-x-clip mobile-scroll-optimize">
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-border/50">

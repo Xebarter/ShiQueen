@@ -129,12 +129,12 @@ export function HomePage() {
   return (
     <>
       <Header />
-      <main className="overflow-x-hidden">
+      <main className="overflow-x-clip mobile-scroll-optimize">
 
       {/* Hero — products above the fold */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-background" />
-        <div className="absolute top-20 right-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
+        <div className="pointer-events-none absolute top-20 right-0 h-96 w-96 rounded-full bg-accent/10 blur-3xl max-md:hidden" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12 md:pt-12 md:pb-16">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <motion.div

@@ -29,7 +29,7 @@ export function ServicesFeaturedRow({
           </span>
           <h2 className="text-lg font-semibold tracking-tight sm:text-xl">{title}</h2>
         </div>
-        <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory">
+        <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory touch-pan-x">
           {listings.map((listing) => (
             <div key={listing.id} className="w-[280px] shrink-0 snap-start sm:w-[300px]">
               <ServiceCard

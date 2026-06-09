@@ -44,7 +44,7 @@ export const ServicesSearchBar = forwardRef<HTMLInputElement, ServicesSearchBarP
       <section
         id="services-search"
         className={cn(
-          'sticky top-[var(--mobile-header-offset,4rem)] z-40 border-b border-border/60 bg-background/90 shadow-sm backdrop-blur-xl lg:top-16',
+          'sticky top-[var(--mobile-header-offset,4rem)] z-40 border-b border-border/60 bg-background/90 shadow-sm max-md:bg-background lg:top-16',
           className
         )}
       >

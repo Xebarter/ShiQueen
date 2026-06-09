@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { useLightScroll } from '@/lib/hooks/use-light-scroll';
 
 interface ProductSectionProps {
   title: string;
@@ -26,15 +27,21 @@ export function ProductSection({
   children,
   className = '',
 }: ProductSectionProps) {
+  const lightScroll = useLightScroll();
+  const Header = lightScroll ? 'div' : motion.div;
+  const headerProps = lightScroll
+    ? { className: 'flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 md:mb-8' }
+    : {
+        initial: { opacity: 0, y: 12 },
+        whileInView: { opacity: 1, y: 0 },
+        viewport: { once: true },
+        className: 'flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 md:mb-8',
+      };
+
   return (
-    <section className={`py-10 md:py-14 ${className}`}>
+    <section className={`scroll-section py-10 md:py-14 ${className}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 md:mb-8"
-        >
+        <Header {...headerProps}>
           <div>
             {urgency && (
               <span className="inline-block text-xs font-semibold uppercase tracking-widest text-accent mb-2">
@@ -52,7 +59,7 @@ export function ProductSection({
               </Button>
             </Link>
           )}
-        </motion.div>
+        </Header>
         {children}
       </div>
     </section>
@@ -93,7 +100,7 @@ export function ProductCarousel({ children }: ProductCarouselProps) {
       </button>
       <div
         ref={scrollRef}
-        className="flex gap-4 md:gap-5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2 -mx-1 px-1"
+        className="flex gap-4 md:gap-5 overflow-x-auto snap-x snap-mandatory scrollbar-hide touch-pan-x pb-2 -mx-1 px-1"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {children}
@@ -133,15 +140,21 @@ export function CategoryShowcase({
   gradient,
   children,
 }: CategoryShowcaseProps) {
+  const lightScroll = useLightScroll();
+  const Banner = lightScroll ? 'div' : motion.div;
+  const bannerProps = lightScroll
+    ? { className: `relative overflow-hidden rounded-3xl ${gradient} p-6 md:p-10 mb-6 md:mb-8` }
+    : {
+        initial: { opacity: 0, y: 16 },
+        whileInView: { opacity: 1, y: 0 },
+        viewport: { once: true },
+        className: `relative overflow-hidden rounded-3xl ${gradient} p-6 md:p-10 mb-6 md:mb-8`,
+      };
+
   return (
-    <section className="py-10 md:py-14">
+    <section className="scroll-section py-10 md:py-14">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className={`relative overflow-hidden rounded-3xl ${gradient} p-6 md:p-10 mb-6 md:mb-8`}
-        >
+        <Banner {...bannerProps}>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.15),transparent_50%)]" />
           <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
@@ -155,7 +168,7 @@ export function CategoryShowcase({
               </Button>
             </Link>
           </div>
-        </motion.div>
+        </Banner>
         {children}
       </div>
     </section>
@@ -164,9 +177,9 @@ export function CategoryShowcase({
 
 export function SocialProofBanner({ message, children }: { message: string; children: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm p-4 md:p-6">
+    <div className="rounded-2xl border border-border/60 bg-card/80 max-md:backdrop-blur-none md:bg-card/50 md:backdrop-blur-sm p-4 md:p-6">
       <p className="text-xs font-semibold uppercase tracking-widest text-accent mb-4 flex items-center gap-2">
-        <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+        <span className="w-2 h-2 rounded-full bg-accent max-md:animate-none md:animate-pulse" />
         {message}
       </p>
       {children}

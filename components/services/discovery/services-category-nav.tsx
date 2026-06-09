@@ -80,7 +80,7 @@ export function ServicesCategoryNav({
             className="pointer-events-none absolute inset-y-2 right-2 z-10 w-10 rounded-r-xl bg-gradient-to-l from-card to-transparent"
             aria-hidden
           />
-          <div className="flex gap-2 overflow-x-auto px-1 pb-0.5 scrollbar-hide snap-x snap-mandatory">
+          <div className="flex gap-2 overflow-x-auto px-1 pb-0.5 scrollbar-hide snap-x snap-mandatory touch-pan-x">
             <button type="button" onClick={() => handleSelect('')} className={pillClass(!selectedCategoryId)}>
               <span aria-hidden>✨</span>
               All

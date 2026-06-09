@@ -124,16 +124,29 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    @apply font-sans;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+  html,
+  body {
+    overflow-x: clip;
+    overscroll-behavior-y: none;
+  }
   body {
     @apply bg-background text-foreground;
+    touch-action: pan-y pinch-zoom;
     background-image: radial-gradient(
       ellipse 120% 80% at 50% -20%,
       oklch(0.94 0.035 350 / 0.55),
       transparent 55%
     );
   }
-  html {
-    @apply font-sans;
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
   }
 }
 
@@ -144,5 +157,19 @@
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+  .touch-pan-x {
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .scroll-section {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 480px;
+  }
+  @media (max-width: 767px) {
+    .mobile-scroll-optimize {
+      transform: translateZ(0);
+    }
   }
 }
