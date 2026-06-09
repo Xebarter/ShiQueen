@@ -16,6 +16,7 @@ import { getFirebaseDb } from '@/lib/firebase';
 import { COLLECTIONS } from '@/lib/firebase/collections';
 import { stripUndefined } from '@/lib/firebase/sanitize';
 import { toDate } from '@/lib/firebase/timestamp';
+import { isValidPackageCategory } from '@/lib/package-catalog';
 import { Package, BulkOrder, WholesaleAccount } from '@/lib/types/wholesale';
 
 function sanitizePackageUpdateData(data: Record<string, unknown>): Record<string, unknown> {
@@ -43,6 +44,20 @@ function mapPackage(id: string, data: Record<string, unknown>): Package {
     coverProductIds: Array.isArray(data.coverProductIds)
       ? data.coverProductIds.map(String).slice(0, 4)
       : undefined,
+    category:
+      typeof data.category === 'string' && isValidPackageCategory(data.category)
+        ? data.category
+        : undefined,
+    tagline: data.tagline ? String(data.tagline) : undefined,
+    highlights: Array.isArray(data.highlights)
+      ? data.highlights.map(String).slice(0, 5)
+      : undefined,
+    tier:
+      typeof data.tier === 'string' &&
+      ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'vip'].includes(data.tier)
+        ? (data.tier as Package['tier'])
+        : undefined,
+    isSignature: data.isSignature === true ? true : undefined,
     isActive: Boolean(data.isActive ?? true),
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),

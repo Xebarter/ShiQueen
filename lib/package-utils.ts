@@ -2,6 +2,60 @@ import type { CartItem } from '@/lib/cart-context';
 import type { OrderItem, Product } from '@/lib/types/database';
 import { Package, PackageItem, PricingTier } from '@/lib/types/wholesale';
 
+export function isCustomPackageItem(item: PackageItem): boolean {
+  return item.isCustom === true;
+}
+
+export function createCustomPackageItemId(): string {
+  return `pkgitem-${crypto.randomUUID()}`;
+}
+
+export function getPackageItemName(
+  item: PackageItem,
+  catalogNames: Record<string, string>
+): string {
+  if (isCustomPackageItem(item)) {
+    return item.customName?.trim() || 'Custom item';
+  }
+  return catalogNames[item.productId] ?? 'Product';
+}
+
+export function getPackageItemRetailUnit(
+  item: PackageItem,
+  catalogPrices: Record<string, number>
+): number {
+  if (isCustomPackageItem(item)) {
+    return item.customRetailPrice ?? 0;
+  }
+  return catalogPrices[item.productId] ?? 0;
+}
+
+export function getPackageItemImage(item: PackageItem, products: Product[]): string | undefined {
+  if (isCustomPackageItem(item)) {
+    return item.customImage;
+  }
+  return products.find((p) => p.id === item.productId)?.image;
+}
+
+export function mergePackageItemMaps(
+  packages: Package[],
+  catalogNames: Record<string, string>,
+  catalogPrices: Record<string, number>
+): { productNames: Record<string, string>; retailPrices: Record<string, number> } {
+  const productNames = { ...catalogNames };
+  const retailPrices = { ...catalogPrices };
+
+  for (const pkg of packages) {
+    for (const item of pkg.items) {
+      if (!isCustomPackageItem(item)) continue;
+      productNames[item.productId] = item.customName?.trim() || 'Custom item';
+      retailPrices[item.productId] = item.customRetailPrice ?? 0;
+    }
+  }
+
+  return { productNames, retailPrices };
+}
+
 /**
  * Calculate the effective price for a given quantity based on pricing tiers
  */
@@ -50,11 +104,12 @@ export function calculatePackageSavings(
   savingsPercentage: number;
 } {
   const retailTotal = items.reduce((sum, item) => {
-    return sum + (retailPrices[item.productId] || 0) * item.quantity;
+    return sum + getPackageItemRetailUnit(item, retailPrices) * item.quantity;
   }, 0);
 
   const packagePrice = items.reduce((sum, item) => {
-    return sum + (item.price || retailPrices[item.productId] || 0) * item.quantity;
+    const unitPrice = item.price ?? getPackageItemRetailUnit(item, retailPrices);
+    return sum + unitPrice * item.quantity;
   }, 0);
 
   const savingsAmount = retailTotal - packagePrice;
@@ -111,7 +166,7 @@ export function computePackageRetailTotal(
   retailPrices: Record<string, number>
 ): number {
   return items.reduce((sum, item) => {
-    return sum + (retailPrices[item.productId] || 0) * item.quantity;
+    return sum + getPackageItemRetailUnit(item, retailPrices) * item.quantity;
   }, 0);
 }
 
@@ -120,7 +175,7 @@ export function computePackageItemTotal(
   retailPrices: Record<string, number>
 ): number {
   return items.reduce((sum, item) => {
-    const unitPrice = item.price ?? retailPrices[item.productId] ?? 0;
+    const unitPrice = item.price ?? getPackageItemRetailUnit(item, retailPrices);
     return sum + unitPrice * item.quantity;
   }, 0);
 }
@@ -206,6 +261,7 @@ export function getPackageCoverImages(pkg: Package, products: Product[]): string
   }
 
   const productMap = new Map(products.map((p) => [p.id, p]));
+  const itemByProductId = new Map(pkg.items.map((item) => [item.productId, item]));
   const priorityIds = resolveCoverProductIds(pkg);
   const allItemIds = getUniquePackageProductIds(pkg.items);
   const idQueue = [...priorityIds];
@@ -216,7 +272,10 @@ export function getPackageCoverImages(pkg: Package, products: Product[]): string
   const images: string[] = [];
   for (const productId of idQueue) {
     if (images.length >= 4) break;
-    const image = productMap.get(productId)?.image;
+    const item = itemByProductId.get(productId);
+    const image = item
+      ? getPackageItemImage(item, products)
+      : productMap.get(productId)?.image;
     if (image) images.push(image);
   }
 
@@ -247,7 +306,6 @@ export function expandPackageCartItems(
   products: Product[]
 ): OrderItem[] {
   const result: OrderItem[] = [];
-  const productMap = new Map(products.map((p) => [p.id, p]));
 
   for (const cartItem of cartItems) {
     if (!isPackageCartItem(cartItem)) {
@@ -276,21 +334,25 @@ export function expandPackageCartItems(
       continue;
     }
 
-    const retailPrices: Record<string, number> = {};
+    const catalogPrices: Record<string, number> = {};
     for (const product of products) {
-      retailPrices[product.id] = product.price;
+      catalogPrices[product.id] = product.price;
     }
+    const { productNames, retailPrices } = mergePackageItemMaps(
+      [pkg],
+      Object.fromEntries(products.map((p) => [p.id, p.name])),
+      catalogPrices
+    );
 
     const packageUnitPrice = resolvePackagePrice(pkg, retailPrices);
     const totalPackageValue = packageUnitPrice * cartItem.quantity;
     const weights = pkg.items.map((item) => {
-      const retail = retailPrices[item.productId] || 0;
+      const retail = getPackageItemRetailUnit(item, retailPrices);
       return retail * item.quantity;
     });
     const weightSum = weights.reduce((a, b) => a + b, 0) || 1;
 
     pkg.items.forEach((pkgItem, index) => {
-      const product = productMap.get(pkgItem.productId);
       const lineRetailWeight = weights[index];
       const allocatedTotal =
         Math.round((lineRetailWeight / weightSum) * totalPackageValue) || 0;
@@ -299,10 +361,10 @@ export function expandPackageCartItems(
 
       result.push({
         productId: pkgItem.productId,
-        name: product?.name ?? `Product ${pkgItem.productId}`,
+        name: getPackageItemName(pkgItem, productNames),
         price: unitPrice,
         quantity: lineQty,
-        image: product?.image,
+        image: getPackageItemImage(pkgItem, products),
         packageId: index === 0 ? pkg.id : undefined,
       });
     });

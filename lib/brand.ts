@@ -1,6 +1,6 @@
 export const BRAND_NAME = 'SheQueen';
 
-export const BRAND_TAGLINE = "Premium Women's Lifestyle";
+export const BRAND_TAGLINE = "Ladies' Lifestyle";
 
 export const BRAND_ASSETS = {
   faviconIco: '/favicon.ico',

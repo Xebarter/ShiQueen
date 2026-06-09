@@ -6,6 +6,12 @@ import { Package } from '@/lib/types/wholesale';
 import { Product } from '@/lib/types/database';
 import { formatUGX } from '@/lib/wholesale-data';
 import { isRemoteProductImage } from '@/components/product-image';
+import {
+  getPackageItemImage,
+  getPackageItemName,
+  getPackageItemRetailUnit,
+  isCustomPackageItem,
+} from '@/lib/package-utils';
 
 interface PackageContentsListProps {
   pkg: Package;
@@ -24,17 +30,20 @@ export function PackageContentsList({
 }: PackageContentsListProps) {
   return (
     <div className="space-y-3">
-      {pkg.items.map((item) => {
+      {pkg.items.map((item, index) => {
         const product = products.find((p) => p.id === item.productId);
-        const lineRetail = (retailPrices[item.productId] || 0) * item.quantity;
+        const isCustom = isCustomPackageItem(item);
+        const itemName = getPackageItemName(item, productNames);
+        const itemImage = getPackageItemImage(item, products);
+        const lineRetail = getPackageItemRetailUnit(item, retailPrices) * item.quantity;
 
         const content = (
           <div className="flex items-center gap-4">
             <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
-              {product && isRemoteProductImage(product.image) ? (
+              {isRemoteProductImage(itemImage) ? (
                 <Image
-                  src={product.image}
-                  alt={product.name}
+                  src={itemImage}
+                  alt={itemName}
                   fill
                   sizes="56px"
                   className="object-cover"
@@ -44,7 +53,7 @@ export function PackageContentsList({
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="font-medium">{productNames[item.productId] ?? 'Product'}</p>
+              <p className="font-medium">{itemName}</p>
               <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
             </div>
             <p className="shrink-0 font-semibold tabular-nums">{formatUGX(lineRetail)}</p>
@@ -53,10 +62,10 @@ export function PackageContentsList({
 
         return (
           <div
-            key={item.productId}
+            key={index}
             className="border-b border-border pb-3 last:border-b-0 last:pb-0"
           >
-            {showLinks && product ? (
+            {showLinks && product && !isCustom ? (
               <Link href={`/products/${product.id}`} className="block hover:opacity-80 transition">
                 {content}
               </Link>

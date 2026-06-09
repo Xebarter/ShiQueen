@@ -10,10 +10,13 @@ import { formatUGX } from '@/lib/wholesale-data';
 import { PackageCoverDisplay } from '@/components/packages/package-cover-display';
 import {
   getPackageCoverImages,
-  getPackageTypeLabel,
-  getUniquePackageProductIds,
+  getPackageItemName,
   resolvePackageSavings,
 } from '@/lib/package-utils';
+import {
+  getPackageCategoryLabel,
+  getPackageTierLabel,
+} from '@/lib/package-catalog';
 interface PackageCardProps {
   pkg: PackageType;
   productNames: Record<string, string>;
@@ -35,7 +38,6 @@ export function PackageCard({
   const { retailTotal, packagePrice, savingsAmount, savingsPercentage } =
     resolvePackageSavings(pkg, retailPrices);
   const itemCount = pkg.items.reduce((sum, item) => sum + item.quantity, 0);
-  const uniqueProducts = getUniquePackageProductIds(pkg.items).length;
 
   return (
     <motion.article
@@ -57,8 +59,13 @@ export function PackageCard({
             />
           </div>
           <span className="absolute left-2 top-2 rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground shadow-sm backdrop-blur-sm sm:left-3 sm:top-3 sm:text-xs">
-            {getPackageTypeLabel(pkg.rule.type)}
+            {getPackageCategoryLabel(pkg.category).replace(' Packages', '')}
           </span>
+          {pkg.isSignature && (
+            <span className="absolute left-2 top-8 rounded-full bg-primary/90 px-2 py-0.5 text-[10px] font-semibold text-primary-foreground shadow-sm sm:left-3 sm:top-10 sm:text-xs">
+              Signature
+            </span>
+          )}
           {savingsAmount > 0 && (
             <span className="absolute bottom-2 right-2 rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold text-accent-foreground shadow-sm sm:bottom-3 sm:right-3 sm:px-2.5 sm:py-1 sm:text-xs">
               −{savingsPercentage.toFixed(0)}%
@@ -71,6 +78,11 @@ export function PackageCard({
             <h2 className="line-clamp-2 text-sm font-semibold leading-snug tracking-tight sm:text-lg">
               {pkg.name}
             </h2>
+            {pkg.tagline ? (
+              <p className="mt-1 line-clamp-2 text-xs font-medium text-foreground/80 sm:text-sm">
+                {pkg.tagline}
+              </p>
+            ) : null}
             <p className="mt-1 line-clamp-2 text-xs text-muted-foreground sm:line-clamp-2 sm:text-sm">
               {pkg.description}
             </p>
@@ -78,15 +90,20 @@ export function PackageCard({
             <div className="mt-2.5 flex flex-wrap items-center gap-1.5 sm:mt-3">
               <span className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground sm:text-xs">
                 <Package className="h-3 w-3" />
-                {itemCount} items · {uniqueProducts} products
+                Complete bundle · {itemCount} pieces
               </span>
+              {pkg.tier && (
+                <span className="rounded-md bg-accent/15 px-2 py-0.5 text-[10px] font-medium text-accent sm:text-xs">
+                  {getPackageTierLabel(pkg.tier)}
+                </span>
+              )}
             </div>
 
             <ul className="mt-2.5 hidden space-y-1 sm:block">
-              {pkg.items.slice(0, 3).map((item) => (
-                <li key={item.productId} className="truncate text-xs text-muted-foreground">
+              {pkg.items.slice(0, 3).map((item, index) => (
+                <li key={index} className="truncate text-xs text-muted-foreground">
                   <span className="font-medium text-foreground">
-                    {productNames[item.productId]}
+                    {getPackageItemName(item, productNames)}
                   </span>
                   <span> × {item.quantity}</span>
                 </li>

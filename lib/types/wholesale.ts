@@ -1,5 +1,9 @@
 // Wholesale and bulk ordering types
 
+import type { PackageCategoryId, PackageTierId } from '@/lib/package-catalog';
+
+export type { PackageCategoryId, PackageTierId };
+
 export interface PricingTier {
   minQuantity: number;
   maxQuantity: number | null; // null means unlimited
@@ -21,6 +25,11 @@ export interface PackageItem {
   productId: string;
   quantity: number;
   price?: number; // optional override
+  /** Package-only line — not in the product catalog */
+  isCustom?: boolean;
+  customName?: string;
+  customImage?: string;
+  customRetailPrice?: number;
 }
 
 export interface PackageRule {
@@ -45,6 +54,11 @@ export interface Package {
   coverMode?: PackageCoverMode;
   image?: string;
   coverProductIds?: string[];
+  category?: PackageCategoryId;
+  tagline?: string;
+  highlights?: string[];
+  tier?: PackageTierId;
+  isSignature?: boolean;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;

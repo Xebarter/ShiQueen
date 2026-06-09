@@ -1,4 +1,4 @@
-# SheQueen - Premium Women's Lifestyle E-Commerce Platform
+# SheQueen - Ladies' Lifestyle E-Commerce Platform
 
 A fully-featured, luxury-focused e-commerce platform built with Next.js 15, React, TypeScript, and Firebase. Designed specifically for premium women's fashion, wellness, and lifestyle products.
 

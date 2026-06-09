@@ -40,8 +40,21 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: BRAND_NAME,
+    title: `${BRAND_NAME} - ${BRAND_TAGLINE}`,
     statusBarStyle: 'default',
+  },
+  openGraph: {
+    title: `${BRAND_NAME} - ${BRAND_TAGLINE}`,
+    siteName: BRAND_NAME,
+    description:
+      'Discover curated collections of premium fashion, wellness, and lifestyle products.',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `${BRAND_NAME} - ${BRAND_TAGLINE}`,
+    description:
+      'Discover curated collections of premium fashion, wellness, and lifestyle products.',
   },
 }
 

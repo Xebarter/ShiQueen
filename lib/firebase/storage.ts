@@ -53,6 +53,14 @@ export async function uploadPackageImage(packageId: string, file: File): Promise
   return uploadProductImage(`package-${packageId}`, file);
 }
 
+export async function uploadPackageItemImage(
+  packageId: string,
+  itemId: string,
+  file: File
+): Promise<string> {
+  return uploadProductImage(`package-${packageId}-item-${itemId}`, file);
+}
+
 export async function uploadProductImages(
   productId: string,
   files: File[]

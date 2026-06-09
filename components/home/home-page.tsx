@@ -9,6 +9,7 @@ import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
 import { useProducts } from '@/lib/products-context';
 import { useWholesale } from '@/lib/wholesale-context';
+import { getPackageCategoryLabel } from '@/lib/package-catalog';
 import { HomeProductCard, ProductCardSkeleton } from '@/components/home/home-product-card';
 import {
   ProductSection,
@@ -350,38 +351,48 @@ export function HomePage() {
         </ProductSection>
       )}
 
-      {/* Package Deals */}
+      {/* Curated Bundles */}
       {!loading && (sections?.wholesale.length ?? 0) > 0 && (
         <ProductSection
-          title="Package Deals"
-          subtitle="Curated bundles at special prices — save more together"
+          title="Curated bundles"
+          subtitle="Complete solutions for needs, occasions, and gifts — buy the bundle, not the guesswork"
           href="/packages"
           className="bg-primary/5"
         >
           {renderGrid(sections!.wholesale, 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6', 'compact')}
-          {packages.length > 0 && (
+          {packages.filter((p) => p.isActive).length > 0 && (
             <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-              {packages.slice(0, 3).map((pkg) => (
-                <Link
-                  key={pkg.id}
-                  href={`/packages/${pkg.id}`}
-                  className="group p-5 rounded-2xl border border-border bg-card/80 backdrop-blur hover:shadow-lg transition"
-                >
-                  <div className="flex items-start gap-3">
-                    <Package className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                    <div>
-                      <h3 className="font-semibold group-hover:text-primary transition">{pkg.name}</h3>
-                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{pkg.description}</p>
-                      <p className="text-sm font-bold text-primary mt-2">
-                        {formatUGX(pkg.discountedPrice)}{' '}
-                        <span className="text-xs font-normal text-accent">
-                          Save {pkg.savingsPercentage.toFixed(0)}%
-                        </span>
-                      </p>
+              {packages
+                .filter((p) => p.isActive)
+                .slice(0, 3)
+                .map((pkg) => (
+                  <Link
+                    key={pkg.id}
+                    href={`/packages/${pkg.id}`}
+                    className="group p-5 rounded-2xl border border-border bg-card/80 backdrop-blur hover:shadow-lg transition"
+                  >
+                    <div className="flex items-start gap-3">
+                      <Package className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                      <div className="min-w-0">
+                        {pkg.category && (
+                          <span className="inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary mb-1.5">
+                            {getPackageCategoryLabel(pkg.category).replace(' Packages', '')}
+                          </span>
+                        )}
+                        <h3 className="font-semibold group-hover:text-primary transition">{pkg.name}</h3>
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                          {pkg.tagline || pkg.description}
+                        </p>
+                        <p className="text-sm font-bold text-primary mt-2">
+                          {formatUGX(pkg.discountedPrice)}{' '}
+                          <span className="text-xs font-normal text-accent">
+                            Save {pkg.savingsPercentage.toFixed(0)}%
+                          </span>
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                ))}
             </div>
           )}
         </ProductSection>

@@ -102,9 +102,17 @@ export function ProductCarousel({ children }: ProductCarouselProps) {
   );
 }
 
-export function CarouselItem({ children }: { children: ReactNode }) {
+export function CarouselItem({
+  children,
+  className = '',
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="snap-start shrink-0 w-[160px] sm:w-[200px] md:w-[220px] lg:w-[240px]">
+    <div
+      className={`snap-start shrink-0 w-[160px] sm:w-[200px] md:w-[220px] lg:w-[240px] ${className}`}
+    >
       {children}
     </div>
   );
