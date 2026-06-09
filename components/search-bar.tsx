@@ -28,6 +28,7 @@ import {
 } from '@/lib/wholesale-data';
 import { useWholesale } from '@/lib/wholesale-context';
 import { mergePackageItemMaps } from '@/lib/package-utils';
+import { useHistoryOverlay } from '@/lib/hooks/use-history-overlay';
 
 const RECENT_SEARCHES_KEY = 'shequeen-recent-searches';
 const MAX_RECENT = 5;
@@ -211,6 +212,13 @@ export function SearchBar({ className }: { className?: string }) {
 
   const showDropdown = isOpen && (trimmedQuery.length > 0 || recentSearches.length > 0);
   const navigableCount = results.length + (trimmedQuery ? 1 : 0);
+
+  const closeDropdown = useCallback(() => {
+    setIsOpen(false);
+    setActiveIndex(-1);
+  }, []);
+
+  useHistoryOverlay(showDropdown, closeDropdown);
 
   useEffect(() => {
     setRecentSearches(readRecentSearches());

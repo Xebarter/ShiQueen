@@ -25,6 +25,7 @@ import { useCart } from '@/lib/cart-context';
 import { useProducts } from '@/lib/products-context';
 import { createDefaultPricingTiers, formatUGX } from '@/lib/wholesale-data';
 import { cn } from '@/lib/utils';
+import { useSmartBack } from '@/lib/hooks/use-smart-back';
 
 function ProductBreadcrumb({ category, name }: { category: string; name: string }) {
   return (
@@ -71,6 +72,7 @@ function OptionPill({
 export function ProductDetailPage() {
   const params = useParams();
   const id = params.id as string;
+  const goBack = useSmartBack('/shop');
   const { getProductById, loading } = useProducts();
   const product = getProductById(id);
 
@@ -173,13 +175,14 @@ export function ProductDetailPage() {
 
       <section className="py-6 sm:py-10 lg:py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <Link
-            href="/shop"
+          <button
+            type="button"
+            onClick={goBack}
             className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground sm:hidden"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to shop
-          </Link>
+            Back
+          </button>
 
           <ProductBreadcrumb category={product.category} name={product.name} />
 

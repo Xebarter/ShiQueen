@@ -10,6 +10,7 @@ import { AccountAvatar } from '@/components/account/account-avatar';
 import { useAuth } from '@/lib/auth-context';
 import { getDisplayName } from '@/lib/user-display';
 import { cn } from '@/lib/utils';
+import { useHistoryOverlay } from '@/lib/hooks/use-history-overlay';
 
 export function HeaderAccountMenu() {
   const { user, profile, logout } = useAuth();
@@ -32,6 +33,10 @@ export function HeaderAccountMenu() {
     clearCloseTimer();
     closeTimerRef.current = window.setTimeout(() => setOpen(false), 120);
   }, [clearCloseTimer]);
+
+  const closeMenu = useCallback(() => setOpen(false), []);
+
+  useHistoryOverlay(open, closeMenu);
 
   const handleSignOut = async () => {
     setSigningOut(true);

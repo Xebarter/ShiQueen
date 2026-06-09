@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { ShareProductButton } from '@/components/shared/share-button';
 import { ProductImage } from '@/components/product-image';
 import toast from 'react-hot-toast';
+import { useHistoryOverlay } from '@/lib/hooks/use-history-overlay';
 
 interface QuickViewModalProps {
   product: Product | null;
@@ -19,6 +20,8 @@ interface QuickViewModalProps {
 
 export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
   const { addItem } = useCart();
+
+  useHistoryOverlay(Boolean(product), onClose);
 
   if (!product) return null;
 

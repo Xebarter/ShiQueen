@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { PackageCategoryId } from '@/lib/package-catalog';
 import { cn } from '@/lib/utils';
+import { useHistoryOverlay } from '@/lib/hooks/use-history-overlay';
 
 export interface PackageQuizResult {
   category?: PackageCategoryId;
@@ -53,10 +54,12 @@ export function PackageQuizModal({ open, onClose, onComplete }: PackageQuizModal
     setBudget(null);
   };
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     reset();
     onClose();
-  };
+  }, [onClose]);
+
+  useHistoryOverlay(open, handleClose);
 
   const finish = () => {
     if (!budget) return;

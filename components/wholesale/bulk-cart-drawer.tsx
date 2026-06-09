@@ -9,6 +9,7 @@ import { Product } from '@/lib/types/database';
 import { getWholesaleDiscountForItem } from '@/lib/wholesale-cart';
 import { formatUGX } from '@/lib/wholesale-data';
 import { cn } from '@/lib/utils';
+import { useHistoryOverlay } from '@/lib/hooks/use-history-overlay';
 
 function cartLineKey(item: CartItem): string {
   return [item.id, item.size, item.color, item.wholesale ? 'wholesale' : 'retail']
@@ -48,6 +49,8 @@ export function BulkCartDrawer({
   onRemove,
 }: BulkCartDrawerProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+
+  useHistoryOverlay(open, onClose);
 
   useEffect(() => {
     if (!open) return;

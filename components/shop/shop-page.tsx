@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -20,6 +20,7 @@ import {
   filterByPriceRange,
 } from '@/lib/hooks/use-product-merchandising';
 import { useCatalogSearch } from '@/lib/hooks/use-catalog-search';
+import { useHistoryOverlay } from '@/lib/hooks/use-history-overlay';
 import {
   countCatalogSearchHits,
   filterCatalogSearchHits,
@@ -63,6 +64,9 @@ export function ShopPage() {
   const [priceRange, setPriceRange] = useState<'all' | 'under-500k' | 'luxury'>('all');
   const [viewMode, setViewMode] = useState<ViewMode>('discover');
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const closeFilters = useCallback(() => setFiltersOpen(false), []);
+  useHistoryOverlay(filtersOpen, closeFilters);
 
   const { search: searchCatalog } = useCatalogSearch();
 
@@ -452,7 +456,10 @@ export function ShopPage() {
       </section>
 
       <Footer />
-      <QuickViewModal product={quickViewProduct} onClose={() => setQuickViewProduct(null)} />
+      <QuickViewModal
+        product={quickViewProduct}
+        onClose={() => setQuickViewProduct(null)}
+      />
     </main>
     </>
   );

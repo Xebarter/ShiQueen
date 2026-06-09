@@ -14,6 +14,7 @@ import { getAvailableTimeSlots } from '@/lib/services-utils';
 import type { ServiceListing, ServiceProvider } from '@/lib/types/services';
 import { formatUGX } from '@/lib/wholesale-data';
 import { cn } from '@/lib/utils';
+import { useHistoryOverlay } from '@/lib/hooks/use-history-overlay';
 
 interface ServiceBookingSheetProps {
   open: boolean;
@@ -34,6 +35,8 @@ export function ServiceBookingSheet({
 }: ServiceBookingSheetProps) {
   const { user } = useAuth();
   const { bookings, availability } = useServices();
+
+  useHistoryOverlay(open, onClose);
   const [loading, setLoading] = useState(false);
   const [date, setDate] = useState('');
   const [timeSlot, setTimeSlot] = useState('');

@@ -23,6 +23,7 @@ import { incrementServiceViewCount } from '@/lib/firebase/service-listings';
 import { getProviderById, resolveListingImage } from '@/lib/services-utils';
 import { buildTelLink, buildWhatsAppLink } from '@/lib/phone-utils';
 import { formatUGX } from '@/lib/wholesale-data';
+import { useSmartBack } from '@/lib/hooks/use-smart-back';
 
 interface ServiceDetailPageProps {
   slug: string;
@@ -35,6 +36,7 @@ export function ServiceDetailPage({ slug }: ServiceDetailPageProps) {
   const listing = activeListings.find((l) => l.slug === slug);
   const provider = listing ? getProviderById(activeProviders, listing.providerId) : undefined;
   const category = listing ? activeCategories.find((c) => c.id === listing.categoryId) : undefined;
+  const goBack = useSmartBack(category ? `/services/category/${category.id}` : '/services');
   const serviceReviews = listing
     ? reviews.filter((r) => r.serviceId === listing.id && r.isVisible)
     : [];
@@ -82,13 +84,14 @@ export function ServiceDetailPage({ slug }: ServiceDetailPageProps) {
       <Header />
 
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
-        <Link
-          href={category ? `/services/category/${category.id}` : '/services'}
+        <button
+          type="button"
+          onClick={goBack}
           className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"
         >
           <ArrowLeft className="h-4 w-4" />
           {category?.name ?? 'Services'}
-        </Link>
+        </button>
 
         <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
           <div>

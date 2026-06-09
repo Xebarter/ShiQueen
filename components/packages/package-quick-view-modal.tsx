@@ -18,6 +18,7 @@ import { getDefaultHighlights } from '@/lib/package-catalog';
 import { getPackageItemCount } from '@/lib/package-merchandising';
 import { SharePackageButton } from '@/components/shared/share-button';
 import toast from 'react-hot-toast';
+import { useHistoryOverlay } from '@/lib/hooks/use-history-overlay';
 
 interface PackageQuickViewModalProps {
   pkg: PackageType | null;
@@ -37,6 +38,8 @@ export function PackageQuickViewModal({
   onAddToCart,
 }: PackageQuickViewModalProps) {
   const router = useRouter();
+
+  useHistoryOverlay(Boolean(pkg), onClose);
 
   if (!pkg) return null;
 

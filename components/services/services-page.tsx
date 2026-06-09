@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { BadgeCheck, MapPin, X } from 'lucide-react';
 import { Header } from '@/components/header';
@@ -17,6 +17,7 @@ import { ServicesFeaturedRow } from '@/components/services/discovery/services-fe
 import { ServicesTrustStrip } from '@/components/services/discovery/services-trust-strip';
 import { useServices } from '@/lib/services-context';
 import { useServicesSearch } from '@/lib/hooks/use-services-search';
+import { useHistoryOverlay } from '@/lib/hooks/use-history-overlay';
 import {
   getFeaturedServices,
   getNewProviders,
@@ -30,6 +31,9 @@ export function ServicesPage() {
   const search = useServicesSearch();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [bookingListing, setBookingListing] = useState<ServiceListing | null>(null);
+
+  const closeFilters = useCallback(() => setFiltersOpen(false), []);
+  useHistoryOverlay(filtersOpen, closeFilters);
 
   const bookingProvider = bookingListing
     ? getProviderById(activeProviders, bookingListing.providerId)

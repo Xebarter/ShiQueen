@@ -13,6 +13,7 @@ import { HeaderAccountMenu } from '@/components/header/account-menu';
 import { cn } from '@/lib/utils';
 import { getStoredWishlist } from '@/lib/home-merchandising';
 import { MAIN_NAV_LINKS } from '@/lib/site-nav';
+import { useHistoryOverlay } from '@/lib/hooks/use-history-overlay';
 
 const NAV_LINKS = MAIN_NAV_LINKS;
 
@@ -147,6 +148,8 @@ export function Header() {
   const closeMobileMenu = useCallback(() => {
     setMobileMenuOpen(false);
   }, []);
+
+  useHistoryOverlay(mobileMenuOpen, closeMobileMenu);
 
   useEffect(() => {
     setMobileMenuOpen(false);
