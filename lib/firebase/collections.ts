@@ -7,4 +7,5 @@ export const COLLECTIONS = {
   wholesaleAccounts: 'wholesaleAccounts',
   settings: 'settings',
   marketingAds: 'marketingAds',
+  sharedCheckouts: 'sharedCheckouts',
 } as const;

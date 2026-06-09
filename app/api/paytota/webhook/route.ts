@@ -88,6 +88,13 @@ export async function POST(request: NextRequest) {
       ...(mapped.orderStatus ? { status: mapped.orderStatus } : {}),
     });
 
+    if (mapped.paymentStatus === 'paid') {
+      const { markSharedCheckoutPaidByOrderId } = await import(
+        '@/lib/firebase/shared-checkouts-server'
+      );
+      await markSharedCheckoutPaidByOrderId(order.id);
+    }
+
     return NextResponse.json({ received: true, updated: true, orderId: order.id });
   } catch (error) {
     console.error('[SheQueen] paytota webhook:', error);

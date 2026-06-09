@@ -29,7 +29,6 @@ import {
   isPackageCartItem,
   resolvePackageSavings,
 } from '@/lib/package-utils';
-import { ShareButton } from '@/components/shared/share-button';
 import { cn } from '@/lib/utils';
 
 function cartItemKey(item: CartItem): string {
@@ -197,20 +196,14 @@ function CartItemCard({
                 )}
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-1">
-              <ShareButton
-                title={item.name}
-                path={isPackage ? `/packages/${item.id}` : `/products/${item.id}`}
-              />
-              <button
-                type="button"
-                onClick={onRemove}
-                aria-label={`Remove ${item.name}`}
-                className="flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-600 active:scale-95"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={onRemove}
+              aria-label={`Remove ${item.name}`}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-600 active:scale-95"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
           </div>
 
           <div className="mt-auto flex flex-wrap items-end justify-between gap-3 pt-4">

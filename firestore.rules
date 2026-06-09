@@ -70,5 +70,19 @@ service cloud.firestore {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }
+
+    // Token in the URL is the secret; rules limit what clients can change.
+    match /sharedCheckouts/{token} {
+      allow read: if true;
+      allow create: if request.resource.data.status == 'pending';
+      allow update: if resource.data.status == 'pending'
+        && (
+          (request.resource.data.status == 'pending'
+            && resource.data.get('orderId', null) == null
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['orderId']))
+          || (request.resource.data.status == 'paid'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'orderId', 'paidAt']))
+        );
+    }
   }
 }

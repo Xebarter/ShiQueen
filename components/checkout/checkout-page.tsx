@@ -26,6 +26,7 @@ import { useProducts } from '@/lib/products-context';
 import { useWholesale } from '@/lib/wholesale-context';
 import { createOrder, generateOrderId } from '@/lib/firebase/orders';
 import { expandPackageCartItems } from '@/lib/package-utils';
+import { SendPaymentLinkCard } from '@/components/checkout/send-payment-link-card';
 import { formatUGX } from '@/lib/wholesale-data';
 import type { ShippingAddress } from '@/lib/types/database';
 import { cn } from '@/lib/utils';
@@ -205,6 +206,10 @@ export function CheckoutPage() {
   }
 
   const orderTotal = total;
+  const orderItems = expandPackageCartItems(items, packages, products);
+  const isWholesaleOrder = items.some((item) => item.quantity >= 10);
+  const isPackageOrder = items.some((item) => item.id.startsWith('pkg-'));
+  const orderType = isPackageOrder ? 'package' : isWholesaleOrder ? 'wholesale' : 'retail';
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -217,11 +222,6 @@ export function CheckoutPage() {
 
     const shippingAddress = buildShippingAddress(form);
     const customerName = form.fullName.trim();
-    const isWholesaleOrder = items.some((item) => item.quantity >= 10);
-    const isPackageOrder = items.some((item) => item.id.startsWith('pkg-'));
-    const orderType = isPackageOrder ? 'package' : isWholesaleOrder ? 'wholesale' : 'retail';
-    const orderItems = expandPackageCartItems(items, packages, products);
-
     try {
       if (paymentMethod === 'mobile_money') {
         let response: Response;
@@ -475,6 +475,22 @@ export function CheckoutPage() {
                 />
               </div>
             </SectionCard>
+
+            <SendPaymentLinkCard
+              cartItems={items}
+              orderItems={orderItems}
+              subtotal={total}
+              total={orderTotal}
+              orderType={orderType}
+              deliveryDetails={{
+                fullName: form.fullName,
+                email: form.email,
+                phone: form.phone,
+                address: form.address,
+                city: form.city,
+              }}
+              senderUserId={user?.uid ?? null}
+            />
 
             <SectionCard
               icon={Sparkles}
