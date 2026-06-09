@@ -16,6 +16,7 @@ import {
 } from '@/lib/package-utils';
 import { getDefaultHighlights } from '@/lib/package-catalog';
 import { getPackageItemCount } from '@/lib/package-merchandising';
+import { SharePackageButton } from '@/components/shared/share-button';
 import toast from 'react-hot-toast';
 
 interface PackageQuickViewModalProps {
@@ -156,14 +157,17 @@ export function PackageQuickViewModal({
                 </Button>
               </div>
 
-              <Link
-                href={`/packages/${pkg.id}`}
-                className="mt-4 flex items-center justify-center gap-2 text-sm font-medium text-primary hover:underline"
-                onClick={onClose}
-              >
-                View full details
-                <ArrowRight className="h-4 w-4" />
-              </Link>
+              <div className="mt-4 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                <SharePackageButton pkg={pkg} variant="button" size="default" />
+                <Link
+                  href={`/packages/${pkg.id}`}
+                  className="flex items-center justify-center gap-2 text-sm font-medium text-primary hover:underline"
+                  onClick={onClose}
+                >
+                  View full details
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
             </div>
           </motion.div>
         </>

@@ -23,7 +23,7 @@ const FIELD_WEIGHTS = {
   blob: 4,
 } as const;
 
-function normalize(text: string): string {
+export function normalizeSearchText(text: string): string {
   return text
     .toLowerCase()
     .normalize('NFD')
@@ -33,8 +33,8 @@ function normalize(text: string): string {
     .trim();
 }
 
-function tokenize(text: string): string[] {
-  const normalized = normalize(text);
+export function tokenizeSearchText(text: string): string[] {
+  const normalized = normalizeSearchText(text);
   if (!normalized) return [];
   return normalized.split(/[\s\-_/]+/).filter((token) => token.length > 0);
 }
@@ -62,26 +62,26 @@ export function createProductSearchIndex(products: Product[]): ProductSearchInde
 
     const tokens = new Set<string>();
     for (const part of parts) {
-      for (const token of tokenize(part)) {
+      for (const token of tokenizeSearchText(part)) {
         tokens.add(token);
       }
     }
 
     return {
       product,
-      nameNorm: normalize(product.name),
-      categoryNorm: normalize(product.category),
-      skuNorm: normalize(product.sku),
-      blobNorm: normalize(parts.join(' ')),
+      nameNorm: normalizeSearchText(product.name),
+      categoryNorm: normalizeSearchText(product.category),
+      skuNorm: normalizeSearchText(product.sku),
+      blobNorm: normalizeSearchText(parts.join(' ')),
       tokens,
     };
   });
 
   function search(query: string, limit = 8): ProductSearchHit[] {
-    const q = normalize(query);
+    const q = normalizeSearchText(query);
     if (!q) return [];
 
-    const queryTokens = tokenize(q);
+    const queryTokens = tokenizeSearchText(q);
     const hits: ProductSearchHit[] = [];
 
     for (const entry of entries) {

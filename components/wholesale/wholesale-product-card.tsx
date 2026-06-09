@@ -13,6 +13,7 @@ import {
 } from '@/lib/wholesale-catalog';
 import { formatUGX } from '@/lib/wholesale-data';
 import { CartItem } from '@/lib/cart-context';
+import { ShareProductButton } from '@/components/shared/share-button';
 import { cn } from '@/lib/utils';
 
 type WholesaleProductCardProps = {
@@ -95,11 +96,14 @@ export function WholesaleProductCard({ product, cartItem, onAdd }: WholesaleProd
             Save {discountPercent}%
           </span>
         )}
-        {inCart && (
-          <span className="absolute right-3 top-3 rounded-full bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground shadow-sm">
-            In cart
-          </span>
-        )}
+        <div className="absolute right-3 top-3 flex flex-col items-end gap-1.5">
+          <ShareProductButton product={product} />
+          {inCart && (
+            <span className="rounded-full bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground shadow-sm">
+              In cart
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-1 flex-col p-4 sm:p-5">

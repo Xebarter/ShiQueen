@@ -6,7 +6,6 @@ import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import {
   Heart,
-  Share2,
   ArrowLeft,
   Star,
   Loader2,
@@ -21,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Reviews } from '@/components/reviews';
 import { PricingTiers } from '@/components/pricing-tiers';
 import { ProductImage, isRemoteProductImage } from '@/components/product-image';
+import { ShareProductButton } from '@/components/shared/share-button';
 import { useCart } from '@/lib/cart-context';
 import { useProducts } from '@/lib/products-context';
 import { createDefaultPricingTiers, formatUGX } from '@/lib/wholesale-data';
@@ -117,21 +117,6 @@ export function ProductDetailPage() {
     });
     toast.success(`${product.name} added to cart`);
   }, [addItem, color, product, quantity, size]);
-
-  const handleShare = useCallback(async () => {
-    if (!product) return;
-    const url = window.location.href;
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: product.name, url });
-        return;
-      }
-      await navigator.clipboard.writeText(url);
-      toast.success('Link copied to clipboard');
-    } catch {
-      // user cancelled share or clipboard failed
-    }
-  }, [product]);
 
   if (loading) {
     return (
@@ -393,15 +378,10 @@ export function ProductDetailPage() {
                     className={cn('h-5 w-5', isWishlisted && 'fill-current text-accent')}
                   />
                 </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="min-h-11 min-w-11 px-3"
-                  onClick={handleShare}
-                  aria-label="Share product"
-                >
-                  <Share2 className="h-5 w-5" />
-                </Button>
+                <ShareProductButton
+                  product={product}
+                  className="min-h-11 min-w-11 rounded-lg"
+                />
               </div>
 
               {/* Mobile secondary actions */}
@@ -416,10 +396,12 @@ export function ProductDetailPage() {
                   />
                   Wishlist
                 </Button>
-                <Button variant="outline" className="min-h-11 flex-1 gap-2" onClick={handleShare}>
-                  <Share2 className="h-4 w-4" />
-                  Share
-                </Button>
+                <ShareProductButton
+                  product={product}
+                  variant="button"
+                  size="lg"
+                  className="min-h-11 flex-1"
+                />
               </div>
 
               <div className="mt-8 border-t border-border pt-6 sm:mt-10 sm:pt-8">

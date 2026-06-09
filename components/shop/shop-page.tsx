@@ -12,14 +12,20 @@ import { useProducts } from '@/lib/products-context';
 import { HomeProductCard, ProductCardSkeleton } from '@/components/home/home-product-card';
 import { QuickViewModal } from '@/components/home/quick-view-modal';
 import { MerchandisingBlocks, AllProductsGrid } from '@/components/shared/merchandising-blocks';
+import { CatalogSearchResults } from '@/components/shared/catalog-search-results';
 import {
   useProductMerchandising,
   sortProducts,
   filterByCategory,
   filterByPriceRange,
 } from '@/lib/hooks/use-product-merchandising';
-import { createProductSearchIndex } from '@/lib/product-search';
+import { useCatalogSearch } from '@/lib/hooks/use-catalog-search';
+import {
+  countCatalogSearchHits,
+  filterCatalogSearchHits,
+} from '@/lib/catalog-search';
 import { HeroMarketingSlot } from '@/components/home/hero-marketing-slot';
+import { PackageSpotlightSection } from '@/components/packages/package-spotlight-section';
 
 const CATEGORIES = [
   { id: 'all', label: 'All Products' },
@@ -58,7 +64,7 @@ export function ShopPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('discover');
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const searchIndex = useMemo(() => createProductSearchIndex(products), [products]);
+  const { search: searchCatalog } = useCatalogSearch();
 
   useEffect(() => {
     const paramCategory = searchParams.get('category');
@@ -73,17 +79,31 @@ export function ShopPage() {
     }
   }, [searchQuery]);
 
-  const searchedProducts = useMemo(() => {
-    if (!searchQuery) return products;
-    return searchIndex.search(searchQuery, 200).map((hit) => hit.product);
-  }, [products, searchQuery, searchIndex]);
+  const searchHits = useMemo(() => {
+    if (!searchQuery) return [];
+    return searchCatalog(searchQuery, 200);
+  }, [searchQuery, searchCatalog]);
+
+  const filteredSearchHits = useMemo(() => {
+    if (!searchQuery) return [];
+    return filterCatalogSearchHits(searchHits, {
+      category,
+      priceRange,
+      products,
+    });
+  }, [searchHits, category, priceRange, products, searchQuery]);
+
+  const searchResultCounts = useMemo(
+    () => countCatalogSearchHits(filteredSearchHits),
+    [filteredSearchHits]
+  );
 
   const filteredProducts = useMemo(() => {
-    let result = searchQuery ? searchedProducts : products;
+    let result = products;
     result = filterByCategory(result, category);
     result = filterByPriceRange(result, priceRange);
     return sortProducts(result, sortBy);
-  }, [products, searchQuery, searchedProducts, category, priceRange, sortBy]);
+  }, [products, category, priceRange, sortBy]);
 
   const isSearchMode = Boolean(searchQuery);
   const isFiltered = isSearchMode || category !== 'all' || priceRange !== 'all';
@@ -144,7 +164,9 @@ export function ShopPage() {
                   </h1>
                   <p className="text-muted-foreground max-w-lg mb-4">
                     {isSearchMode
-                      ? `${filteredProducts.length} product${filteredProducts.length === 1 ? '' : 's'} matched your search`
+                      ? searchResultCounts.packages > 0
+                        ? `${searchResultCounts.total} result${searchResultCounts.total === 1 ? '' : 's'} matched your search (${searchResultCounts.products} product${searchResultCounts.products === 1 ? '' : 's'}, ${searchResultCounts.packages} bundle${searchResultCounts.packages === 1 ? '' : 's'})`
+                        : `${searchResultCounts.total} result${searchResultCounts.total === 1 ? '' : 's'} matched your search`
                       : `${filteredProducts.length} curated products matching your selection`}
                   </p>
                   <Button variant="outline" size="sm" onClick={clearFilters} className="gap-2">
@@ -299,13 +321,37 @@ export function ShopPage() {
           </div>
         </div>
       ) : isSearchMode || viewMode === 'grid' ? (
-        <section className="py-10 md:py-14">
+        <>
+          {!isSearchMode && category !== 'all' ? (
+            <PackageSpotlightSection
+              context="shop"
+              shopCategory={category}
+              className="border-b border-border/50 bg-primary/5"
+            />
+          ) : null}
+          <section className="py-10 md:py-14">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between mb-6">
               <p className="text-sm text-muted-foreground">
-                Showing{' '}
-                <span className="font-semibold text-foreground">{filteredProducts.length}</span>{' '}
-                products
+                {isSearchMode ? (
+                  <>
+                    Showing{' '}
+                    <span className="font-semibold text-foreground">{searchResultCounts.total}</span>{' '}
+                    results
+                    {searchResultCounts.packages > 0 && (
+                      <span className="text-muted-foreground">
+                        {' '}
+                        · includes bundles
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    Showing{' '}
+                    <span className="font-semibold text-foreground">{filteredProducts.length}</span>{' '}
+                    products
+                  </>
+                )}
               </p>
               <Button
                 variant="ghost"
@@ -317,26 +363,38 @@ export function ShopPage() {
                 Discovery view
               </Button>
             </div>
-            <AllProductsGrid
-              products={filteredProducts}
-              wishlistIds={wishlistIds}
-              onWishlistChange={setWishlistIds}
-              onQuickView={setQuickViewProduct}
-              emptyMessage={
-                <div className="text-center py-16 col-span-full">
-                  <p className="text-muted-foreground mb-4">
-                    {isSearchMode
-                      ? `No products found for "${searchQuery}"`
-                      : 'No products match your filters'}
-                  </p>
-                  <Button onClick={clearFilters}>
-                    {isSearchMode ? 'Clear search' : 'Clear all filters'}
-                  </Button>
-                </div>
-              }
-            />
+            {isSearchMode ? (
+              <CatalogSearchResults
+                hits={filteredSearchHits}
+                wishlistIds={wishlistIds}
+                onWishlistChange={setWishlistIds}
+                onQuickView={setQuickViewProduct}
+                emptyMessage={
+                  <div className="text-center py-16 col-span-full">
+                    <p className="text-muted-foreground mb-4">
+                      {`No products or bundles found for "${searchQuery}"`}
+                    </p>
+                    <Button onClick={clearFilters}>Clear search</Button>
+                  </div>
+                }
+              />
+            ) : (
+              <AllProductsGrid
+                products={filteredProducts}
+                wishlistIds={wishlistIds}
+                onWishlistChange={setWishlistIds}
+                onQuickView={setQuickViewProduct}
+                emptyMessage={
+                  <div className="text-center py-16 col-span-full">
+                    <p className="text-muted-foreground mb-4">No products match your filters</p>
+                    <Button onClick={clearFilters}>Clear all filters</Button>
+                  </div>
+                }
+              />
+            )}
           </div>
         </section>
+        </>
       ) : sections ? (
         <MerchandisingBlocks
           products={displayProducts}
@@ -347,6 +405,13 @@ export function ShopPage() {
           onQuickView={setQuickViewProduct}
           viewedIds={viewedIds}
           showCategoryShowcases={!isFiltered}
+          afterFlashDeals={
+            <PackageSpotlightSection
+              context="shop"
+              shopCategory={category}
+              className="bg-gradient-to-r from-primary/5 via-background to-accent/5"
+            />
+          }
         />
       ) : (
         <section className="py-20 text-center">
@@ -356,17 +421,33 @@ export function ShopPage() {
 
       {/* Bottom CTA */}
       <section className="py-12 md:py-16 bg-secondary/40 border-t border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl md:text-3xl font-light mb-3">Looking for bulk pricing?</h2>
-          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-            Save up to 25% with our wholesale program — perfect for retailers and resellers.
-          </p>
-          <Link href="/wholesale">
-            <Button size="lg" className="gap-2">
-              Explore Wholesale
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-          </Link>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-8 md:grid-cols-2 md:gap-12">
+            <div className="text-center md:text-left">
+              <h2 className="text-2xl md:text-3xl font-light mb-3">Shop complete bundles</h2>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto md:mx-0">
+                Curated packages for gifts, occasions, and lifestyles — bundle pricing with everything included.
+              </p>
+              <Link href="/packages">
+                <Button size="lg" variant="default" className="gap-2">
+                  Explore Curated Bundles
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            </div>
+            <div className="text-center md:text-left">
+              <h2 className="text-2xl md:text-3xl font-light mb-3">Looking for bulk pricing?</h2>
+              <p className="text-muted-foreground mb-6 max-w-md mx-auto md:mx-0">
+                Save up to 25% with our wholesale program — perfect for retailers and resellers.
+              </p>
+              <Link href="/wholesale">
+                <Button size="lg" variant="outline" className="gap-2">
+                  Explore Wholesale
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 

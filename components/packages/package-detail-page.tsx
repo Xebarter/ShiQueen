@@ -32,6 +32,7 @@ import {
 } from '@/lib/package-catalog';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Star } from 'lucide-react';
+import { SharePackageButton } from '@/components/shared/share-button';
 
 export function PackageDetailPage() {
   const { packages } = useWholesale();
@@ -168,7 +169,10 @@ export function PackageDetailPage() {
                     </span>
                   )}
                 </div>
-                <h1 className="text-5xl font-light tracking-tight mb-3">{pkg.name}</h1>
+                <div className="mb-3 flex flex-wrap items-start justify-between gap-4">
+                  <h1 className="text-5xl font-light tracking-tight">{pkg.name}</h1>
+                  <SharePackageButton pkg={pkg} variant="button" size="default" />
+                </div>
                 {pkg.tagline && (
                   <p className="text-lg font-medium text-foreground/90 mb-3">{pkg.tagline}</p>
                 )}

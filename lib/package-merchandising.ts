@@ -1,6 +1,7 @@
 import type { Package } from '@/lib/types/wholesale';
+import type { Product } from '@/lib/types/database';
 import type { PackageTierId } from '@/lib/package-catalog';
-import { resolvePackageSavings } from '@/lib/package-utils';
+import { getPackageItemName, resolvePackageSavings } from '@/lib/package-utils';
 
 const VIEWED_PACKAGES_KEY = 'shequeen_viewed_packages';
 const MAX_VIEWED = 20;
@@ -198,6 +199,57 @@ export function getNewArrivals(packages: Package[], limit = 8): Package[] {
 
 export function getSignaturePackages(packages: Package[], limit = 8): Package[] {
   return packages.filter((p) => p.isActive && p.isSignature).slice(0, limit);
+}
+
+/** Diverse hero-quality picks for home/shop spotlights. */
+export function getSpotlightPackages(
+  packages: Package[],
+  retailPrices: Record<string, number>,
+  limit = 6
+): Package[] {
+  return getFeaturedHeroPackages(packages, retailPrices, limit);
+}
+
+export function filterPackagesByProductCategory(
+  packages: Package[],
+  products: Product[],
+  category: string
+): Package[] {
+  const normalized = category.toLowerCase();
+  if (normalized === 'all') {
+    return packages.filter((p) => p.isActive);
+  }
+
+  const productCategories = new Map(
+    products.map((product) => [product.id, product.category.toLowerCase()])
+  );
+
+  return packages.filter((pkg) => {
+    if (!pkg.isActive) return false;
+    return pkg.items.some((item) => productCategories.get(item.productId) === normalized);
+  });
+}
+
+export function searchPackages(
+  packages: Package[],
+  term: string,
+  productNames: Record<string, string>
+): Package[] {
+  const query = term.toLowerCase().trim();
+  if (!query) return packages.filter((p) => p.isActive);
+
+  return packages.filter((pkg) => {
+    if (!pkg.isActive) return false;
+    return (
+      pkg.name.toLowerCase().includes(query) ||
+      pkg.description.toLowerCase().includes(query) ||
+      (pkg.tagline ?? '').toLowerCase().includes(query) ||
+      (pkg.highlights ?? []).some((highlight) => highlight.toLowerCase().includes(query)) ||
+      pkg.items.some((item) =>
+        getPackageItemName(item, productNames).toLowerCase().includes(query)
+      )
+    );
+  });
 }
 
 export function getSimilarPackages(

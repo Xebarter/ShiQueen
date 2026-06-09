@@ -29,6 +29,7 @@ interface MerchandisingBlocksProps {
   onQuickView: (product: Product) => void;
   showCategoryShowcases?: boolean;
   viewedIds: string[];
+  afterFlashDeals?: ReactNode;
 }
 
 export function MerchandisingBlocks({
@@ -40,6 +41,7 @@ export function MerchandisingBlocks({
   onQuickView,
   showCategoryShowcases = true,
   viewedIds,
+  afterFlashDeals,
 }: MerchandisingBlocksProps) {
   const cardProps = {
     onQuickView,
@@ -106,6 +108,8 @@ export function MerchandisingBlocks({
           {renderCarousel(sections.flashDeals)}
         </ProductSection>
       )}
+
+      {afterFlashDeals}
 
       <ProductSection
         title="Trending This Week"

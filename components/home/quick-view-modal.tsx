@@ -8,6 +8,7 @@ import { useCart } from '@/lib/cart-context';
 import { formatUGX } from '@/lib/wholesale-data';
 import { getDiscountPercent } from '@/lib/home-merchandising';
 import { Button } from '@/components/ui/button';
+import { ShareProductButton } from '@/components/shared/share-button';
 import { ProductImage } from '@/components/product-image';
 import toast from 'react-hot-toast';
 
@@ -95,6 +96,7 @@ export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
                   <ShoppingBag className="w-4 h-4" />
                   Add to Cart
                 </Button>
+                <ShareProductButton product={product} variant="button" size="default" />
                 <Link href={`/products/${product.id}`} onClick={onClose}>
                   <Button variant="outline">Full Details</Button>
                 </Link>

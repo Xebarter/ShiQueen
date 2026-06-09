@@ -9,14 +9,25 @@ import {
   useState,
   type KeyboardEvent,
 } from 'react';
-import { Search, X, Loader2, Clock, ArrowRight } from 'lucide-react';
+import { Search, X, Loader2, Clock, ArrowRight, Gift } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { useProductSearch } from '@/lib/hooks/use-product-search';
-import { ProductSearchHit } from '@/lib/product-search';
+import { useCatalogSearch } from '@/lib/hooks/use-catalog-search';
+import type { CatalogSearchHit } from '@/lib/catalog-search';
 import { formatUGX } from '@/lib/wholesale-data';
 import { ProductImage } from '@/components/product-image';
+import { PackageCoverDisplay } from '@/components/packages/package-cover-display';
+import { useProducts } from '@/lib/products-context';
+import { getPackageCoverImages, resolvePackageSavings } from '@/lib/package-utils';
+import { getPackageCategoryLabel } from '@/lib/package-catalog';
+import {
+  getProductNameMap,
+  getRetailPricesMap,
+  productsToCatalog,
+} from '@/lib/wholesale-data';
+import { useWholesale } from '@/lib/wholesale-context';
+import { mergePackageItemMaps } from '@/lib/package-utils';
 
 const RECENT_SEARCHES_KEY = 'shequeen-recent-searches';
 const MAX_RECENT = 5;
@@ -61,22 +72,74 @@ function HighlightMatch({ text, query }: { text: string; query: string }) {
   );
 }
 
+function getHitHref(hit: CatalogSearchHit): string {
+  return hit.type === 'product' ? `/products/${hit.product.id}` : `/packages/${hit.pkg.id}`;
+}
+
 function SearchResultRow({
   hit,
   query,
   active,
   onSelect,
+  products,
+  retailPrices,
 }: {
-  hit: ProductSearchHit;
+  hit: CatalogSearchHit;
   query: string;
   active: boolean;
   onSelect: () => void;
+  products: ReturnType<typeof useProducts>['products'];
+  retailPrices: Record<string, number>;
 }) {
-  const { product } = hit;
+  if (hit.type === 'product') {
+    const { product } = hit;
+
+    return (
+      <Link
+        href={getHitHref(hit)}
+        onClick={onSelect}
+        className={cn(
+          'flex items-center gap-3 px-3 py-2.5 transition-colors',
+          active ? 'bg-secondary' : 'hover:bg-secondary/70'
+        )}
+      >
+        <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg ring-1 ring-border/60">
+          <ProductImage
+            product={product}
+            className="h-full w-full"
+            imageClassName="object-cover"
+            fallbackClassName="text-2xl"
+            sizes="44px"
+          />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-foreground">
+            <HighlightMatch text={product.name} query={query} />
+          </p>
+          <p className="truncate text-xs text-muted-foreground">
+            {product.category}
+            {product.sku ? ` · ${product.sku}` : ''}
+          </p>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="text-sm font-semibold text-foreground">{formatUGX(product.price)}</p>
+          {product.originalPrice && product.originalPrice > product.price && (
+            <p className="text-[11px] text-muted-foreground line-through">
+              {formatUGX(product.originalPrice)}
+            </p>
+          )}
+        </div>
+      </Link>
+    );
+  }
+
+  const { pkg } = hit;
+  const coverImages = getPackageCoverImages(pkg, products);
+  const { packagePrice } = resolvePackageSavings(pkg, retailPrices);
 
   return (
     <Link
-      href={`/products/${product.id}`}
+      href={getHitHref(hit)}
       onClick={onSelect}
       className={cn(
         'flex items-center gap-3 px-3 py-2.5 transition-colors',
@@ -84,30 +147,29 @@ function SearchResultRow({
       )}
     >
       <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg ring-1 ring-border/60">
-        <ProductImage
-          product={product}
+        <PackageCoverDisplay
+          images={coverImages}
+          alt={pkg.name}
           className="h-full w-full"
           imageClassName="object-cover"
-          fallbackClassName="text-2xl"
           sizes="44px"
         />
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium text-foreground">
-          <HighlightMatch text={product.name} query={query} />
+          <HighlightMatch text={pkg.name} query={query} />
         </p>
         <p className="truncate text-xs text-muted-foreground">
-          {product.category}
-          {product.sku ? ` · ${product.sku}` : ''}
+          <span className="inline-flex items-center gap-1 text-primary">
+            <Gift className="h-3 w-3" />
+            Bundle
+          </span>
+          {pkg.category ? ` · ${getPackageCategoryLabel(pkg.category)}` : ''}
         </p>
       </div>
       <div className="shrink-0 text-right">
-        <p className="text-sm font-semibold text-foreground">{formatUGX(product.price)}</p>
-        {product.originalPrice && product.originalPrice > product.price && (
-          <p className="text-[11px] text-muted-foreground line-through">
-            {formatUGX(product.originalPrice)}
-          </p>
-        )}
+        <p className="text-sm font-semibold text-foreground">{formatUGX(packagePrice)}</p>
+        <p className="text-[11px] text-accent">Save {pkg.savingsPercentage.toFixed(0)}%</p>
       </div>
     </Link>
   );
@@ -115,7 +177,9 @@ function SearchResultRow({
 
 export function SearchBar({ className }: { className?: string }) {
   const router = useRouter();
-  const { search, loading, productCount } = useProductSearch();
+  const { products } = useProducts();
+  const { packages } = useWholesale();
+  const { search, loading, catalogCount } = useCatalogSearch();
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -127,6 +191,18 @@ export function SearchBar({ className }: { className?: string }) {
   const deferredQuery = useDeferredValue(query);
   const trimmedQuery = deferredQuery.trim();
   const isSearching = query !== deferredQuery;
+
+  const activePackages = useMemo(() => packages.filter((pkg) => pkg.isActive), [packages]);
+  const catalog = useMemo(() => productsToCatalog(products), [products]);
+  const retailPrices = useMemo(
+    () =>
+      mergePackageItemMaps(
+        activePackages,
+        getProductNameMap(catalog),
+        getRetailPricesMap(catalog)
+      ).retailPrices,
+    [activePackages, catalog]
+  );
 
   const results = useMemo(() => {
     if (!trimmedQuery) return [];
@@ -206,7 +282,7 @@ export function SearchBar({ className }: { className?: string }) {
       if (activeIndex >= 0 && activeIndex < results.length) {
         const hit = results[activeIndex];
         handleSelect();
-        router.push(`/products/${hit.product.id}`);
+        router.push(getHitHref(hit));
         return;
       }
       if (trimmedQuery) {
@@ -232,7 +308,7 @@ export function SearchBar({ className }: { className?: string }) {
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
-          placeholder={loading ? 'Loading products…' : 'Search products…'}
+          placeholder={loading ? 'Loading catalog…' : 'Search products & bundles…'}
           value={query}
           onChange={(event) => {
             setQuery(event.target.value);
@@ -285,11 +361,13 @@ export function SearchBar({ className }: { className?: string }) {
               <div className="max-h-80 overflow-y-auto overscroll-contain">
                 {results.map((hit, index) => (
                   <SearchResultRow
-                    key={hit.product.id}
+                    key={hit.type === 'product' ? hit.product.id : hit.pkg.id}
                     hit={hit}
                     query={trimmedQuery}
                     active={activeIndex === index}
                     onSelect={handleSelect}
+                    products={products}
+                    retailPrices={retailPrices}
                   />
                 ))}
               </div>
@@ -310,17 +388,17 @@ export function SearchBar({ className }: { className?: string }) {
           {trimmedQuery && !loading && results.length === 0 && (
             <div className="px-4 py-6 text-center">
               <p className="text-sm text-muted-foreground">
-                No products found for &ldquo;{trimmedQuery}&rdquo;
+                No products or bundles found for &ldquo;{trimmedQuery}&rdquo;
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Try a different name, category, or SKU
+                Try a different name, category, or bundle occasion
               </p>
             </div>
           )}
 
-          {trimmedQuery && productCount === 0 && !loading && (
+          {trimmedQuery && catalogCount === 0 && !loading && (
             <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-              No products available to search yet.
+              Nothing available to search yet.
             </div>
           )}
         </div>

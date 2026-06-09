@@ -9,6 +9,7 @@ import { MarketingAd } from '@/lib/types/database';
 import { Product } from '@/lib/types/database';
 import { formatUGX } from '@/lib/wholesale-data';
 import { isRemoteProductImage } from '@/components/product-image';
+import { ShareProductButton } from '@/components/shared/share-button';
 import { cn } from '@/lib/utils';
 
 type MarketingPromoCardProps = {
@@ -108,6 +109,12 @@ export function MarketingPromoCard({ ad, product, className, compact = false }: 
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
+              <ShareProductButton
+                product={product}
+                variant="button"
+                size="lg"
+                className="border-white/30 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 hover:text-white"
+              />
               <Link href="/shop">
                 <Button
                   size="lg"

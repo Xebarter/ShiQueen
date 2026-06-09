@@ -36,6 +36,7 @@ import { useProducts } from '@/lib/products-context';
 import { Order } from '@/lib/types/database';
 import { formatUGX } from '@/lib/wholesale-data';
 import { getDisplayName } from '@/lib/user-display';
+import { ShareProductButton } from '@/components/shared/share-button';
 import { cn } from '@/lib/utils';
 
 type AccountSection = 'overview' | 'orders' | 'wishlist' | 'settings';
@@ -698,6 +699,7 @@ export function AccountDashboard() {
                                   <ShoppingCart className="h-3.5 w-3.5" />
                                   Add to cart
                                 </Button>
+                                <ShareProductButton product={product} size="sm" className="h-8 w-8 p-0" />
                                 <Button
                                   size="sm"
                                   variant="outline"

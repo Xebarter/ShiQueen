@@ -22,6 +22,7 @@ import {
   getPackageSocialBadge,
   type PackageSocialBadgeInfo,
 } from '@/lib/package-merchandising';
+import { SharePackageButton } from '@/components/shared/share-button';
 import { cn } from '@/lib/utils';
 
 interface PackageDiscoveryCardProps {
@@ -108,20 +109,23 @@ export function PackageDiscoveryCard({
           )}
         </Link>
 
-        {onQuickView && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onQuickView(pkg);
-            }}
-            className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-background/90 text-foreground opacity-0 shadow-md backdrop-blur-sm transition-opacity group-hover:opacity-100"
-            aria-label="Quick view"
-          >
-            <Eye className="h-4 w-4" />
-          </button>
-        )}
+        <div className="absolute right-3 top-3 z-10 flex flex-col gap-1.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+          <SharePackageButton pkg={pkg} />
+          {onQuickView && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onQuickView(pkg);
+              }}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-border/50 bg-background/90 text-foreground shadow-md backdrop-blur-sm"
+              aria-label="Quick view"
+            >
+              <Eye className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className={cn('flex flex-1 flex-col', isCompact ? 'p-3.5' : 'p-4 sm:p-5')}>

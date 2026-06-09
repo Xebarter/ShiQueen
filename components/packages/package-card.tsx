@@ -17,6 +17,7 @@ import {
   getPackageCategoryLabel,
   getPackageTierLabel,
 } from '@/lib/package-catalog';
+import { SharePackageButton } from '@/components/shared/share-button';
 interface PackageCardProps {
   pkg: PackageType;
   productNames: Record<string, string>;
@@ -47,9 +48,10 @@ export function PackageCard({
       className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm transition-shadow hover:shadow-md"
     >
       <div className="flex min-h-0 flex-1 flex-row sm:flex-col">
+        <div className="relative min-h-[7.5rem] w-[36%] max-w-[9.5rem] shrink-0 self-stretch sm:aspect-[4/3] sm:h-auto sm:w-full sm:max-w-none">
         <Link
           href={`/packages/${pkg.id}`}
-          className="relative min-h-[7.5rem] w-[36%] max-w-[9.5rem] shrink-0 self-stretch overflow-hidden bg-muted sm:aspect-[4/3] sm:h-auto sm:w-full sm:max-w-none"
+          className="relative block h-full overflow-hidden bg-muted"
         >
           <div className="absolute inset-0">
             <PackageCoverDisplay
@@ -72,6 +74,8 @@ export function PackageCard({
             </span>
           )}
         </Link>
+        <SharePackageButton pkg={pkg} className="absolute right-2 top-2 z-10 sm:right-3 sm:top-3" />
+        </div>
 
         <div className="flex min-w-0 flex-1 flex-col p-3.5 sm:p-5">
           <Link href={`/packages/${pkg.id}`} className="min-w-0 flex-1">

@@ -93,6 +93,15 @@ function mapWholesaleAccount(id: string, data: Record<string, unknown>): Wholesa
   };
 }
 
+export async function getPackage(id: string): Promise<Package | null> {
+  const db = getFirebaseDb();
+  if (!db) return null;
+
+  const snap = await getDoc(doc(db, COLLECTIONS.packages, id));
+  if (!snap.exists()) return null;
+  return mapPackage(snap.id, snap.data());
+}
+
 export function subscribePackages(
   onData: (packages: Package[]) => void,
   onError?: (error: Error) => void

@@ -8,8 +8,7 @@ import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
 import { useProducts } from '@/lib/products-context';
-import { useWholesale } from '@/lib/wholesale-context';
-import { getPackageCategoryLabel } from '@/lib/package-catalog';
+import { PackageSpotlightSection } from '@/components/packages/package-spotlight-section';
 import { HomeProductCard, ProductCardSkeleton } from '@/components/home/home-product-card';
 import {
   ProductSection,
@@ -39,7 +38,6 @@ import {
   getStoredWishlist,
   getStoredRecentlyViewed,
 } from '@/lib/home-merchandising';
-import { formatUGX } from '@/lib/wholesale-data';
 import { Product } from '@/lib/types/database';
 import { HeroMarketingSlot } from '@/components/home/hero-marketing-slot';
 
@@ -51,7 +49,6 @@ const CATEGORY_GRADIENTS = [
 
 export function HomePage() {
   const { products, loading } = useProducts();
-  const { packages } = useWholesale();
   const [wishlistIds, setWishlistIds] = useState<string[]>([]);
   const [viewedIds, setViewedIds] = useState<string[]>([]);
   const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
@@ -146,10 +143,17 @@ export function HomePage() {
               transition={{ duration: 0.6 }}
             >
               <HeroMarketingSlot placement="home-hero" />
-              <div className="mt-6 flex flex-wrap gap-4 text-sm text-muted-foreground">
+              <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
                 <span>{products.length}+ Products</span>
                 <span>Free shipping over USh 500K</span>
                 <span>18% VAT included</span>
+                <Link
+                  href="/packages"
+                  className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline"
+                >
+                  <Package className="h-4 w-4" />
+                  Curated bundles
+                </Link>
               </div>
             </motion.div>
 
@@ -276,6 +280,8 @@ export function HomePage() {
         {loading ? renderSkeletons(4) : renderGrid(sections!.bestSellers)}
       </ProductSection>
 
+      <PackageSpotlightSection context="home" />
+
       {/* Staff Picks */}
       {!loading && sections && (
         <ProductSection
@@ -348,53 +354,6 @@ export function HomePage() {
               </div>
             ))}
           </div>
-        </ProductSection>
-      )}
-
-      {/* Curated Bundles */}
-      {!loading && (sections?.wholesale.length ?? 0) > 0 && (
-        <ProductSection
-          title="Curated bundles"
-          subtitle="Complete solutions for needs, occasions, and gifts — buy the bundle, not the guesswork"
-          href="/packages"
-          className="bg-primary/5"
-        >
-          {renderGrid(sections!.wholesale, 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6', 'compact')}
-          {packages.filter((p) => p.isActive).length > 0 && (
-            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-              {packages
-                .filter((p) => p.isActive)
-                .slice(0, 3)
-                .map((pkg) => (
-                  <Link
-                    key={pkg.id}
-                    href={`/packages/${pkg.id}`}
-                    className="group p-5 rounded-2xl border border-border bg-card/80 backdrop-blur hover:shadow-lg transition"
-                  >
-                    <div className="flex items-start gap-3">
-                      <Package className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                      <div className="min-w-0">
-                        {pkg.category && (
-                          <span className="inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary mb-1.5">
-                            {getPackageCategoryLabel(pkg.category).replace(' Packages', '')}
-                          </span>
-                        )}
-                        <h3 className="font-semibold group-hover:text-primary transition">{pkg.name}</h3>
-                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                          {pkg.tagline || pkg.description}
-                        </p>
-                        <p className="text-sm font-bold text-primary mt-2">
-                          {formatUGX(pkg.discountedPrice)}{' '}
-                          <span className="text-xs font-normal text-accent">
-                            Save {pkg.savingsPercentage.toFixed(0)}%
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-            </div>
-          )}
         </ProductSection>
       )}
 

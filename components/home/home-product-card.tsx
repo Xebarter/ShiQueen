@@ -15,6 +15,7 @@ import {
 import { formatUGX } from '@/lib/wholesale-data';
 import { Button } from '@/components/ui/button';
 import { ProductImage } from '@/components/product-image';
+import { ShareProductButton } from '@/components/shared/share-button';
 import toast from 'react-hot-toast';
 
 export type ProductBadge = 'sale' | 'new' | 'selling-fast' | 'limited' | 'trending';
@@ -128,15 +129,18 @@ export function HomeProductCard({
             )}
           </div>
 
-          <button
-            onClick={handleWishlist}
-            className="absolute top-3 right-3 p-2 rounded-full bg-background/70 backdrop-blur-md border border-border/50 hover:bg-background transition z-10"
-            aria-label="Toggle wishlist"
-          >
-            <Heart
-              className={`w-4 h-4 ${isWishlisted ? 'fill-accent text-accent' : 'text-muted-foreground'}`}
-            />
-          </button>
+          <div className="absolute top-3 right-3 z-10 flex gap-1.5">
+            <ShareProductButton product={product} />
+            <button
+              onClick={handleWishlist}
+              className="rounded-full border border-border/50 bg-background/70 p-2 backdrop-blur-md transition hover:bg-background"
+              aria-label="Toggle wishlist"
+            >
+              <Heart
+                className={`w-4 h-4 ${isWishlisted ? 'fill-accent text-accent' : 'text-muted-foreground'}`}
+              />
+            </button>
+          </div>
 
           <motion.div
             initial={false}

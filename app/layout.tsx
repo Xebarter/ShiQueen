@@ -8,7 +8,11 @@ import { ProductsProvider } from '@/lib/products-context'
 import { MarketingAdsProvider } from '@/lib/marketing-ads-context'
 import { WholesaleProvider } from '@/lib/wholesale-context'
 import { BRAND_ASSETS, BRAND_NAME, BRAND_TAGLINE, BRAND_THEME } from '@/lib/brand'
+import { getDefaultOgImageUrl } from '@/lib/metadata/resolve-og-image'
+import { getSiteUrl } from '@/lib/site-url'
 import { Toaster } from 'react-hot-toast'
+
+const defaultOgImage = getDefaultOgImageUrl()
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
 const geistMono = Geist_Mono({
@@ -17,6 +21,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getSiteUrl()),
   title: {
     default: `${BRAND_NAME} - ${BRAND_TAGLINE}`,
     template: `%s | ${BRAND_NAME}`,
@@ -49,12 +54,14 @@ export const metadata: Metadata = {
     description:
       'Discover curated collections of premium fashion, wellness, and lifestyle products.',
     type: 'website',
+    images: [{ url: defaultOgImage, alt: BRAND_NAME }],
   },
   twitter: {
     card: 'summary_large_image',
     title: `${BRAND_NAME} - ${BRAND_TAGLINE}`,
     description:
       'Discover curated collections of premium fashion, wellness, and lifestyle products.',
+    images: [defaultOgImage],
   },
 }
 

@@ -11,6 +11,7 @@ import { Product } from '@/lib/types/database';
 import { formatUGX } from '@/lib/wholesale-data';
 import { getPackageCoverImages, resolvePackageSavings } from '@/lib/package-utils';
 import { getPackageCategoryDiscoveryLabel } from '@/lib/package-catalog';
+import { SharePackageButton } from '@/components/shared/share-button';
 import { cn } from '@/lib/utils';
 
 interface PackageHeroCarouselProps {
@@ -133,6 +134,7 @@ export function PackageHeroCarousel({
                       View this bundle
                     </Button>
                   </Link>
+                  <SharePackageButton pkg={slide} variant="button" size="lg" className="h-12 rounded-xl" />
                 </div>
               </motion.div>
             </AnimatePresence>
