@@ -15,8 +15,8 @@ import { getStoredWishlist } from '@/lib/home-merchandising';
 
 const NAV_LINKS = [
   { href: '/shop', label: 'Shop' },
-  { href: '/services', label: 'Services' },
   { href: '/packages', label: 'Packages' },
+  { href: '/services', label: 'Services' },
   { href: '/wholesale', label: 'Wholesale' },
 ];
 
