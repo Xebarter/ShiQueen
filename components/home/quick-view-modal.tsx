@@ -88,11 +88,6 @@ export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
               <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-bold">{formatUGX(product.price)}</span>
-                {product.originalPrice && (
-                  <span className="text-sm line-through text-muted-foreground">
-                    {formatUGX(product.originalPrice)}
-                  </span>
-                )}
               </div>
               <div className="flex gap-3 pt-2">
                 <Button className="flex-1 gap-2" onClick={handleAdd}>

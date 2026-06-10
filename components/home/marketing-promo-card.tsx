@@ -93,9 +93,6 @@ export function MarketingPromoCard({ ad, product, className, compact = false }: 
             <div className="flex flex-wrap items-end gap-3 pt-1">
               <div>
                 <p className="text-2xl font-semibold text-white">{formatUGX(product.price)}</p>
-                {hasDiscount && (
-                  <p className="text-sm text-white/60 line-through">{formatUGX(product.originalPrice!)}</p>
-                )}
               </div>
               {!compact && product.rating > 0 && (
                 <p className="text-xs text-white/70">

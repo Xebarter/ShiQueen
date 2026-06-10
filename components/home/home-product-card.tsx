@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Heart, ShoppingBag, Eye, Star, Zap, Clock, Flame } from 'lucide-react';
+import { Heart, ShoppingBag, Eye, Zap, Clock, Flame } from 'lucide-react';
 import { Product } from '@/lib/types/database';
 import { useCart } from '@/lib/cart-context';
 import {
@@ -173,19 +173,8 @@ export function HomeProductCard({
           <h3 className={`font-medium leading-snug group-hover:text-primary transition line-clamp-2 ${variant === 'editorial' ? 'text-lg' : 'text-sm'}`}>
             {product.name}
           </h3>
-          <div className="flex items-center gap-1">
-            <Star className="w-3 h-3 fill-accent text-accent" />
-            <span className="text-xs text-muted-foreground">
-              {product.rating} ({product.reviews})
-            </span>
-          </div>
           <div className="flex items-baseline gap-2 pt-0.5">
             <span className="font-semibold text-sm">{formatUGX(product.price)}</span>
-            {product.originalPrice && (
-              <span className="text-xs text-muted-foreground line-through">
-                {formatUGX(product.originalPrice)}
-              </span>
-            )}
           </div>
           {product.stock <= 10 && product.stock > 0 && (
             <p className="text-[10px] text-orange-600 font-medium">Only {product.stock} left in stock</p>
