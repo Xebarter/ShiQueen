@@ -1,9 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { Gift } from 'lucide-react';
 import {
   ProductSection,
   ProductCarousel,
@@ -60,33 +58,30 @@ function getSectionCopy(
 ) {
   if (context === 'shop-search' && searchQuery) {
     return {
-      title: 'Matching curated bundles',
-      subtitle: `Complete sets related to "${searchQuery}" — buy the bundle, skip the guesswork`,
-      linkLabel: 'Browse all bundles',
+      title: 'Bundles',
+      linkLabel: 'All',
     };
   }
 
   if (context === 'shop' && shopCategory !== 'all') {
     const label = SHOP_CATEGORY_LABELS[shopCategory] ?? shopCategory;
     return {
-      title: `Complete ${label.toLowerCase()} bundles`,
-      subtitle: `Curated ${label.toLowerCase()} sets — everything picked and priced for you`,
-      linkLabel: 'View all bundles',
+      title: `${label} bundles`,
+      linkLabel: 'All',
     };
   }
 
   if (context === 'shop') {
     return {
-      title: 'Shop complete bundles',
-      subtitle: 'Skip picking items one by one — curated solutions with bundle savings',
-      linkLabel: 'Explore bundles',
+      title: 'Bundles',
+      linkLabel: 'All',
     };
   }
 
   return {
-    title: 'Curated bundles',
-    subtitle: 'Complete solutions for needs, occasions, and gifts — buy the bundle, not the guesswork',
-    linkLabel: 'View all bundles',
+    title: 'Bundles',
+    urgency: 'Save',
+    linkLabel: 'All',
   };
 }
 
@@ -174,30 +169,11 @@ export function PackageSpotlightSection({
     <>
       <ProductSection
         title={copy.title}
-        subtitle={copy.subtitle}
         href="/packages"
         linkLabel={copy.linkLabel}
-        urgency={context === 'home' ? 'Bundle & save' : undefined}
+        urgency={'urgency' in copy ? copy.urgency : undefined}
         className={className}
       >
-        {context === 'home' && !loading && spotlightPackages.length > 0 && (
-          <Link
-            href="/packages"
-            className="mb-6 flex items-center gap-3 rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/10 via-background to-accent/5 p-4 transition hover:border-primary/35 hover:shadow-md sm:p-5"
-          >
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-              <Gift className="h-5 w-5" />
-            </span>
-            <div className="min-w-0 text-left">
-              <p className="font-semibold">Need a complete gift or lifestyle solution?</p>
-              <p className="text-sm text-muted-foreground">
-                Browse {activePackages.length} curated bundle
-                {activePackages.length === 1 ? '' : 's'} with exclusive savings
-              </p>
-            </div>
-          </Link>
-        )}
-
         {loading ? (
           <div className="flex gap-4 overflow-hidden">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -216,6 +192,7 @@ export function PackageSpotlightSection({
                   retailPrices={retailPrices}
                   variant="compact"
                   index={i}
+                  minimal
                   onQuickView={handleQuickView}
                   onAddToCart={handleAddToCart}
                 />

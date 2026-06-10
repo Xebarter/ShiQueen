@@ -38,8 +38,8 @@ export function PackageContentsList({
         const lineRetail = getPackageItemRetailUnit(item, retailPrices) * item.quantity;
 
         const content = (
-          <div className="flex items-center gap-4">
-            <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-muted sm:h-14 sm:w-14">
               {isRemoteProductImage(itemImage) ? (
                 <Image
                   src={itemImage}
@@ -53,10 +53,12 @@ export function PackageContentsList({
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="font-medium">{itemName}</p>
-              <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+              <p className="text-sm font-medium leading-snug sm:text-base">{itemName}</p>
+              <p className="text-xs text-muted-foreground sm:text-sm">Qty: {item.quantity}</p>
             </div>
-            <p className="shrink-0 font-semibold tabular-nums">{formatUGX(lineRetail)}</p>
+            <p className="shrink-0 text-sm font-semibold tabular-nums sm:text-base">
+              {formatUGX(lineRetail)}
+            </p>
           </div>
         );
 
