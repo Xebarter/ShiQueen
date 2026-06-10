@@ -117,7 +117,7 @@ export function PackageDiscoveryCard({
 
         <div className="absolute right-3 top-3 z-10 flex flex-col gap-1.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
           <SharePackageButton pkg={pkg} />
-          {onQuickView && (
+          {onQuickView && !minimal && (
             <button
               type="button"
               onClick={(e) => {
@@ -196,7 +196,7 @@ export function PackageDiscoveryCard({
         <div
           className={cn(
             'mt-3 grid gap-2',
-            minimal ? 'grid-cols-2' : isCompact ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-3'
+            minimal ? 'grid-cols-1' : isCompact ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-3'
           )}
         >
           {onQuickView && !isCompact && !minimal && (
@@ -218,7 +218,7 @@ export function PackageDiscoveryCard({
             type="button"
             size="sm"
             className="h-9 gap-1.5 rounded-xl font-semibold sm:h-10"
-            onClick={onAddToCart}
+            onClick={(e) => onAddToCart(pkg, e)}
             aria-label={`Add ${pkg.name} to cart`}
           >
             <ShoppingBag className="h-3.5 w-3.5" />
@@ -237,21 +237,6 @@ export function PackageDiscoveryCard({
             >
               <Zap className="h-3.5 w-3.5" />
               Buy now
-            </Button>
-          )}
-          {minimal && onQuickView && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-9 rounded-xl sm:h-10"
-              onClick={(e) => {
-                e.preventDefault();
-                onQuickView(pkg);
-              }}
-              aria-label="Quick view"
-            >
-              <Eye className="h-3.5 w-3.5" />
             </Button>
           )}
         </div>

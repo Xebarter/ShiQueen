@@ -132,7 +132,6 @@ export function MerchandisingBlocks({
               <HomeProductCard
                 product={product}
                 variant={i === 0 ? 'editorial' : 'default'}
-                badges={['new']}
                 index={i}
                 {...cardProps}
               />

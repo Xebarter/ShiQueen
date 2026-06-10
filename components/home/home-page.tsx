@@ -146,7 +146,7 @@ export function HomePage() {
                       product={product}
                       variant={i === 0 ? 'editorial' : 'compact'}
                       index={i}
-                      badges={i === 0 ? ['trending'] : ['selling-fast']}
+                      badges={i === 0 ? ['trending'] : undefined}
                       onQuickView={setQuickViewProduct}
                       wishlistIds={wishlistIds}
                       onWishlistChange={setWishlistIds}
@@ -229,7 +229,6 @@ export function HomePage() {
                 <HomeProductCard
                   product={product}
                   variant={i === 0 ? 'editorial' : 'default'}
-                  badges={['new']}
                   index={i}
                   onQuickView={setQuickViewProduct}
                   wishlistIds={wishlistIds}

@@ -8,8 +8,6 @@ import { Product } from '@/lib/types/database';
 import { useCart } from '@/lib/cart-context';
 import {
   getDiscountPercent,
-  isSellingFast,
-  isNewArrival,
   toggleStoredWishlist,
 } from '@/lib/home-merchandising';
 import { formatUGX } from '@/lib/wholesale-data';
@@ -34,8 +32,6 @@ interface HomeProductCardProps {
 function getAutoBadges(product: Product): ProductBadge[] {
   const badges: ProductBadge[] = [];
   if (getDiscountPercent(product) > 0) badges.push('sale');
-  if (isNewArrival(product)) badges.push('new');
-  if (isSellingFast(product)) badges.push('selling-fast');
   if (product.stock > 0 && product.stock <= 10) badges.push('limited');
   return badges;
 }

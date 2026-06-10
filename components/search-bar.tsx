@@ -4,13 +4,14 @@ import {
   useCallback,
   useDeferredValue,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type KeyboardEvent,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, X, Loader2, Clock, ArrowRight, Gift } from 'lucide-react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useCatalogSearch } from '@/lib/hooks/use-catalog-search';
@@ -28,7 +29,6 @@ import {
 } from '@/lib/wholesale-data';
 import { useWholesale } from '@/lib/wholesale-context';
 import { mergePackageItemMaps } from '@/lib/package-utils';
-import { useHistoryOverlay } from '@/lib/hooks/use-history-overlay';
 
 const RECENT_SEARCHES_KEY = 'shequeen-recent-searches';
 const MAX_RECENT = 5;
@@ -88,19 +88,26 @@ function SearchResultRow({
   hit: CatalogSearchHit;
   query: string;
   active: boolean;
-  onSelect: () => void;
+  onSelect: (hit: CatalogSearchHit) => void;
   products: ReturnType<typeof useProducts>['products'];
   retailPrices: Record<string, number>;
 }) {
+  const handleSelect = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onSelect(hit);
+  };
+
   if (hit.type === 'product') {
     const { product } = hit;
 
     return (
-      <Link
-        href={getHitHref(hit)}
-        onClick={onSelect}
+      <button
+        type="button"
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={handleSelect}
         className={cn(
-          'flex items-center gap-3 px-3 py-2.5 transition-colors',
+          'flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors',
           active ? 'bg-secondary' : 'hover:bg-secondary/70'
         )}
       >
@@ -130,7 +137,7 @@ function SearchResultRow({
             </p>
           )}
         </div>
-      </Link>
+      </button>
     );
   }
 
@@ -139,11 +146,12 @@ function SearchResultRow({
   const { packagePrice } = resolvePackageSavings(pkg, retailPrices);
 
   return (
-    <Link
-      href={getHitHref(hit)}
-      onClick={onSelect}
+    <button
+      type="button"
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={handleSelect}
       className={cn(
-        'flex items-center gap-3 px-3 py-2.5 transition-colors',
+        'flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors',
         active ? 'bg-secondary' : 'hover:bg-secondary/70'
       )}
     >
@@ -172,7 +180,7 @@ function SearchResultRow({
         <p className="text-sm font-semibold text-foreground">{formatUGX(packagePrice)}</p>
         <p className="text-[11px] text-accent">Save {pkg.savingsPercentage.toFixed(0)}%</p>
       </div>
-    </Link>
+    </button>
   );
 }
 
@@ -182,12 +190,15 @@ export function SearchBar({ className }: { className?: string }) {
   const { packages } = useWholesale();
   const { search, loading, catalogCount } = useCatalogSearch();
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+  const [mounted, setMounted] = useState(false);
 
   const deferredQuery = useDeferredValue(query);
   const trimmedQuery = deferredQuery.trim();
@@ -213,16 +224,36 @@ export function SearchBar({ className }: { className?: string }) {
   const showDropdown = isOpen && (trimmedQuery.length > 0 || recentSearches.length > 0);
   const navigableCount = results.length + (trimmedQuery ? 1 : 0);
 
-  const closeDropdown = useCallback(() => {
-    setIsOpen(false);
-    setActiveIndex(-1);
-  }, []);
+  const updateDropdownPosition = useCallback(() => {
+    const anchor = inputRef.current;
+    if (!anchor) return;
 
-  useHistoryOverlay(showDropdown, closeDropdown);
+    const rect = anchor.getBoundingClientRect();
+    setDropdownStyle({
+      position: 'fixed',
+      top: rect.bottom + 8,
+      left: rect.left,
+      width: rect.width,
+      zIndex: 200,
+    });
+  }, []);
 
   useEffect(() => {
+    setMounted(true);
     setRecentSearches(readRecentSearches());
   }, []);
+
+  useLayoutEffect(() => {
+    if (!showDropdown) return;
+    updateDropdownPosition();
+
+    window.addEventListener('resize', updateDropdownPosition);
+    window.addEventListener('scroll', updateDropdownPosition, true);
+    return () => {
+      window.removeEventListener('resize', updateDropdownPosition);
+      window.removeEventListener('scroll', updateDropdownPosition, true);
+    };
+  }, [showDropdown, updateDropdownPosition, query, results.length]);
 
   useEffect(() => {
     setActiveIndex(-1);
@@ -230,12 +261,26 @@ export function SearchBar({ className }: { className?: string }) {
 
   useEffect(() => {
     const onPointerDown = (event: MouseEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) {
-        setIsOpen(false);
+      const target = event.target as Node;
+      if (containerRef.current?.contains(target) || dropdownRef.current?.contains(target)) {
+        return;
       }
+      setIsOpen(false);
     };
+
     document.addEventListener('mousedown', onPointerDown);
     return () => document.removeEventListener('mousedown', onPointerDown);
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+        setActiveIndex(-1);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
   const commitSearch = useCallback(
@@ -258,12 +303,38 @@ export function SearchBar({ className }: { className?: string }) {
     inputRef.current?.focus();
   }, []);
 
-  const handleSelect = useCallback(() => {
-    if (trimmedQuery) storeRecentSearch(trimmedQuery);
+  const handleRecentSelect = useCallback((value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    storeRecentSearch(trimmed);
+    setRecentSearches(readRecentSearches());
+    setQuery(trimmed);
+    setActiveIndex(-1);
+    setIsOpen(true);
+    inputRef.current?.focus();
+  }, []);
+
+  const handleResultSelect = useCallback(
+    (hit: CatalogSearchHit) => {
+      const href = getHitHref(hit);
+      if (trimmedQuery) storeRecentSearch(trimmedQuery);
+      setRecentSearches(readRecentSearches());
+      setQuery('');
+      setIsOpen(false);
+      setActiveIndex(-1);
+      router.push(href);
+    },
+    [trimmedQuery, router]
+  );
+
+  const handleViewAllSelect = useCallback(() => {
+    if (!trimmedQuery) return;
+    storeRecentSearch(trimmedQuery);
     setRecentSearches(readRecentSearches());
     setQuery('');
     setIsOpen(false);
-  }, [trimmedQuery]);
+    router.push(`/shop?q=${encodeURIComponent(trimmedQuery)}`);
+  }, [trimmedQuery, router]);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (!showDropdown && event.key === 'ArrowDown' && trimmedQuery) {
@@ -288,9 +359,7 @@ export function SearchBar({ className }: { className?: string }) {
     if (event.key === 'Enter') {
       event.preventDefault();
       if (activeIndex >= 0 && activeIndex < results.length) {
-        const hit = results[activeIndex];
-        handleSelect();
-        router.push(getHitHref(hit));
+        handleResultSelect(results[activeIndex]);
         return;
       }
       if (trimmedQuery) {
@@ -304,6 +373,81 @@ export function SearchBar({ className }: { className?: string }) {
       setActiveIndex(-1);
     }
   };
+
+  const dropdown = showDropdown ? (
+    <div
+      ref={dropdownRef}
+      style={dropdownStyle}
+      className="overflow-hidden rounded-xl border border-border bg-background shadow-xl"
+    >
+      {!trimmedQuery && recentSearches.length > 0 && (
+        <div className="border-b border-border/60 p-2">
+          <p className="px-2 py-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+            Recent
+          </p>
+          {recentSearches.map((item) => (
+            <button
+              key={item}
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => handleRecentSelect(item)}
+              className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm transition hover:bg-secondary"
+            >
+              <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span className="truncate">{item}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {trimmedQuery && results.length > 0 && (
+        <>
+          <div className="max-h-80 overflow-y-auto overscroll-contain">
+            {results.map((hit, index) => (
+              <SearchResultRow
+                key={hit.type === 'product' ? hit.product.id : hit.pkg.id}
+                hit={hit}
+                query={trimmedQuery}
+                active={activeIndex === index}
+                onSelect={handleResultSelect}
+                products={products}
+                retailPrices={retailPrices}
+              />
+            ))}
+          </div>
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={handleViewAllSelect}
+            className={cn(
+              'flex w-full items-center justify-center gap-2 border-t border-border px-4 py-3 text-sm font-medium text-primary transition hover:bg-secondary',
+              activeIndex === results.length && 'bg-secondary'
+            )}
+          >
+            View all results for &ldquo;{trimmedQuery}&rdquo;
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </>
+      )}
+
+      {trimmedQuery && !loading && results.length === 0 && (
+        <div className="px-4 py-6 text-center">
+          <p className="text-sm text-muted-foreground">
+            No products or bundles found for &ldquo;{trimmedQuery}&rdquo;
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Try a different name, category, or bundle occasion
+          </p>
+        </div>
+      )}
+
+      {trimmedQuery && catalogCount === 0 && !loading && (
+        <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+          Nothing available to search yet.
+        </div>
+      )}
+    </div>
+  ) : null;
 
   return (
     <div ref={containerRef} className={cn('relative w-full max-w-md', className)}>
@@ -343,74 +487,7 @@ export function SearchBar({ className }: { className?: string }) {
         </div>
       </div>
 
-      {showDropdown && (
-        <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-[100] overflow-hidden rounded-xl border border-border bg-background shadow-xl">
-          {!trimmedQuery && recentSearches.length > 0 && (
-            <div className="border-b border-border/60 p-2">
-              <p className="px-2 py-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                Recent
-              </p>
-              {recentSearches.map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => commitSearch(item)}
-                  className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm transition hover:bg-secondary"
-                >
-                  <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                  <span className="truncate">{item}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {trimmedQuery && results.length > 0 && (
-            <>
-              <div className="max-h-80 overflow-y-auto overscroll-contain">
-                {results.map((hit, index) => (
-                  <SearchResultRow
-                    key={hit.type === 'product' ? hit.product.id : hit.pkg.id}
-                    hit={hit}
-                    query={trimmedQuery}
-                    active={activeIndex === index}
-                    onSelect={handleSelect}
-                    products={products}
-                    retailPrices={retailPrices}
-                  />
-                ))}
-              </div>
-              <Link
-                href={`/shop?q=${encodeURIComponent(trimmedQuery)}`}
-                onClick={handleSelect}
-                className={cn(
-                  'flex items-center justify-center gap-2 border-t border-border px-4 py-3 text-sm font-medium text-primary transition hover:bg-secondary',
-                  activeIndex === results.length && 'bg-secondary'
-                )}
-              >
-                View all results for &ldquo;{trimmedQuery}&rdquo;
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </>
-          )}
-
-          {trimmedQuery && !loading && results.length === 0 && (
-            <div className="px-4 py-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                No products or bundles found for &ldquo;{trimmedQuery}&rdquo;
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Try a different name, category, or bundle occasion
-              </p>
-            </div>
-          )}
-
-          {trimmedQuery && catalogCount === 0 && !loading && (
-            <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-              Nothing available to search yet.
-            </div>
-          )}
-        </div>
-      )}
+      {mounted && dropdown ? createPortal(dropdown, document.body) : null}
     </div>
   );
 }

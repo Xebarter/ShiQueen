@@ -166,6 +166,17 @@ function DestinationCard({
   );
 }
 
+export const mobileDrawerEase = [0.32, 0.72, 0, 1] as const;
+
+export const mobileDrawerShellClassName =
+  'fixed inset-y-0 right-0 z-[70] flex w-[min(21rem,92vw)] flex-col border-l border-border/40 bg-background shadow-[-20px_0_60px_rgba(0,0,0,0.12)] will-change-transform md:hidden';
+
+export function getMobileDrawerTransition(prefersReducedMotion: boolean) {
+  return prefersReducedMotion
+    ? { duration: 0 }
+    : { type: 'tween' as const, duration: 0.38, ease: mobileDrawerEase };
+}
+
 export function MobileDrawer({ onClose, user, itemCount, wishlistCount }: MobileDrawerProps) {
   const pathname = usePathname();
   const shopFilters = useShopFilters();
@@ -178,16 +189,7 @@ export function MobileDrawer({ onClose, user, itemCount, wishlistCount }: Mobile
   const wishlistHref = user ? '/account#wishlist' : '/sign-in';
 
   return (
-    <motion.aside
-      initial={{ x: '100%' }}
-      animate={{ x: 0 }}
-      exit={{ x: '100%' }}
-      transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-      className="fixed inset-y-0 right-0 z-[70] flex w-[min(21rem,92vw)] flex-col border-l border-border/40 bg-background shadow-[-20px_0_60px_rgba(0,0,0,0.12)] md:hidden"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Navigation menu"
-    >
+    <>
       {/* Header */}
       <div className="relative overflow-hidden border-b border-border/50 px-5 py-4">
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/[0.06] via-transparent to-accent/[0.05]" />
@@ -334,6 +336,6 @@ export function MobileDrawer({ onClose, user, itemCount, wishlistCount }: Mobile
           </span>
         </Link>
       </div>
-    </motion.aside>
+    </>
   );
 }
