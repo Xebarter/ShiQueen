@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono, Playfair_Display } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/lib/auth-context'
+import { GoogleOneTap } from '@/components/auth/google-one-tap'
 import { CartProvider } from '@/lib/cart-context'
 import { ProductsProvider } from '@/lib/products-context'
 import { MarketingAdsProvider } from '@/lib/marketing-ads-context'
@@ -92,6 +93,7 @@ export default function RootLayout({
               <WholesaleProvider>
                 <ServicesProvider>
                   {children}
+                  <GoogleOneTap />
                   <Toaster />
                 </ServicesProvider>
               </WholesaleProvider>

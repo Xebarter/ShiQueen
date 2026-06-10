@@ -11,11 +11,13 @@ import {
   createUserWithEmailAndPassword,
   signInWithPopup,
   signInWithRedirect,
+  signInWithCredential,
   getRedirectResult,
   GoogleAuthProvider,
   signOut,
   browserPopupRedirectResolver,
 } from 'firebase/auth';
+import { disableGoogleOneTapAutoSelect } from '@/lib/google-identity';
 
 interface AuthContextType {
   user: User | null;
@@ -25,6 +27,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  signInWithGoogleCredential: (idToken: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -159,6 +162,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await ensureUserProfile(credential.user.uid, email);
   };
 
+  const signInWithGoogleCredential = async (idToken: string) => {
+    if (!isFirebaseConfigured()) {
+      throw new Error('Firebase is not configured');
+    }
+
+    const auth = getFirebaseAuth();
+    if (!auth) throw new Error('Firebase Auth not initialized');
+
+    const credential = GoogleAuthProvider.credential(idToken);
+    const result = await signInWithCredential(auth, credential);
+    const googleUser = result.user;
+
+    if (googleUser.email) {
+      await ensureUserProfile(
+        googleUser.uid,
+        googleUser.email,
+        googleUser.displayName ?? undefined
+      );
+    }
+  };
+
   const signInWithGoogle = async () => {
     if (!isFirebaseConfigured()) {
       throw new Error('Firebase is not configured');
@@ -196,6 +220,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     const auth = getFirebaseAuth();
     if (!auth) throw new Error('Firebase Auth not initialized');
+    disableGoogleOneTapAutoSelect();
     await signOut(auth);
     setProfile(null);
   };
@@ -210,6 +235,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signIn,
         signUp,
         signInWithGoogle,
+        signInWithGoogleCredential,
         logout,
       }}
     >

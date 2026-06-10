@@ -216,7 +216,7 @@ export function ShopPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex flex-col gap-3">
             {/* Category pills */}
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
+            <div className="flex flex-wrap gap-2 pb-1 md:flex-nowrap md:overflow-x-auto md:scrollbar-hide md:-mx-1 md:px-1">
               {CATEGORIES.map((cat) => (
                 <button
                   key={cat.id}

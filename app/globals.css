@@ -168,6 +168,9 @@
     contain-intrinsic-size: auto 480px;
   }
   @media (max-width: 767px) {
+    .scroll-section {
+      content-visibility: visible;
+    }
     .mobile-scroll-optimize {
       transform: translateZ(0);
     }

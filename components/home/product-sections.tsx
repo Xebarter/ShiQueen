@@ -72,6 +72,7 @@ interface ProductCarouselProps {
 
 export function ProductCarousel({ children }: ProductCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const lightScroll = useLightScroll();
 
   const scroll = (direction: 'left' | 'right') => {
     if (!scrollRef.current) return;
@@ -81,6 +82,10 @@ export function ProductCarousel({ children }: ProductCarouselProps) {
       behavior: 'smooth',
     });
   };
+
+  if (lightScroll) {
+    return <div className="grid grid-cols-2 gap-4 pb-2">{children}</div>;
+  }
 
   return (
     <div className="relative group/carousel">
@@ -100,7 +105,7 @@ export function ProductCarousel({ children }: ProductCarouselProps) {
       </button>
       <div
         ref={scrollRef}
-        className="flex gap-4 md:gap-5 overflow-x-auto snap-x snap-mandatory scrollbar-hide touch-pan-x pb-2 -mx-1 px-1"
+        className="flex gap-4 md:gap-5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2 -mx-1 px-1"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {children}
@@ -118,7 +123,7 @@ export function CarouselItem({
 }) {
   return (
     <div
-      className={`snap-start shrink-0 w-[160px] sm:w-[200px] md:w-[220px] lg:w-[240px] ${className}`}
+      className={`min-w-0 w-full md:snap-start md:shrink-0 md:w-[220px] lg:w-[240px] ${className}`}
     >
       {children}
     </div>
