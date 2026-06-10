@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ArrowRight, Sparkles, SlidersHorizontal, X, Grid3X3, LayoutGrid } from 'lucide-react';
+import { ArrowRight, Sparkles, X, Grid3X3, LayoutGrid } from 'lucide-react';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
@@ -20,21 +20,26 @@ import {
   filterByPriceRange,
 } from '@/lib/hooks/use-product-merchandising';
 import { useCatalogSearch } from '@/lib/hooks/use-catalog-search';
-import { useHistoryOverlay } from '@/lib/hooks/use-history-overlay';
 import {
   countCatalogSearchHits,
   filterCatalogSearchHits,
 } from '@/lib/catalog-search';
 import { HeroMarketingSlot } from '@/components/home/hero-marketing-slot';
 import { PackageSpotlightSection } from '@/components/packages/package-spotlight-section';
+import {
+  ShopFiltersProvider,
+  type ShopPriceRange,
+  type ShopViewMode,
+} from '@/lib/shop-filters-context';
+import { cn } from '@/lib/utils';
 
 const CATEGORIES = [
-  { id: 'all', label: 'All Products' },
-  { id: 'clothing', label: 'Clothing' },
-  { id: 'beauty', label: 'Beauty' },
-  { id: 'wellness', label: 'Wellness' },
-  { id: 'accessories', label: 'Accessories' },
-  { id: 'home', label: 'Home' },
+  { id: 'all', label: 'All Products', shortLabel: 'All' },
+  { id: 'clothing', label: 'Clothing', shortLabel: 'Clothes' },
+  { id: 'beauty', label: 'Beauty', shortLabel: 'Beauty' },
+  { id: 'wellness', label: 'Wellness', shortLabel: 'Wellness' },
+  { id: 'accessories', label: 'Accessories', shortLabel: 'Access.' },
+  { id: 'home', label: 'Home', shortLabel: 'Home' },
 ];
 
 const SORT_OPTIONS = [
@@ -51,8 +56,6 @@ const PRICE_FILTERS = [
   { id: 'luxury', label: 'Luxury' },
 ] as const;
 
-type ViewMode = 'discover' | 'grid';
-
 export function ShopPage() {
   const router = useRouter();
   const { products, loading } = useProducts();
@@ -61,12 +64,8 @@ export function ShopPage() {
 
   const [category, setCategory] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
-  const [priceRange, setPriceRange] = useState<'all' | 'under-500k' | 'luxury'>('all');
-  const [viewMode, setViewMode] = useState<ViewMode>('discover');
-  const [filtersOpen, setFiltersOpen] = useState(false);
-
-  const closeFilters = useCallback(() => setFiltersOpen(false), []);
-  useHistoryOverlay(filtersOpen, closeFilters);
+  const [priceRange, setPriceRange] = useState<ShopPriceRange>('all');
+  const [viewMode, setViewMode] = useState<ShopViewMode>('discover');
 
   const { search: searchCatalog } = useCatalogSearch();
 
@@ -124,74 +123,44 @@ export function ShopPage() {
   const activeCategoryLabel =
     CATEGORIES.find((c) => c.id === category)?.label ?? 'All Products';
 
-  const clearFilters = () => {
+  const clearFilters = useCallback(() => {
     setCategory('all');
     setPriceRange('all');
     setSortBy('newest');
     if (isSearchMode) {
       router.push('/shop');
     }
-  };
+  }, [isSearchMode, router]);
+
+  const shopFiltersContext = useMemo(
+    () => ({
+      priceRange,
+      setPriceRange,
+      sortBy,
+      setSortBy,
+      viewMode,
+      setViewMode,
+      clearFilters,
+      hasSecondaryFilters: priceRange !== 'all' || sortBy !== 'newest',
+    }),
+    [priceRange, sortBy, viewMode, clearFilters]
+  );
 
   return (
-    <>
+    <ShopFiltersProvider value={shopFiltersContext}>
       <Header />
       <main className="overflow-x-clip mobile-scroll-optimize">
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-border/50">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-background" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6 md:pt-10 md:pb-8">
-          <div className="grid lg:grid-cols-2 gap-8 items-center">
+        <div className="relative mx-auto max-w-7xl px-4 pb-5 pt-6 sm:px-6 md:pb-6 md:pt-8 lg:px-8">
+          <div className="grid items-start gap-5 lg:grid-cols-2 lg:gap-8">
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              {isSearchMode || isFiltered ? (
-                <>
-                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/15 text-accent text-xs font-semibold uppercase tracking-widest mb-3">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    {isSearchMode ? 'Search' : activeCategoryLabel}
-                  </span>
-                  <h1 className="text-3xl sm:text-4xl md:text-5xl font-light tracking-tight mb-3">
-                    {isSearchMode ? (
-                      <>
-                        Results for{' '}
-                        <span className="font-semibold text-primary">&ldquo;{searchQuery}&rdquo;</span>
-                      </>
-                    ) : (
-                      <>
-                        Shop <span className="font-semibold text-primary">{activeCategoryLabel}</span>
-                      </>
-                    )}
-                  </h1>
-                  <p className="text-muted-foreground max-w-lg mb-4">
-                    {isSearchMode
-                      ? searchResultCounts.packages > 0
-                        ? `${searchResultCounts.total} result${searchResultCounts.total === 1 ? '' : 's'} matched your search (${searchResultCounts.products} product${searchResultCounts.products === 1 ? '' : 's'}, ${searchResultCounts.packages} bundle${searchResultCounts.packages === 1 ? '' : 's'})`
-                        : `${searchResultCounts.total} result${searchResultCounts.total === 1 ? '' : 's'} matched your search`
-                      : `${filteredProducts.length} curated products matching your selection`}
-                  </p>
-                  <Button variant="outline" size="sm" onClick={clearFilters} className="gap-2">
-                    <X className="w-3.5 h-3.5" />
-                    {isSearchMode ? 'Clear search' : 'Clear filters'}
-                  </Button>
-                </>
-              ) : (
-                <HeroMarketingSlot
-                  placement="shop-hero"
-                  fallbackPlacements={['home-hero']}
-                  compact
-                />
-              )}
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="hidden sm:grid grid-cols-4 gap-2"
+              transition={{ duration: 0.5, delay: 0.06 }}
+              className="order-1 grid grid-cols-4 gap-2 lg:order-2"
             >
               {loading
                 ? Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} variant="compact" />)
@@ -207,25 +176,84 @@ export function ShopPage() {
                     />
                   ))}
             </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="order-2 lg:order-1"
+            >
+              {isSearchMode || isFiltered ? (
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
+                      <Sparkles className="h-3 w-3" />
+                      {isSearchMode ? 'Search' : activeCategoryLabel}
+                    </p>
+                    <h1 className="truncate text-2xl font-light tracking-tight md:text-3xl">
+                      {isSearchMode ? (
+                        <span className="font-medium text-primary">&ldquo;{searchQuery}&rdquo;</span>
+                      ) : (
+                        activeCategoryLabel
+                      )}
+                    </h1>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {isSearchMode ? searchResultCounts.total : filteredProducts.length} items
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={clearFilters} className="shrink-0 gap-1.5">
+                    <X className="h-3.5 w-3.5" />
+                    Clear
+                  </Button>
+                </div>
+              ) : (
+                <HeroMarketingSlot
+                  placement="shop-hero"
+                  fallbackPlacements={['home-hero']}
+                  compact
+                />
+              )}
+            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Sticky filter bar */}
-      <div className="sticky top-[var(--mobile-header-offset,4rem)] z-40 bg-background/90 backdrop-blur-md border-b border-border/60 lg:top-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex flex-col gap-3">
-            {/* Category pills */}
-            <div className="flex flex-wrap gap-2 pb-1 md:flex-nowrap md:overflow-x-auto md:scrollbar-hide md:-mx-1 md:px-1">
+      {/* Sticky filter bar — mobile: categories only (one row); desktop: full controls */}
+      <div className="sticky top-[var(--mobile-header-offset,4rem)] z-40 border-b border-border/60 bg-background/90 backdrop-blur-md lg:top-16">
+        <div className="mx-auto max-w-7xl px-3 py-2 sm:px-6 sm:py-3 lg:px-8">
+          {/* Mobile: single-line category strip */}
+          <div className="grid grid-cols-6 gap-0.5 md:hidden">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setCategory(cat.id)}
+                className={cn(
+                  'min-w-0 rounded-full px-0.5 py-2 text-center text-[10px] font-medium leading-tight transition',
+                  category === cat.id
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'bg-secondary text-foreground hover:bg-secondary/80'
+                )}
+              >
+                <span className="block truncate">{cat.shortLabel}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Desktop: categories + price / sort / view */}
+          <div className="hidden flex-col gap-3 md:flex">
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
               {CATEGORIES.map((cat) => (
                 <button
                   key={cat.id}
+                  type="button"
                   onClick={() => setCategory(cat.id)}
-                  className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition ${
+                  className={cn(
+                    'shrink-0 rounded-full px-4 py-2 text-sm font-medium transition',
                     category === cat.id
                       ? 'bg-primary text-primary-foreground shadow-md'
-                      : 'bg-secondary hover:bg-secondary/80 text-foreground'
-                  }`}
+                      : 'bg-secondary text-foreground hover:bg-secondary/80'
+                  )}
                 >
                   {cat.label}
                 </button>
@@ -237,31 +265,25 @@ export function ShopPage() {
                 {PRICE_FILTERS.map((filter) => (
                   <button
                     key={filter.id}
+                    type="button"
                     onClick={() => setPriceRange(filter.id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
+                    className={cn(
+                      'rounded-lg border px-3 py-1.5 text-xs font-medium transition',
                       priceRange === filter.id
                         ? 'border-primary bg-primary/10 text-primary'
                         : 'border-border hover:border-primary/50'
-                    }`}
+                    )}
                   >
                     {filter.label}
                   </button>
                 ))}
               </div>
 
-              <div className="flex items-center gap-2 ml-auto">
-                <button
-                  onClick={() => setFiltersOpen(!filtersOpen)}
-                  className="md:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-sm"
-                >
-                  <SlidersHorizontal className="w-4 h-4" />
-                  Filters
-                </button>
-
+              <div className="ml-auto flex items-center gap-2">
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="text-sm px-3 py-2 rounded-lg border border-border bg-background"
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
                 >
                   {SORT_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -270,47 +292,34 @@ export function ShopPage() {
                   ))}
                 </select>
 
-                <div className="hidden sm:flex rounded-lg border border-border overflow-hidden">
+                <div className="hidden overflow-hidden rounded-lg border border-border sm:flex">
                   <button
+                    type="button"
                     onClick={() => setViewMode('discover')}
-                    className={`p-2 ${viewMode === 'discover' ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'}`}
+                    className={cn(
+                      'p-2',
+                      viewMode === 'discover'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-secondary'
+                    )}
                     title="Discovery view"
                   >
-                    <LayoutGrid className="w-4 h-4" />
+                    <LayoutGrid className="h-4 w-4" />
                   </button>
                   <button
+                    type="button"
                     onClick={() => setViewMode('grid')}
-                    className={`p-2 ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'}`}
+                    className={cn(
+                      'p-2',
+                      viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'
+                    )}
                     title="Grid view"
                   >
-                    <Grid3X3 className="w-4 h-4" />
+                    <Grid3X3 className="h-4 w-4" />
                   </button>
                 </div>
               </div>
             </div>
-
-            {filtersOpen && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                className="md:hidden pt-2 border-t border-border"
-              >
-                <p className="text-xs text-muted-foreground mb-2">Price range</p>
-                <div className="flex flex-wrap gap-2">
-                  {PRICE_FILTERS.map((filter) => (
-                    <button
-                      key={filter.id}
-                      onClick={() => setPriceRange(filter.id)}
-                      className={`px-3 py-1.5 rounded-lg text-xs border ${
-                        priceRange === filter.id ? 'border-primary bg-primary/10' : 'border-border'
-                      }`}
-                    >
-                      {filter.label}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
           </div>
         </div>
       </div>
@@ -333,38 +342,24 @@ export function ShopPage() {
               className="border-b border-border/50 bg-primary/5"
             />
           ) : null}
-          <section className="py-10 md:py-14">
+          <section className="py-7 md:py-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between mb-6">
+            <div className="mb-4 flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                {isSearchMode ? (
-                  <>
-                    Showing{' '}
-                    <span className="font-semibold text-foreground">{searchResultCounts.total}</span>{' '}
-                    results
-                    {searchResultCounts.packages > 0 && (
-                      <span className="text-muted-foreground">
-                        {' '}
-                        · includes bundles
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    Showing{' '}
-                    <span className="font-semibold text-foreground">{filteredProducts.length}</span>{' '}
-                    products
-                  </>
-                )}
+                <span className="font-semibold text-foreground">
+                  {isSearchMode ? searchResultCounts.total : filteredProducts.length}
+                </span>{' '}
+                items
               </p>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setViewMode('discover')}
-                className="gap-2"
+                className="gap-1.5"
+                aria-label="Discovery view"
               >
-                <LayoutGrid className="w-4 h-4" />
-                Discovery view
+                <LayoutGrid className="h-4 w-4" />
+                <span className="hidden sm:inline">Discover</span>
               </Button>
             </div>
             {isSearchMode ? (
@@ -424,34 +419,20 @@ export function ShopPage() {
       )}
 
       {/* Bottom CTA */}
-      <section className="py-12 md:py-16 bg-secondary/40 border-t border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-8 md:grid-cols-2 md:gap-12">
-            <div className="text-center md:text-left">
-              <h2 className="text-2xl md:text-3xl font-light mb-3">Shop complete bundles</h2>
-              <p className="text-muted-foreground mb-6 max-w-md mx-auto md:mx-0">
-                Curated packages for gifts, occasions, and lifestyles — bundle pricing with everything included.
-              </p>
-              <Link href="/packages">
-                <Button size="lg" variant="default" className="gap-2">
-                  Explore Curated Bundles
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
-            </div>
-            <div className="text-center md:text-left">
-              <h2 className="text-2xl md:text-3xl font-light mb-3">Looking for bulk pricing?</h2>
-              <p className="text-muted-foreground mb-6 max-w-md mx-auto md:mx-0">
-                Save up to 25% with our wholesale program — perfect for retailers and resellers.
-              </p>
-              <Link href="/wholesale">
-                <Button size="lg" variant="outline" className="gap-2">
-                  Explore Wholesale
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
-            </div>
-          </div>
+      <section className="border-t border-border bg-secondary/30 py-8 md:py-10">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 sm:flex-row sm:px-6 lg:px-8">
+          <Link href="/packages" className="flex-1">
+            <Button size="lg" variant="default" className="w-full gap-2">
+              Bundles
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+          <Link href="/wholesale" className="flex-1">
+            <Button size="lg" variant="outline" className="w-full gap-2">
+              Wholesale
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
         </div>
       </section>
 
@@ -461,6 +442,6 @@ export function ShopPage() {
         onClose={() => setQuickViewProduct(null)}
       />
     </main>
-    </>
+    </ShopFiltersProvider>
   );
 }

@@ -14,12 +14,6 @@ import { MerchandisingSections, ProductCardVariant } from '@/lib/hooks/use-produ
 import { getByCategories } from '@/lib/home-merchandising';
 import { CATEGORY_GROUPS } from '@/lib/home-merchandising';
 
-const CATEGORY_GRADIENTS = [
-  'bg-gradient-to-br from-rose-50 to-pink-100 dark:from-rose-950/30 dark:to-pink-950/20',
-  'bg-gradient-to-br from-fuchsia-50 to-rose-100 dark:from-fuchsia-950/30 dark:to-rose-950/20',
-  'bg-gradient-to-br from-amber-50 to-rose-100 dark:from-amber-950/25 dark:to-rose-950/20',
-];
-
 interface MerchandisingBlocksProps {
   products: Product[];
   sections: MerchandisingSections;
@@ -100,8 +94,7 @@ export function MerchandisingBlocks({
       {(sections.flashDeals.length > 0) && (
         <ProductSection
           title="Flash Deals"
-          subtitle="Limited-time savings"
-          urgency="Ends soon"
+          urgency="Sale"
           href="/shop"
           className="bg-gradient-to-r from-accent/5 to-primary/5"
         >
@@ -111,39 +104,28 @@ export function MerchandisingBlocks({
 
       {afterFlashDeals}
 
-      <ProductSection
-        title="Trending This Week"
-        subtitle="What shoppers are loving right now"
-        urgency="Hot right now"
-        href="/shop"
-      >
+      <ProductSection title="Trending" urgency="Hot" href="/shop">
         {renderCarousel(sections.trending, 'default')}
       </ProductSection>
 
       {showCategoryShowcases &&
-        CATEGORY_GROUPS.map((group, idx) => {
+        CATEGORY_GROUPS.map((group) => {
           const groupProducts = getByCategories(products, group.categories, 4);
           if (groupProducts.length === 0) return null;
           return (
-            <CategoryShowcase
-              key={group.slug}
-              title={group.title}
-              subtitle={group.subtitle}
-              href={group.href}
-              gradient={CATEGORY_GRADIENTS[idx % CATEGORY_GRADIENTS.length]}
-            >
+            <CategoryShowcase key={group.slug} title={group.title} href={group.href}>
               {renderGrid(groupProducts)}
             </CategoryShowcase>
           );
         })}
 
-      <ProductSection title="" subtitle="" className="pt-0">
-        <SocialProofBanner message="Customers are buying this now">
+      <ProductSection title="" className="pt-0">
+        <SocialProofBanner message="Live">
           {renderCarousel(sections.buyingNow)}
         </SocialProofBanner>
       </ProductSection>
 
-      <ProductSection title="New Arrivals" subtitle="Fresh drops in our marketplace" href="/shop">
+      <ProductSection title="New" href="/shop">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
           {sections.newArrivals.slice(0, 4).map((product, i) => (
             <div key={product.id} className={i === 0 ? 'md:col-span-2' : ''}>
@@ -160,16 +142,16 @@ export function MerchandisingBlocks({
       </ProductSection>
 
       {sections.under50k.length > 0 && (
-        <ProductSection title="Under UGX 500,000" subtitle="Premium picks at accessible prices" href="/shop">
+        <ProductSection title="Under 500K" href="/shop">
           {renderGrid(sections.under50k)}
         </ProductSection>
       )}
 
-      <ProductSection title="Customer Favorites" subtitle="Top-rated by our community" href="/shop">
+      <ProductSection title="Favorites" href="/shop">
         {renderGrid(sections.bestSellers)}
       </ProductSection>
 
-      <ProductSection title="Staff Picks" subtitle="Curated by our style team" className="bg-secondary/30">
+      <ProductSection title="Staff Picks" className="bg-secondary/30">
         <div className="grid md:grid-cols-2 gap-6">
           <div>
             {sections.staffPicks[0] && (
@@ -190,13 +172,13 @@ export function MerchandisingBlocks({
       </ProductSection>
 
       {sections.limited.length > 0 && (
-        <ProductSection title="Limited Stock" subtitle="Selling fast — don't miss out" urgency="Only a few left" href="/shop">
+        <ProductSection title="Limited" urgency="Low stock" href="/shop">
           {renderCarousel(sections.limited)}
         </ProductSection>
       )}
 
       {sections.boughtTogether.length >= 2 && (
-        <ProductSection title="Frequently Bought Together" subtitle="Popular product pairings">
+        <ProductSection title="Pairs well with">
           <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
             {sections.boughtTogether.map((product, i) => (
               <div key={product.id} className="flex items-center gap-4 md:gap-6 w-full md:w-auto">
@@ -211,41 +193,35 @@ export function MerchandisingBlocks({
       )}
 
       {sections.wholesale.length > 0 && (
-        <ProductSection
-          title="Wholesale Deals"
-          subtitle="Volume pricing for bulk buyers"
-          href="/wholesale"
-          className="bg-primary/5"
-        >
+        <ProductSection title="Wholesale" href="/wholesale" className="bg-primary/5">
           {renderGrid(sections.wholesale, 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6', 'compact')}
         </ProductSection>
       )}
 
       {sections.luxury.length > 0 && (
-        <ProductSection title="Luxury Collection" subtitle="Premium investment pieces" href="/shop">
+        <ProductSection title="Luxury" href="/shop">
           {renderCarousel(sections.luxury, 'default')}
         </ProductSection>
       )}
 
-      <ProductSection title="Complete the Look" subtitle="Shop curated combinations" className="bg-secondary/20">
+      <ProductSection title="Complete the look" className="bg-secondary/20">
         {renderGrid(sections.completeLook)}
       </ProductSection>
 
       <ProductSection
-        title={viewedIds.length > 0 ? 'Recommended For You' : 'You May Also Like'}
-        subtitle={viewedIds.length > 0 ? 'Based on your browsing' : 'Popular picks for you'}
+        title={viewedIds.length > 0 ? 'For you' : 'Picks for you'}
         href="/shop"
       >
         {renderGrid(sections.recommended)}
       </ProductSection>
 
       {sections.recentlyViewed.length > 0 && (
-        <ProductSection title="Recently Viewed" subtitle="Continue where you left off">
+        <ProductSection title="Recent">
           {renderCarousel(sections.recentlyViewed)}
         </ProductSection>
       )}
 
-      <ProductSection title="Most Wishlisted" subtitle="Community favorites" href="/shop">
+      <ProductSection title="Wishlisted" href="/shop">
         {renderGrid(sections.wishlisted, 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6', 'compact')}
       </ProductSection>
     </>
@@ -271,7 +247,7 @@ export function AllProductsGrid({
     return (
       emptyMessage ?? (
         <div className="text-center py-16">
-          <p className="text-muted-foreground">No products match your filters</p>
+          <p className="text-muted-foreground">No matches</p>
         </div>
       )
     );

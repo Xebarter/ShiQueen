@@ -41,7 +41,7 @@ export function MarketingPromoCard({ ad, product, className, compact = false }: 
         className
       )}
     >
-      <div className={cn('relative', compact ? 'min-h-[20rem]' : 'min-h-[22rem] md:min-h-[24rem]')}>
+      <div className={cn('relative', compact ? 'min-h-[12rem] sm:min-h-[14rem]' : 'min-h-[22rem] md:min-h-[24rem]')}>
         {isRemoteProductImage(ad.bannerImage) ? (
           <Image
             src={ad.bannerImage}
@@ -86,7 +86,9 @@ export function MarketingPromoCard({ ad, product, className, compact = false }: 
             >
               {headline}
             </h2>
-            <p className="max-w-lg text-sm leading-relaxed text-white/80 sm:text-base">{subheadline}</p>
+            {!compact && (
+              <p className="max-w-lg text-sm leading-relaxed text-white/80 sm:text-base">{subheadline}</p>
+            )}
 
             <div className="flex flex-wrap items-end gap-3 pt-1">
               <div>
@@ -95,35 +97,39 @@ export function MarketingPromoCard({ ad, product, className, compact = false }: 
                   <p className="text-sm text-white/60 line-through">{formatUGX(product.originalPrice!)}</p>
                 )}
               </div>
-              {product.rating > 0 && (
+              {!compact && product.rating > 0 && (
                 <p className="text-xs text-white/70">
-                  ★ {product.rating.toFixed(1)} · {product.reviews} reviews
+                  ★ {product.rating.toFixed(1)}
                 </p>
               )}
             </div>
 
             <div className="flex flex-wrap gap-3 pt-2">
               <Link href={`/products/${product.id}`}>
-                <Button size="lg" className="gap-2 shadow-lg">
-                  {ad.ctaLabel || 'Shop Now'}
+                <Button size={compact ? 'default' : 'lg'} className="gap-2 shadow-lg">
+                  {ad.ctaLabel || 'Shop'}
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
-              <ShareProductButton
-                product={product}
-                variant="button"
-                size="lg"
-                className="border-white/30 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 hover:text-white"
-              />
-              <Link href="/shop">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-white/30 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 hover:text-white"
-                >
-                  Browse All
-                </Button>
-              </Link>
+              {!compact && (
+                <>
+                  <ShareProductButton
+                    product={product}
+                    variant="button"
+                    size="lg"
+                    className="border-white/30 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 hover:text-white"
+                  />
+                  <Link href="/shop">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="border-white/30 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 hover:text-white"
+                    >
+                      Browse
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -136,18 +142,14 @@ export function MarketingPromoFallback({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        'flex min-h-[20rem] flex-col justify-center rounded-3xl border border-dashed border-border bg-secondary/30 p-8 text-center',
+        'flex min-h-[14rem] flex-col items-center justify-center rounded-2xl border border-border/60 bg-gradient-to-br from-primary/10 via-background to-accent/10 p-6 text-center',
         className
       )}
     >
-      <Sparkles className="mx-auto mb-3 h-8 w-8 text-accent" />
-      <h2 className="text-xl font-light tracking-tight">Featured collections arriving soon</h2>
-      <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
-        Admins can publish a hero banner from the dashboard under Ads.
-      </p>
-      <Link href="/shop" className="mt-5">
+      <Sparkles className="mb-2 h-7 w-7 text-accent" />
+      <Link href="/shop">
         <Button className="gap-2">
-          Shop Now
+          Shop now
           <ArrowRight className="h-4 w-4" />
         </Button>
       </Link>

@@ -29,37 +29,45 @@ export function ProductSection({
 }: ProductSectionProps) {
   const lightScroll = useLightScroll();
   const Header = lightScroll ? 'div' : motion.div;
+  const showHeader = Boolean(title || urgency || href);
+
   const headerProps = lightScroll
-    ? { className: 'flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 md:mb-8' }
+    ? { className: 'flex items-center justify-between gap-3 mb-4 md:mb-5' }
     : {
         initial: { opacity: 0, y: 12 },
         whileInView: { opacity: 1, y: 0 },
         viewport: { once: true },
-        className: 'flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 md:mb-8',
+        className: 'flex items-center justify-between gap-3 mb-4 md:mb-5',
       };
 
   return (
-    <section className={`scroll-section py-10 md:py-14 ${className}`}>
+    <section className={`scroll-section py-7 md:py-10 ${className}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <Header {...headerProps}>
-          <div>
-            {urgency && (
-              <span className="inline-block text-xs font-semibold uppercase tracking-widest text-accent mb-2">
-                {urgency}
-              </span>
+        {showHeader && (
+          <Header {...headerProps}>
+            <div className="flex min-w-0 items-center gap-2">
+              {urgency && (
+                <span className="shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
+                  {urgency}
+                </span>
+              )}
+              {title ? (
+                <h2 className="truncate text-xl font-light tracking-tight md:text-2xl">{title}</h2>
+              ) : null}
+            </div>
+            {href && (
+              <Link href={href} className="shrink-0">
+                <Button variant="ghost" size="sm" className="gap-1 text-primary">
+                  {linkLabel}
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
             )}
-            <h2 className="text-2xl md:text-3xl font-light tracking-tight">{title}</h2>
-            {subtitle && <p className="text-muted-foreground mt-1 text-sm md:text-base">{subtitle}</p>}
-          </div>
-          {href && (
-            <Link href={href}>
-              <Button variant="ghost" className="gap-2 text-primary shrink-0">
-                {linkLabel}
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
-          )}
-        </Header>
+          </Header>
+        )}
+        {subtitle ? (
+          <p className="-mt-2 mb-4 text-sm text-muted-foreground md:mb-5">{subtitle}</p>
+        ) : null}
         {children}
       </div>
     </section>
@@ -132,9 +140,9 @@ export function CarouselItem({
 
 interface CategoryShowcaseProps {
   title: string;
-  subtitle: string;
+  subtitle?: string;
   href: string;
-  gradient: string;
+  gradient?: string;
   children: ReactNode;
 }
 
@@ -142,38 +150,23 @@ export function CategoryShowcase({
   title,
   subtitle,
   href,
-  gradient,
   children,
 }: CategoryShowcaseProps) {
-  const lightScroll = useLightScroll();
-  const Banner = lightScroll ? 'div' : motion.div;
-  const bannerProps = lightScroll
-    ? { className: `relative overflow-hidden rounded-3xl ${gradient} p-6 md:p-10 mb-6 md:mb-8` }
-    : {
-        initial: { opacity: 0, y: 16 },
-        whileInView: { opacity: 1, y: 0 },
-        viewport: { once: true },
-        className: `relative overflow-hidden rounded-3xl ${gradient} p-6 md:p-10 mb-6 md:mb-8`,
-      };
-
   return (
-    <section className="scroll-section py-10 md:py-14">
+    <section className="scroll-section py-7 md:py-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <Banner {...bannerProps}>
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.15),transparent_50%)]" />
-          <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-2xl md:text-4xl font-light tracking-tight text-foreground">{title}</h2>
-              <p className="text-muted-foreground mt-2 max-w-md">{subtitle}</p>
-            </div>
-            <Link href={href}>
-              <Button size="lg" className="gap-2 shadow-lg">
-                Shop Collection
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
+        <div className="mb-4 flex items-center justify-between gap-3 md:mb-5">
+          <div className="min-w-0">
+            <h2 className="text-xl font-light tracking-tight md:text-2xl">{title}</h2>
+            {subtitle ? <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p> : null}
           </div>
-        </Banner>
+          <Link href={href} className="shrink-0">
+            <Button variant="ghost" size="sm" className="gap-1 text-primary">
+              Shop
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
         {children}
       </div>
     </section>
@@ -182,9 +175,9 @@ export function CategoryShowcase({
 
 export function SocialProofBanner({ message, children }: { message: string; children: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/80 max-md:backdrop-blur-none md:bg-card/50 md:backdrop-blur-sm p-4 md:p-6">
-      <p className="text-xs font-semibold uppercase tracking-widest text-accent mb-4 flex items-center gap-2">
-        <span className="w-2 h-2 rounded-full bg-accent max-md:animate-none md:animate-pulse" />
+    <div className="rounded-2xl border border-border/60 bg-card/50 p-3 md:p-4">
+      <p className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
+        <span className="h-1.5 w-1.5 rounded-full bg-accent max-md:animate-none md:animate-pulse" />
         {message}
       </p>
       {children}

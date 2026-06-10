@@ -11,22 +11,22 @@ export interface CategoryGroup {
 export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     slug: 'beauty',
-    title: 'Beauty Collection',
-    subtitle: 'Skincare, glow essentials & daily rituals',
+    title: 'Beauty',
+    subtitle: '',
     categories: ['Beauty'],
     href: '/shop?category=beauty',
   },
   {
     slug: 'fashion',
-    title: 'Fashion & Accessories',
-    subtitle: 'Statement pieces & timeless wardrobe staples',
+    title: 'Fashion',
+    subtitle: '',
     categories: ['Clothing', 'Accessories'],
     href: '/shop?category=clothing',
   },
   {
     slug: 'wellness',
-    title: 'Wellness & Home',
-    subtitle: 'Self-care, comfort & everyday luxury',
+    title: 'Wellness',
+    subtitle: '',
     categories: ['Wellness', 'Home'],
     href: '/shop?category=wellness',
   },

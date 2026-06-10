@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, Sparkles, TrendingUp, Package, Timer } from 'lucide-react';
+import { ArrowRight, Package, Timer, Sparkles } from 'lucide-react';
+import { ProductImage } from '@/components/product-image';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
@@ -40,12 +41,6 @@ import {
 } from '@/lib/home-merchandising';
 import { Product } from '@/lib/types/database';
 import { HeroMarketingSlot } from '@/components/home/hero-marketing-slot';
-
-const CATEGORY_GRADIENTS = [
-  'bg-gradient-to-br from-rose-50 to-pink-100 dark:from-rose-950/30 dark:to-pink-950/20',
-  'bg-gradient-to-br from-fuchsia-50 to-rose-100 dark:from-fuchsia-950/30 dark:to-rose-950/20',
-  'bg-gradient-to-br from-amber-50 to-rose-100 dark:from-amber-950/25 dark:to-rose-950/20',
-];
 
 export function HomePage() {
   const { products, loading } = useProducts();
@@ -135,32 +130,13 @@ export function HomePage() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-background" />
         <div className="pointer-events-none absolute top-20 right-0 h-96 w-96 rounded-full bg-accent/10 blur-3xl max-md:hidden" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12 md:pt-12 md:pb-16">
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+        <div className="relative mx-auto max-w-7xl px-4 pb-8 pt-6 sm:px-6 md:pb-12 md:pt-10 lg:px-8">
+          <div className="grid items-start gap-5 lg:grid-cols-2 lg:gap-10">
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <HeroMarketingSlot placement="home-hero" />
-              <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
-                <span>{products.length}+ Products</span>
-                <span>Free shipping over USh 500K</span>
-                <Link
-                  href="/packages"
-                  className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline"
-                >
-                  <Package className="h-4 w-4" />
-                  Curated bundles
-                </Link>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.15 }}
-              className="grid grid-cols-2 gap-3 md:gap-4"
+              transition={{ duration: 0.5, delay: 0.08 }}
+              className="order-1 grid grid-cols-2 gap-2.5 sm:gap-3 lg:order-2"
             >
               {loading
                 ? Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)
@@ -177,6 +153,24 @@ export function HomePage() {
                     />
                   ))}
             </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: -16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.5 }}
+              className="order-2 lg:order-1"
+            >
+              <HeroMarketingSlot placement="home-hero" compact />
+              <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
+                <Link href="/packages" className="font-medium text-primary hover:underline">
+                  Bundles
+                </Link>
+                <span aria-hidden>·</span>
+                <Link href="/shop" className="hover:text-foreground">
+                  Shop all
+                </Link>
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -185,8 +179,7 @@ export function HomePage() {
       {(loading || (sections?.flashDeals.length ?? 0) > 0) && (
         <ProductSection
           title="Flash Deals"
-          subtitle="Limited-time savings on bestsellers"
-          urgency="Ends soon"
+          urgency="Sale"
           href="/shop"
           className="bg-gradient-to-r from-accent/5 to-primary/5"
         >
@@ -195,28 +188,21 @@ export function HomePage() {
       )}
 
       {/* Trending */}
-      <ProductSection
-        title="Trending This Week"
-        subtitle="What everyone in Kampala is shopping right now"
-        urgency="Hot right now"
-        href="/shop"
-      >
+      <ProductSection title="Trending" urgency="Hot" href="/shop">
         {loading ? renderSkeletons(4) : renderCarousel(sections!.trending, 'default')}
       </ProductSection>
 
       {/* Category showcases with products */}
       {!loading &&
         sections &&
-        CATEGORY_GROUPS.map((group, idx) => {
+        CATEGORY_GROUPS.map((group) => {
           const groupProducts = getByCategories(products, group.categories, 4);
           if (groupProducts.length === 0) return null;
           return (
             <CategoryShowcase
               key={group.slug}
               title={group.title}
-              subtitle={group.subtitle}
               href={group.href}
-              gradient={CATEGORY_GRADIENTS[idx % CATEGORY_GRADIENTS.length]}
             >
               {renderGrid(groupProducts)}
             </CategoryShowcase>
@@ -225,19 +211,15 @@ export function HomePage() {
 
       {/* Customers buying now */}
       {!loading && sections && (
-        <ProductSection title="" subtitle="" className="pt-0">
-          <SocialProofBanner message="Customers are buying this now">
+        <ProductSection title="" className="pt-0">
+          <SocialProofBanner message="Live">
             {renderCarousel(sections.buyingNow)}
           </SocialProofBanner>
         </ProductSection>
       )}
 
       {/* New Arrivals — editorial masonry */}
-      <ProductSection
-        title="New Arrivals"
-        subtitle="Fresh drops added to our marketplace"
-        href="/shop"
-      >
+      <ProductSection title="New" href="/shop">
         {loading ? (
           renderSkeletons(4)
         ) : (
@@ -261,21 +243,13 @@ export function HomePage() {
 
       {/* Under 500K */}
       {!loading && sections && sections.under50k.length > 0 && (
-        <ProductSection
-          title="Under UGX 500,000"
-          subtitle="Premium picks that won't break the bank"
-          href="/shop"
-        >
+        <ProductSection title="Under 500K" href="/shop">
           {renderGrid(sections.under50k)}
         </ProductSection>
       )}
 
       {/* Best Sellers */}
-      <ProductSection
-        title="Customer Favorites"
-        subtitle="Our most-loved products by shoppers like you"
-        href="/shop"
-      >
+      <ProductSection title="Favorites" href="/shop">
         {loading ? renderSkeletons(4) : renderGrid(sections!.bestSellers)}
       </ProductSection>
 
@@ -283,11 +257,7 @@ export function HomePage() {
 
       {/* Staff Picks */}
       {!loading && sections && (
-        <ProductSection
-          title="Staff Picks"
-          subtitle="Hand-selected by our style experts"
-          className="bg-secondary/30"
-        >
+        <ProductSection title="Staff Picks" className="bg-secondary/30">
           <div className="grid md:grid-cols-2 gap-6">
             <div className="md:col-span-1">
               {sections.staffPicks[0] && (
@@ -320,22 +290,14 @@ export function HomePage() {
 
       {/* Limited Stock */}
       {!loading && sections && sections.limited.length > 0 && (
-        <ProductSection
-          title="Limited Stock"
-          subtitle="Grab these before they're gone"
-          urgency="Selling fast"
-          href="/shop"
-        >
+        <ProductSection title="Limited" urgency="Low stock" href="/shop">
           {renderCarousel(sections.limited)}
         </ProductSection>
       )}
 
       {/* Frequently Bought Together */}
       {!loading && sections && sections.boughtTogether.length >= 2 && (
-        <ProductSection
-          title="Frequently Bought Together"
-          subtitle="Complete your order with these popular pairings"
-        >
+        <ProductSection title="Pairs well with">
           <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
             {sections.boughtTogether.map((product, i) => (
               <div key={product.id} className="flex items-center gap-4 md:gap-6 w-full md:w-auto">
@@ -358,22 +320,14 @@ export function HomePage() {
 
       {/* Luxury Collection */}
       {!loading && sections && sections.luxury.length > 0 && (
-        <ProductSection
-          title="Luxury Collection"
-          subtitle="Investment pieces for the discerning shopper"
-          href="/shop"
-        >
+        <ProductSection title="Luxury" href="/shop">
           {renderCarousel(sections.luxury, 'default')}
         </ProductSection>
       )}
 
       {/* Complete the Look */}
       {!loading && sections && (
-        <ProductSection
-          title="Complete the Look"
-          subtitle="Curated combinations from across our marketplace"
-          className="bg-secondary/20"
-        >
+        <ProductSection title="Complete the look" className="bg-secondary/20">
           {renderGrid(sections.completeLook, 'grid-cols-2 md:grid-cols-4')}
         </ProductSection>
       )}
@@ -381,12 +335,7 @@ export function HomePage() {
       {/* Personalized: Recommended */}
       {!loading && sections && (
         <ProductSection
-          title={viewedIds.length > 0 ? 'Recommended For You' : 'You May Also Like'}
-          subtitle={
-            viewedIds.length > 0
-              ? 'Based on your browsing history'
-              : 'Popular picks we think you will love'
-          }
+          title={viewedIds.length > 0 ? 'For you' : 'Picks for you'}
           href="/shop"
         >
           {renderGrid(sections.recommended)}
@@ -395,73 +344,59 @@ export function HomePage() {
 
       {/* Recently Viewed */}
       {!loading && sections && sections.recentlyViewed.length > 0 && (
-        <ProductSection title="Recently Viewed" subtitle="Pick up where you left off">
+        <ProductSection title="Recent">
           {renderCarousel(sections.recentlyViewed)}
         </ProductSection>
       )}
 
       {/* Most Wishlisted */}
       {!loading && sections && (
-        <ProductSection
-          title="Most Wishlisted"
-          subtitle="Save your favorites — join thousands of shoppers"
-          href="/shop"
-        >
+        <ProductSection title="Wishlisted" href="/shop">
           {renderGrid(sections.wishlisted, 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6', 'compact')}
         </ProductSection>
       )}
 
       {/* Bottom CTA with product strip */}
-      <section className="py-16 md:py-20 bg-primary text-primary-foreground">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-10 items-center">
-            <div>
-              <TrendingUp className="w-8 h-8 mb-4 opacity-80" />
-              <h2 className="text-3xl md:text-4xl font-light tracking-tight mb-4">
-                Join thousands of happy shoppers
-              </h2>
-              <p className="opacity-90 mb-6 max-w-md">
-                Create an account for personalized recommendations, order tracking, and exclusive
-                member offers.
-              </p>
-              <Link href="/sign-up">
-                <Button size="lg" variant="secondary" className="gap-2">
-                  Create Free Account
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
+      <section className="bg-primary py-10 text-primary-foreground md:py-14">
+        <div className="mx-auto grid max-w-7xl items-center gap-6 px-4 sm:px-6 lg:grid-cols-2 lg:gap-10 lg:px-8">
+          {!loading && sections && (
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              {sections.trending.slice(0, 3).map((product) => (
+                <Link
+                  key={product.id}
+                  href={`/products/${product.id}`}
+                  className="relative aspect-square overflow-hidden rounded-xl border border-primary-foreground/20 shadow-lg transition hover:opacity-90"
+                >
+                  <ProductImage product={product} className="absolute inset-0" sizes="120px" />
+                </Link>
+              ))}
             </div>
-            {!loading && sections && (
-              <div className="grid grid-cols-3 gap-3">
-                {sections.trending.slice(0, 3).map((product) => (
-                  <Link
-                    key={product.id}
-                    href={`/products/${product.id}`}
-                    className="aspect-square rounded-xl bg-primary-foreground/10 backdrop-blur border border-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/20 transition"
-                  >
-                    <span className="text-xs text-center px-2 line-clamp-2 opacity-90">{product.name}</span>
-                  </Link>
-                ))}
-              </div>
-            )}
+          )}
+          <div className="text-center lg:text-left">
+            <h2 className="text-2xl font-light tracking-tight md:text-3xl">Join SheQueen</h2>
+            <Link href="/sign-up" className="mt-4 inline-block">
+              <Button size="lg" variant="secondary" className="gap-2">
+                Sign up
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* Trust strip */}
-      <section className="py-8 border-t border-border">
-        <div className="max-w-7xl mx-auto px-4 flex flex-wrap justify-center gap-8 md:gap-16 text-sm text-muted-foreground">
-          <span className="flex items-center gap-2">
-            <Timer className="w-4 h-4 text-primary" />
-            Same-week delivery in Kampala
+      <section className="border-t border-border py-5">
+        <div className="mx-auto flex max-w-7xl justify-center gap-8 px-4 text-muted-foreground md:gap-14">
+          <span className="flex items-center gap-1.5 text-xs" title="Fast delivery">
+            <Timer className="h-4 w-4 text-primary" />
+            <span className="sr-only">Fast delivery</span>
           </span>
-          <span className="flex items-center gap-2">
-            <Package className="w-4 h-4 text-primary" />
-            Secure packaging
+          <span className="flex items-center gap-1.5 text-xs" title="Secure packaging">
+            <Package className="h-4 w-4 text-primary" />
+            <span className="sr-only">Secure packaging</span>
           </span>
-          <span className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-primary" />
-            100% authentic products
+          <span className="flex items-center gap-1.5 text-xs" title="Authentic products">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <span className="sr-only">Authentic</span>
           </span>
         </div>
       </section>
