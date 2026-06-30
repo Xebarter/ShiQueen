@@ -15,8 +15,10 @@ import {
   LogOut,
   Package,
   Settings,
+  Shield,
   ShoppingBag,
   ShoppingCart,
+  Sparkles,
   Trash2,
   Truck,
   User,
@@ -25,7 +27,6 @@ import toast from 'react-hot-toast';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AccountAvatar } from '@/components/account/account-avatar';
 import { isRemoteProductImage, ProductImage } from '@/components/product-image';
 import { useAuth } from '@/lib/auth-context';
@@ -94,12 +95,10 @@ function OrderStatusBadge({ status }: { status: Order['status'] }) {
 
 function AccountLoadingState() {
   return (
-    <main>
+    <main className="overflow-x-clip">
       <Header />
-      <section className="min-h-[calc(100vh-8rem)] bg-muted/20 py-12">
-        <div className="mx-auto flex max-w-6xl items-center justify-center px-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+      <section className="flex min-h-[calc(100vh-8rem)] items-center justify-center bg-gradient-to-b from-muted/30 via-background to-background py-16">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </section>
       <Footer />
     </main>
@@ -111,12 +110,14 @@ function SectionHeader({
   description,
 }: {
   title: string;
-  description: string;
+  description?: string;
 }) {
   return (
-    <div className="mb-6 border-b border-border/60 pb-5">
-      <h2 className="text-2xl font-light tracking-tight">{title}</h2>
-      <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+    <div className="mb-6 border-b border-border/50 pb-5">
+      <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">{title}</h2>
+      {description ? (
+        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+      ) : null}
     </div>
   );
 }
@@ -133,16 +134,16 @@ function EmptyState({
   action: React.ReactNode;
 }) {
   return (
-    <Card className="border-dashed bg-background/60">
-      <CardContent className="flex flex-col items-center px-6 py-12 text-center">
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-secondary">
-          <Icon className="h-5 w-5 text-muted-foreground" />
-        </div>
-        <h3 className="text-base font-medium">{title}</h3>
-        <p className="mt-1 max-w-sm text-sm text-muted-foreground">{description}</p>
-        <div className="mt-5">{action}</div>
-      </CardContent>
-    </Card>
+    <div className="rounded-2xl border border-dashed border-border/70 bg-gradient-to-b from-muted/30 to-background px-6 py-14 text-center">
+      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/15">
+        <Icon className="h-6 w-6 text-primary" />
+      </div>
+      <h3 className="text-lg font-medium tracking-tight">{title}</h3>
+      <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+        {description}
+      </p>
+      <div className="mt-6">{action}</div>
+    </div>
   );
 }
 
@@ -150,21 +151,28 @@ function StatCard({
   label,
   value,
   hint,
+  icon: Icon,
 }: {
   label: string;
   value: string | number;
   hint?: string;
+  icon: typeof Package;
 }) {
   return (
-    <Card size="sm" className="bg-background/80">
-      <CardContent className="py-1">
-        <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-          {label}
-        </p>
-        <p className="mt-1 text-2xl font-light tracking-tight">{value}</p>
-        {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
-      </CardContent>
-    </Card>
+    <div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm ring-1 ring-border/40 transition hover:border-primary/20 hover:shadow-md sm:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            {label}
+          </p>
+          <p className="mt-2 text-2xl font-semibold tracking-tight tabular-nums">{value}</p>
+          {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
+        </div>
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <Icon className="h-4 w-4" />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -174,14 +182,14 @@ function OrderCard({ order }: { order: Order }) {
   const remainingItems = order.items.length - itemPreview.length;
 
   return (
-    <Card className="overflow-hidden bg-background/90 transition-shadow hover:shadow-md">
+    <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm ring-1 ring-border/40 transition hover:border-primary/20 hover:shadow-md">
       <button
         type="button"
         onClick={() => setExpanded((open) => !open)}
         className="flex w-full items-start gap-4 px-4 py-4 text-left sm:px-5 sm:py-5"
       >
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary">
-          <Package className="h-5 w-5 text-primary" />
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
+          <Package className="h-5 w-5" />
         </div>
 
         <div className="min-w-0 flex-1">
@@ -224,7 +232,7 @@ function OrderCard({ order }: { order: Order }) {
       </button>
 
       {expanded && (
-        <div className="border-t border-border/60 bg-muted/20 px-4 py-4 sm:px-5">
+        <div className="border-t border-border/50 bg-gradient-to-b from-muted/30 to-muted/10 px-4 py-4 sm:px-5">
           <div className="grid gap-5 md:grid-cols-2">
             <div>
               <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
@@ -283,12 +291,41 @@ function OrderCard({ order }: { order: Order }) {
           </div>
         </div>
       )}
-    </Card>
+    </div>
+  );
+}
+
+function PanelCard({
+  title,
+  description,
+  children,
+  className,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        'overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm ring-1 ring-black/[0.02]',
+        className
+      )}
+    >
+      <div className="border-b border-border/50 px-5 py-4 sm:px-6">
+        <h3 className="font-semibold tracking-tight">{title}</h3>
+        {description ? (
+          <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
+        ) : null}
+      </div>
+      <div className="p-5 sm:p-6">{children}</div>
+    </div>
   );
 }
 
 export function AccountDashboard() {
-  const { user, profile, logout, loading } = useAuth();
+  const { user, profile, logout, loading, isAdmin } = useAuth();
   const { products, getProductById, loading: productsLoading } = useProducts();
   const { addItem } = useCart();
   const router = useRouter();
@@ -401,16 +438,33 @@ export function AccountDashboard() {
 
   const latestOrder = orders[0];
 
+  const quickLinks = [
+    { label: 'Browse shop', href: '/shop', icon: ShoppingBag },
+    { label: 'Packages', href: '/packages', icon: Crown },
+    { label: 'Wholesale', href: '/wholesale', icon: Truck },
+    ...(isAdmin ? [{ label: 'Admin dashboard', href: '/admin', icon: Shield }] : []),
+  ];
+
   return (
-    <main>
+    <main className="min-h-screen overflow-x-clip bg-gradient-to-b from-muted/25 via-background to-background">
       <Header />
 
-      <section className="min-h-screen bg-muted/20 py-8 sm:py-12">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      {/* Hero */}
+      <section className="relative overflow-hidden border-b border-border/60">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.07] via-background to-accent/10" />
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.28] [background-image:linear-gradient(to_right,hsl(var(--border)/0.35)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border)/0.35)_1px,transparent_1px)] [background-size:3rem_3rem]"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute -right-16 top-0 h-64 w-64 rounded-full bg-primary/10 blur-3xl"
+          aria-hidden
+        />
+        <div className="relative mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
           <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 text-sm">
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 rounded-md text-muted-foreground transition-colors hover:text-primary"
+              className="inline-flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-primary"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               Home
@@ -419,65 +473,71 @@ export function AccountDashboard() {
             <span className="font-medium text-foreground">My Account</span>
           </nav>
 
-          <div className="mb-8">
-            <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-              Account
-            </p>
-            <h1 className="mt-1 text-3xl font-light tracking-tight sm:text-4xl">My Account</h1>
-            <p className="mt-2 text-sm text-muted-foreground sm:text-base">
-              Orders, saved items, and account preferences in one place.
-            </p>
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <AccountAvatar
+                displayName={profile?.displayName ?? user.displayName}
+                email={user.email}
+                photoURL={user.photoURL}
+                size="lg"
+              />
+              <div className="min-w-0">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+                  <Sparkles className="h-3 w-3" />
+                  {isAdmin ? 'Admin' : 'Member'}
+                </span>
+                <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+                  Welcome back, {displayName.split(' ')[0]}
+                </h1>
+                <p className="mt-0.5 truncate text-sm text-muted-foreground">{user.email}</p>
+              </div>
+            </div>
+            {memberSince ? (
+              <p className="shrink-0 text-xs text-muted-foreground sm:text-right">
+                Member since{' '}
+                <span className="font-medium text-foreground">
+                  {formatAccountDate(memberSince)}
+                </span>
+              </p>
+            ) : null}
           </div>
+        </div>
+      </section>
 
-          <div className="grid gap-8 lg:grid-cols-[15rem_1fr] xl:grid-cols-[16rem_1fr]">
-            <aside className="space-y-4">
-              <Card className="overflow-hidden bg-background/90">
-                <CardContent className="px-4 py-4">
-                  <div className="flex items-center gap-3">
-                    <AccountAvatar
-                      displayName={profile?.displayName ?? user.displayName}
-                      email={user.email}
-                      photoURL={user.photoURL}
-                      size="md"
-                    />
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{displayName}</p>
-                      <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <nav className="hidden flex-col gap-1 lg:flex">
-                <Link
-                  href="/"
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground/75 transition-colors hover:bg-background hover:text-foreground"
-                >
-                  <Home className="h-4 w-4 shrink-0" />
-                  Home
-                </Link>
-                <div className="my-2 h-px bg-border/60" />
+      <section className="py-8 sm:py-10">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-8 lg:grid-cols-[16rem_1fr] xl:grid-cols-[17rem_1fr]">
+            <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+              <nav className="hidden flex-col gap-1 rounded-2xl border border-border/60 bg-card p-2 shadow-sm ring-1 ring-black/[0.02] lg:flex">
                 {SECTIONS.map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
                     type="button"
                     onClick={() => navigateSection(id)}
                     className={cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                      'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
                       activeSection === id
-                        ? 'bg-primary text-primary-foreground shadow-sm'
-                        : 'text-foreground/75 hover:bg-background hover:text-foreground'
+                        ? 'bg-primary/10 text-primary ring-1 ring-primary/15'
+                        : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
                     )}
                   >
                     <Icon className="h-4 w-4 shrink-0" />
                     {label}
                   </button>
                 ))}
+                <div className="my-1 h-px bg-border/60" />
+                <Link
+                  href="/"
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                >
+                  <Home className="h-4 w-4 shrink-0" />
+                  Back to shop
+                </Link>
                 <button
                   type="button"
                   onClick={handleLogout}
                   disabled={signingOut}
-                  className="mt-2 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-background hover:text-foreground disabled:opacity-50"
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-destructive/5 hover:text-destructive disabled:opacity-50"
                 >
                   {signingOut ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -489,32 +549,26 @@ export function AccountDashboard() {
               </nav>
 
               <div className="flex gap-2 overflow-x-auto pb-1 lg:hidden">
-                <Link
-                  href="/"
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-background px-4 py-2 text-sm font-medium text-foreground/75 ring-1 ring-border transition-colors hover:text-primary"
-                >
-                  <Home className="h-3.5 w-3.5" />
-                  Home
-                </Link>
-                {SECTIONS.map(({ id, label }) => (
+                {SECTIONS.map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
                     type="button"
                     onClick={() => navigateSection(id)}
                     className={cn(
-                      'shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors',
+                      'inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors',
                       activeSection === id
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-background text-foreground/75 ring-1 ring-border'
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'bg-card text-muted-foreground ring-1 ring-border'
                     )}
                   >
+                    <Icon className="h-3.5 w-3.5" />
                     {label}
                   </button>
                 ))}
               </div>
             </aside>
 
-            <div className="min-w-0">
+            <div className="min-w-0 rounded-2xl border border-border/60 bg-card p-5 shadow-sm ring-1 ring-black/[0.02] sm:p-7 lg:p-8">
               {activeSection === 'overview' && (
                 <div className="space-y-6">
                   <SectionHeader
@@ -523,79 +577,82 @@ export function AccountDashboard() {
                   />
 
                   <div className="grid gap-4 sm:grid-cols-3">
-                    <StatCard label="Orders" value={orders.length} hint="All time" />
-                    <StatCard label="Wishlist" value={wishlistIds.length} hint="Saved items" />
                     <StatCard
-                      label="Member since"
-                      value={memberSince ? formatAccountDate(memberSince) : '—'}
+                      label="Orders"
+                      value={orders.length}
+                      hint="All time"
+                      icon={ShoppingBag}
+                    />
+                    <StatCard
+                      label="Wishlist"
+                      value={wishlistIds.length}
+                      hint="Saved items"
+                      icon={Heart}
+                    />
+                    <StatCard
+                      label="Sign-in"
+                      value={signInMethod}
+                      hint="Account access"
+                      icon={User}
                     />
                   </div>
 
                   <div className="grid gap-4 lg:grid-cols-2">
-                    <Card className="bg-background/90">
-                      <CardHeader>
-                        <CardTitle className="font-medium">Latest order</CardTitle>
-                        <CardDescription>
-                          {latestOrder
-                            ? `Placed on ${formatAccountDate(latestOrder.createdAt)}`
-                            : 'You have not placed an order yet.'}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        {latestOrder ? (
-                          <div className="space-y-4">
-                            <div className="flex items-center justify-between gap-3">
-                              <div>
-                                <p className="font-medium">
-                                  #{formatOrderReference(latestOrder.id)}
-                                </p>
-                                <p className="text-sm text-muted-foreground">
-                                  {formatUGX(latestOrder.total)}
-                                </p>
-                              </div>
-                              <OrderStatusBadge status={latestOrder.status} />
+                    <PanelCard
+                      title="Latest order"
+                      description={
+                        latestOrder
+                          ? `Placed on ${formatAccountDate(latestOrder.createdAt)}`
+                          : 'You have not placed an order yet.'
+                      }
+                    >
+                      {latestOrder ? (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between gap-3 rounded-xl bg-muted/40 px-4 py-3">
+                            <div>
+                              <p className="font-semibold tracking-tight">
+                                #{formatOrderReference(latestOrder.id)}
+                              </p>
+                              <p className="text-sm tabular-nums text-muted-foreground">
+                                {formatUGX(latestOrder.total)}
+                              </p>
                             </div>
-                            <Button
-                              variant="outline"
-                              className="w-full"
-                              onClick={() => navigateSection('orders')}
-                            >
-                              View all orders
-                            </Button>
+                            <OrderStatusBadge status={latestOrder.status} />
                           </div>
-                        ) : (
-                          <Link href="/shop" className={cn(buttonVariants(), 'w-full')}>
-                            Start shopping
-                          </Link>
-                        )}
-                      </CardContent>
-                    </Card>
+                          <Button
+                            variant="outline"
+                            className="w-full rounded-xl"
+                            onClick={() => navigateSection('orders')}
+                          >
+                            View all orders
+                          </Button>
+                        </div>
+                      ) : (
+                        <Link href="/shop" className={cn(buttonVariants(), 'w-full rounded-xl')}>
+                          Start shopping
+                        </Link>
+                      )}
+                    </PanelCard>
 
-                    <Card className="bg-background/90">
-                      <CardHeader>
-                        <CardTitle className="font-medium">Quick links</CardTitle>
-                        <CardDescription>Shortcuts to popular account actions.</CardDescription>
-                      </CardHeader>
-                      <CardContent className="space-y-2">
-                        {[
-                          { label: 'Browse new arrivals', href: '/shop', icon: ShoppingBag },
-                          { label: 'Browse packages', href: '/packages', icon: Crown },
-                          { label: 'Wholesale program', href: '/wholesale', icon: Truck },
-                        ].map(({ label, href, icon: Icon }) => (
+                    <PanelCard title="Quick links" description="Jump to popular destinations.">
+                      <div className="space-y-2">
+                        {quickLinks.map(({ label, href, icon: Icon }) => (
                           <Link
                             key={href}
                             href={href}
-                            className="flex items-center justify-between rounded-lg border border-border/60 px-4 py-3 text-sm transition-colors hover:border-primary/25 hover:bg-secondary/40"
+                            className="flex items-center justify-between rounded-xl border border-border/60 bg-muted/20 px-4 py-3 text-sm transition-colors hover:border-primary/25 hover:bg-primary/5"
                           >
-                            <span className="inline-flex items-center gap-2.5">
-                              <Icon className="h-4 w-4 text-primary" />
+                            <span className="inline-flex items-center gap-2.5 font-medium">
+                              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                <Icon className="h-4 w-4" />
+                              </span>
                               {label}
                             </span>
                             <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           </Link>
                         ))}
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </PanelCard>
                   </div>
                 </div>
               )}
@@ -655,64 +712,69 @@ export function AccountDashboard() {
                       }
                     />
                   ) : (
-                    <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                       {wishlistProducts.map((product) => (
-                        <Card key={product.id} className="overflow-hidden bg-background/90">
-                          <div className="flex gap-4 p-4">
+                        <div
+                          key={product.id}
+                          className="group overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm ring-1 ring-border/40 transition hover:border-primary/20 hover:shadow-md"
+                        >
+                          <Link
+                            href={`/products/${product.id}`}
+                            className="relative block aspect-[4/5] overflow-hidden bg-secondary"
+                          >
+                            {isRemoteProductImage(product.image) ? (
+                              <ProductImage
+                                product={product}
+                                className="absolute inset-0 transition duration-300 group-hover:scale-105"
+                                sizes="(max-width: 640px) 50vw, 240px"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center text-3xl">
+                                ✨
+                              </div>
+                            )}
+                          </Link>
+
+                          <div className="p-4">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                              {product.category}
+                            </p>
                             <Link
                               href={`/products/${product.id}`}
-                              className="relative h-24 w-20 shrink-0 overflow-hidden rounded-lg bg-secondary"
+                              className="mt-1 line-clamp-2 font-medium leading-snug tracking-tight hover:text-primary"
                             >
-                              {isRemoteProductImage(product.image) ? (
-                                <ProductImage
-                                  product={product}
-                                  className="absolute inset-0"
-                                  sizes="80px"
-                                />
-                              ) : (
-                                <div className="flex h-full items-center justify-center text-2xl">
-                                  ✨
-                                </div>
-                              )}
+                              {product.name}
                             </Link>
+                            <p className="mt-1.5 text-sm font-semibold tabular-nums">
+                              {formatUGX(product.price)}
+                            </p>
 
-                            <div className="flex min-w-0 flex-1 flex-col">
-                              <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                                {product.category}
-                              </p>
-                              <Link
-                                href={`/products/${product.id}`}
-                                className="mt-0.5 line-clamp-2 font-medium leading-snug hover:text-primary"
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <Button
+                                size="sm"
+                                className="h-8 flex-1 gap-1.5 rounded-lg sm:flex-none"
+                                onClick={() => handleAddToCart(product.id)}
                               >
-                                {product.name}
-                              </Link>
-                              <p className="mt-1 text-sm font-semibold tabular-nums">
-                                {formatUGX(product.price)}
-                              </p>
-
-                              <div className="mt-auto flex flex-wrap gap-2 pt-3">
-                                <Button
-                                  size="sm"
-                                  className="h-8 gap-1.5"
-                                  onClick={() => handleAddToCart(product.id)}
-                                >
-                                  <ShoppingCart className="h-3.5 w-3.5" />
-                                  Add to cart
-                                </Button>
-                                <ShareProductButton product={product} size="sm" className="h-8 w-8 p-0" />
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-8 px-2.5"
-                                  onClick={() => handleRemoveWishlist(product.id)}
-                                  aria-label={`Remove ${product.name} from wishlist`}
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                              </div>
+                                <ShoppingCart className="h-3.5 w-3.5" />
+                                Add to cart
+                              </Button>
+                              <ShareProductButton
+                                product={product}
+                                size="sm"
+                                className="h-8 w-8 rounded-lg p-0"
+                              />
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 rounded-lg px-2.5"
+                                onClick={() => handleRemoveWishlist(product.id)}
+                                aria-label={`Remove ${product.name} from wishlist`}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
                             </div>
                           </div>
-                        </Card>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -726,60 +788,58 @@ export function AccountDashboard() {
                     description="Profile details and sign-in information."
                   />
 
-                  <Card className="bg-background/90">
-                    <CardHeader>
-                      <CardTitle className="font-medium">Profile</CardTitle>
-                      <CardDescription>Your personal account details.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="rounded-lg border border-border/60 px-4 py-3">
-                          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                            Display name
-                          </p>
-                          <p className="mt-1 text-sm font-medium">{displayName}</p>
-                        </div>
-                        <div className="rounded-lg border border-border/60 px-4 py-3">
-                          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                            Email
-                          </p>
-                          <p className="mt-1 text-sm font-medium">{user.email}</p>
-                        </div>
-                        <div className="rounded-lg border border-border/60 px-4 py-3">
-                          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                            Sign-in method
-                          </p>
-                          <p className="mt-1 text-sm font-medium">{signInMethod}</p>
-                        </div>
-                        <div className="rounded-lg border border-border/60 px-4 py-3">
-                          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                            Member since
-                          </p>
-                          <p className="mt-1 text-sm font-medium">
-                            {memberSince ? formatAccountDate(memberSince) : '—'}
-                          </p>
-                        </div>
+                  <PanelCard title="Profile" description="Your personal account details.">
+                    <div className="mb-5 flex items-center gap-4 rounded-xl bg-gradient-to-br from-primary/[0.06] via-muted/30 to-transparent p-4 ring-1 ring-border/50">
+                      <AccountAvatar
+                        displayName={profile?.displayName ?? user.displayName}
+                        email={user.email}
+                        photoURL={user.photoURL}
+                        size="md"
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold tracking-tight">{displayName}</p>
+                        <p className="truncate text-sm text-muted-foreground">{user.email}</p>
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {[
+                        { label: 'Display name', value: displayName },
+                        { label: 'Email', value: user.email ?? '—' },
+                        { label: 'Sign-in method', value: signInMethod },
+                        {
+                          label: 'Member since',
+                          value: memberSince ? formatAccountDate(memberSince) : '—',
+                        },
+                      ].map(({ label, value }) => (
+                        <div
+                          key={label}
+                          className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3"
+                        >
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                            {label}
+                          </p>
+                          <p className="mt-1 text-sm font-medium">{value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </PanelCard>
 
-                  <Card className="bg-background/90">
-                    <CardHeader>
-                      <CardTitle className="font-medium">Security</CardTitle>
-                      <CardDescription>
-                        {signInMethod === 'Google'
-                          ? 'Your account is secured through Google sign-in.'
-                          : 'Password and email updates will be available in a future release.'}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <PanelCard
+                    title="Security"
+                    description={
+                      signInMethod === 'Google'
+                        ? 'Your account is secured through Google sign-in.'
+                        : 'Password and email updates will be available in a future release.'
+                    }
+                  >
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex items-start gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary">
-                          <User className="h-4 w-4 text-primary" />
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
+                          <Shield className="h-5 w-5" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium">Account access</p>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="font-medium">Account access</p>
+                          <p className="mt-0.5 text-sm text-muted-foreground">
                             Sign out on this device when you are finished shopping.
                           </p>
                         </div>
@@ -788,7 +848,7 @@ export function AccountDashboard() {
                         variant="outline"
                         onClick={handleLogout}
                         disabled={signingOut}
-                        className="gap-2 sm:shrink-0"
+                        className="gap-2 rounded-xl sm:shrink-0"
                       >
                         {signingOut ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -797,8 +857,8 @@ export function AccountDashboard() {
                         )}
                         Sign out
                       </Button>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </PanelCard>
                 </div>
               )}
             </div>

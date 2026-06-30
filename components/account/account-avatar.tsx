@@ -11,7 +11,7 @@ type AccountAvatarProps = {
   displayName?: string | null;
   email?: string | null;
   photoURL?: string | null;
-  size?: 'sm' | 'md';
+  size?: 'sm' | 'md' | 'lg';
   /** Single email letter with a unique bright color per letter (Google-style). */
   variant?: 'default' | 'email-letter';
   className?: string;
@@ -20,6 +20,7 @@ type AccountAvatarProps = {
 const SIZES = {
   sm: { size: 'size-9', text: 'text-base', image: 36 },
   md: { size: 'size-12', text: 'text-xl', image: 48 },
+  lg: { size: 'size-16', text: 'text-2xl', image: 64 },
 } as const;
 
 export function AccountAvatar({
