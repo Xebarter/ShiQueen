@@ -18,6 +18,7 @@ import { getFirebaseDb } from '@/lib/firebase';
 import { COLLECTIONS } from '@/lib/firebase/collections';
 import { toDate } from '@/lib/firebase/timestamp';
 import type { ServiceListing } from '@/lib/types/services';
+import { DEFAULT_SUPPLIER_ID } from '@/lib/types/suppliers';
 
 function stripUndefined<T extends Record<string, unknown>>(data: T): Partial<T> {
   return Object.fromEntries(
@@ -35,6 +36,7 @@ function mapListing(id: string, data: Record<string, unknown>): ServiceListing {
     categoryId: String(data.categoryId ?? ''),
     serviceType: String(data.serviceType ?? ''),
     providerId: String(data.providerId ?? ''),
+    supplierId: String(data.supplierId ?? DEFAULT_SUPPLIER_ID),
     durationMinutes: Number(data.durationMinutes ?? 60),
     basePrice: Number(data.basePrice ?? 0),
     galleryImages: Array.isArray(data.galleryImages) ? (data.galleryImages as string[]) : [],

@@ -8,6 +8,7 @@ export const COLLECTIONS = {
   settings: 'settings',
   marketingAds: 'marketingAds',
   sharedCheckouts: 'sharedCheckouts',
+  suppliers: 'suppliers',
   serviceCategories: 'serviceCategories',
   serviceProviders: 'serviceProviders',
   services: 'services',

@@ -17,6 +17,7 @@ import { getFirebaseDb } from '@/lib/firebase';
 import { COLLECTIONS } from '@/lib/firebase/collections';
 import { toDate } from '@/lib/firebase/timestamp';
 import { Product } from '@/lib/types/database';
+import { DEFAULT_SUPPLIER_ID } from '@/lib/types/suppliers';
 
 function stripUndefined<T extends Record<string, unknown>>(data: T): Partial<T> {
   return Object.fromEntries(
@@ -40,6 +41,7 @@ function mapProduct(id: string, data: Record<string, unknown>): Product {
     sku: String(data.sku ?? ''),
     description: String(data.description ?? ''),
     category: String(data.category ?? ''),
+    supplierId: String(data.supplierId ?? DEFAULT_SUPPLIER_ID),
     price: Number(data.price ?? 0),
     originalPrice: data.originalPrice ? Number(data.originalPrice) : undefined,
     stock: Number(data.stock ?? 0),

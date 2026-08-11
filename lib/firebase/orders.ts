@@ -141,4 +141,28 @@ export async function updateOrderStatus(
   });
 }
 
+export function subscribeOrder(
+  id: string,
+  onData: (order: Order | null) => void,
+  onError?: (error: Error) => void
+): Unsubscribe {
+  const db = getFirebaseDb();
+  if (!db) {
+    onData(null);
+    return () => {};
+  }
+
+  return onSnapshot(
+    doc(db, COLLECTIONS.orders, id),
+    (snap) => {
+      if (!snap.exists()) {
+        onData(null);
+        return;
+      }
+      onData(mapOrder(snap.id, snap.data()));
+    },
+    (error) => onError?.(error)
+  );
+}
+
 export { generateOrderId } from '@/lib/order-utils';

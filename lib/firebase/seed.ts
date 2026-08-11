@@ -11,12 +11,15 @@ import { getFirebaseDb } from '@/lib/firebase';
 import { COLLECTIONS } from '@/lib/firebase/collections';
 import { isFirestoreOfflineError } from '@/lib/firebase/errors';
 import { SEED_PACKAGES, SEED_PRODUCTS } from '@/lib/firebase/seed-data';
+import { ensureSuppliersReady } from '@/lib/firebase/suppliers';
 
 let seedPromise: Promise<void> | null = null;
 
 async function runSeed(): Promise<void> {
   const db = getFirebaseDb();
   if (!db) return;
+
+  await ensureSuppliersReady();
 
   const settingsRef = doc(db, COLLECTIONS.settings, 'app');
   const settingsSnap = await getDoc(settingsRef);

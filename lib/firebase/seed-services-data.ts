@@ -1,6 +1,7 @@
 import { SERVICE_CATALOG } from '@/lib/service-catalog';
 import type { ServiceProvider, ServiceListing } from '@/lib/types/services';
 import { getDefaultWeeklySlots } from '@/lib/services-utils';
+import { DEFAULT_SUPPLIER_ID } from '@/lib/types/suppliers';
 
 export const SEED_SERVICE_CATEGORIES = SERVICE_CATALOG.map((c) => ({
   id: c.id,
@@ -120,6 +121,7 @@ export const SEED_SERVICE_LISTINGS: Omit<ServiceListing, 'createdAt' | 'updatedA
     categoryId: 'makeup-services',
     serviceType: 'Bridal Makeup',
     providerId: 'provider-glow-studio',
+    supplierId: DEFAULT_SUPPLIER_ID,
     durationMinutes: 120,
     basePrice: 350000,
     galleryImages: [],
@@ -145,6 +147,7 @@ export const SEED_SERVICE_LISTINGS: Omit<ServiceListing, 'createdAt' | 'updatedA
     categoryId: 'hair-services',
     serviceType: 'Knotless Braids',
     providerId: 'provider-queen-braids',
+    supplierId: DEFAULT_SUPPLIER_ID,
     durationMinutes: 300,
     basePrice: 280000,
     galleryImages: [],
@@ -170,6 +173,7 @@ export const SEED_SERVICE_LISTINGS: Omit<ServiceListing, 'createdAt' | 'updatedA
     categoryId: 'spa-wellness',
     serviceType: 'Deep Tissue Massage',
     providerId: 'provider-serenity-spa',
+    supplierId: DEFAULT_SUPPLIER_ID,
     durationMinutes: 90,
     basePrice: 180000,
     galleryImages: [],
@@ -195,6 +199,7 @@ export const SEED_SERVICE_LISTINGS: Omit<ServiceListing, 'createdAt' | 'updatedA
     categoryId: 'nail-services',
     serviceType: 'Gel Polish',
     providerId: 'provider-nail-luxe',
+    supplierId: DEFAULT_SUPPLIER_ID,
     durationMinutes: 75,
     basePrice: 85000,
     galleryImages: [],
@@ -220,6 +225,7 @@ export const SEED_SERVICE_LISTINGS: Omit<ServiceListing, 'createdAt' | 'updatedA
     categoryId: 'eyelash-eyebrow-services',
     serviceType: 'Eyelash Extensions',
     providerId: 'provider-glow-studio',
+    supplierId: DEFAULT_SUPPLIER_ID,
     durationMinutes: 120,
     basePrice: 150000,
     galleryImages: [],
@@ -245,6 +251,7 @@ export const SEED_SERVICE_LISTINGS: Omit<ServiceListing, 'createdAt' | 'updatedA
     categoryId: 'home-beauty-services',
     serviceType: 'Home Facial Service',
     providerId: 'provider-serenity-spa',
+    supplierId: DEFAULT_SUPPLIER_ID,
     durationMinutes: 90,
     basePrice: 220000,
     galleryImages: [],

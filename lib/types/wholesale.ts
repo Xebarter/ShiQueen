@@ -45,6 +45,7 @@ export interface Package {
   id: string;
   name: string;
   description: string;
+  supplierId: string;
   items: PackageItem[];
   rule: PackageRule;
   pricingMode: PackagePricingMode;

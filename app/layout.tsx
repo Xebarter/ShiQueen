@@ -1,6 +1,5 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Geist, Geist_Mono, Playfair_Display } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/lib/auth-context'
 import { GoogleOneTap } from '@/components/auth/google-one-tap'
@@ -9,25 +8,14 @@ import { ProductsProvider } from '@/lib/products-context'
 import { MarketingAdsProvider } from '@/lib/marketing-ads-context'
 import { WholesaleProvider } from '@/lib/wholesale-context'
 import { ServicesProvider } from '@/lib/services-context'
+import { SuppliersProvider } from '@/lib/suppliers-context'
 import { BRAND_ASSETS, BRAND_NAME, BRAND_TAGLINE, BRAND_THEME } from '@/lib/brand'
+import { figtree, playfair } from '@/lib/fonts'
 import { getDefaultOgImageUrl } from '@/lib/metadata/resolve-og-image'
 import { getSiteUrl } from '@/lib/site-url'
 import { Toaster } from 'react-hot-toast'
 
 const defaultOgImage = getDefaultOgImageUrl()
-
-const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-})
-
-const brandDisplay = Playfair_Display({
-  variable: '--font-brand-display',
-  subsets: ['latin'],
-  weight: ['500', '600', '700'],
-  style: ['normal', 'italic'],
-})
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
@@ -84,7 +72,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${brandDisplay.variable} bg-background`}>
+    <html lang="en" className={`${figtree.variable} ${playfair.variable} bg-background`}>
       <body className="font-sans antialiased">
         <AuthProvider>
           <ProductsProvider>
@@ -92,9 +80,11 @@ export default function RootLayout({
             <CartProvider>
               <WholesaleProvider>
                 <ServicesProvider>
+                  <SuppliersProvider>
                   {children}
                   <GoogleOneTap />
                   <Toaster />
+                  </SuppliersProvider>
                 </ServicesProvider>
               </WholesaleProvider>
             </CartProvider>

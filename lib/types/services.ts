@@ -68,6 +68,7 @@ export interface ServiceListing {
   categoryId: string;
   serviceType: string;
   providerId: string;
+  supplierId: string;
   durationMinutes: number;
   basePrice: number;
   galleryImages: string[];

@@ -9,16 +9,11 @@ import {
   ChevronRight,
   Crown,
   Heart,
-  Home,
-  LayoutDashboard,
   Loader2,
-  LogOut,
   Package,
-  Settings,
   Shield,
   ShoppingBag,
   ShoppingCart,
-  Sparkles,
   Trash2,
   Truck,
   User,
@@ -26,6 +21,13 @@ import {
 import toast from 'react-hot-toast';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
+import { AccountMobileNav } from '@/components/account/account-mobile-nav';
+import { AccountSidebar } from '@/components/account/account-sidebar';
+import {
+  getAccountSectionMeta,
+  parseAccountSectionHash,
+  type AccountSection,
+} from '@/components/account/account-nav-items';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { AccountAvatar } from '@/components/account/account-avatar';
 import { isRemoteProductImage, ProductImage } from '@/components/product-image';
@@ -40,15 +42,6 @@ import { getDisplayName } from '@/lib/user-display';
 import { ShareProductButton } from '@/components/shared/share-button';
 import { cn } from '@/lib/utils';
 
-type AccountSection = 'overview' | 'orders' | 'wishlist' | 'settings';
-
-const SECTIONS: { id: AccountSection; label: string; icon: typeof LayoutDashboard }[] = [
-  { id: 'overview', label: 'Overview', icon: LayoutDashboard },
-  { id: 'orders', label: 'Orders', icon: ShoppingBag },
-  { id: 'wishlist', label: 'Wishlist', icon: Heart },
-  { id: 'settings', label: 'Settings', icon: Settings },
-];
-
 const ORDER_STATUS: Record<
   Order['status'],
   { label: string; className: string }
@@ -59,12 +52,6 @@ const ORDER_STATUS: Record<
   delivered: { label: 'Delivered', className: 'bg-emerald-500/10 text-emerald-700 ring-emerald-500/20' },
   cancelled: { label: 'Cancelled', className: 'bg-red-500/10 text-red-700 ring-red-500/20' },
 };
-
-function parseSectionHash(hash: string): AccountSection {
-  const value = hash.replace('#', '');
-  if (value === 'orders' || value === 'wishlist' || value === 'settings') return value;
-  return 'overview';
-}
 
 function formatAccountDate(date: Date): string {
   return new Intl.DateTimeFormat('en-UG', {
@@ -102,23 +89,6 @@ function AccountLoadingState() {
       </section>
       <Footer />
     </main>
-  );
-}
-
-function SectionHeader({
-  title,
-  description,
-}: {
-  title: string;
-  description?: string;
-}) {
-  return (
-    <div className="mb-6 border-b border-border/50 pb-5">
-      <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">{title}</h2>
-      {description ? (
-        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-      ) : null}
-    </div>
   );
 }
 
@@ -363,8 +333,9 @@ export function AccountDashboard() {
   }, [user, loading, router]);
 
   useEffect(() => {
-    setActiveSection(parseSectionHash(window.location.hash));
-    const onHashChange = () => setActiveSection(parseSectionHash(window.location.hash));
+    setActiveSection(parseAccountSectionHash(window.location.hash));
+    const onHashChange = () =>
+      setActiveSection(parseAccountSectionHash(window.location.hash));
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
@@ -437,6 +408,8 @@ export function AccountDashboard() {
   }
 
   const latestOrder = orders[0];
+  const sectionMeta = getAccountSectionMeta(activeSection);
+  const memberSinceLabel = memberSince ? formatAccountDate(memberSince) : null;
 
   const quickLinks = [
     { label: 'Browse shop', href: '/shop', icon: ShoppingBag },
@@ -449,19 +422,12 @@ export function AccountDashboard() {
     <main className="min-h-screen overflow-x-clip bg-gradient-to-b from-muted/25 via-background to-background">
       <Header />
 
-      {/* Hero */}
-      <section className="relative overflow-hidden border-b border-border/60">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.07] via-background to-accent/10" />
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.28] [background-image:linear-gradient(to_right,hsl(var(--border)/0.35)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border)/0.35)_1px,transparent_1px)] [background-size:3rem_3rem]"
-          aria-hidden
-        />
-        <div
-          className="pointer-events-none absolute -right-16 top-0 h-64 w-64 rounded-full bg-primary/10 blur-3xl"
-          aria-hidden
-        />
-        <div className="relative mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
-          <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-2 text-sm">
+      <section className="py-6 sm:py-8 lg:py-10">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <nav
+            aria-label="Breadcrumb"
+            className="mb-5 hidden flex-wrap items-center gap-2 text-sm lg:flex"
+          >
             <Link
               href="/"
               className="inline-flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-primary"
@@ -470,112 +436,48 @@ export function AccountDashboard() {
               Home
             </Link>
             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/45" aria-hidden />
-            <span className="font-medium text-foreground">My Account</span>
+            <span className="text-muted-foreground">My Account</span>
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/45" aria-hidden />
+            <span className="font-medium text-foreground">{sectionMeta.label}</span>
           </nav>
 
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4">
-              <AccountAvatar
-                displayName={profile?.displayName ?? user.displayName}
-                email={user.email}
-                photoURL={user.photoURL}
-                size="lg"
-              />
-              <div className="min-w-0">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
-                  <Sparkles className="h-3 w-3" />
-                  {isAdmin ? 'Admin' : 'Member'}
-                </span>
-                <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
-                  Welcome back, {displayName.split(' ')[0]}
-                </h1>
-                <p className="mt-0.5 truncate text-sm text-muted-foreground">{user.email}</p>
-              </div>
-            </div>
-            {memberSince ? (
-              <p className="shrink-0 text-xs text-muted-foreground sm:text-right">
-                Member since{' '}
-                <span className="font-medium text-foreground">
-                  {formatAccountDate(memberSince)}
-                </span>
-              </p>
-            ) : null}
-          </div>
-        </div>
-      </section>
+          <AccountMobileNav
+            activeSection={activeSection}
+            onNavigate={navigateSection}
+            displayName={displayName}
+            email={user.email}
+            photoURL={user.photoURL}
+            profileDisplayName={profile?.displayName ?? user.displayName}
+            isAdmin={isAdmin}
+            signingOut={signingOut}
+            onLogout={handleLogout}
+          />
 
-      <section className="py-8 sm:py-10">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-8 lg:grid-cols-[16rem_1fr] xl:grid-cols-[17rem_1fr]">
-            <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-              <nav className="hidden flex-col gap-1 rounded-2xl border border-border/60 bg-card p-2 shadow-sm ring-1 ring-black/[0.02] lg:flex">
-                {SECTIONS.map(({ id, label, icon: Icon }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => navigateSection(id)}
-                    className={cn(
-                      'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
-                      activeSection === id
-                        ? 'bg-primary/10 text-primary ring-1 ring-primary/15'
-                        : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
-                    )}
-                  >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    {label}
-                  </button>
-                ))}
-                <div className="my-1 h-px bg-border/60" />
-                <Link
-                  href="/"
-                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
-                >
-                  <Home className="h-4 w-4 shrink-0" />
-                  Back to shop
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  disabled={signingOut}
-                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-destructive/5 hover:text-destructive disabled:opacity-50"
-                >
-                  {signingOut ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <LogOut className="h-4 w-4" />
-                  )}
-                  Sign out
-                </button>
-              </nav>
-
-              <div className="flex gap-2 overflow-x-auto pb-1 lg:hidden">
-                {SECTIONS.map(({ id, label, icon: Icon }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => navigateSection(id)}
-                    className={cn(
-                      'inline-flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-colors',
-                      activeSection === id
-                        ? 'bg-primary text-primary-foreground shadow-sm'
-                        : 'bg-card text-muted-foreground ring-1 ring-border'
-                    )}
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </aside>
+          <div className="grid gap-8 lg:grid-cols-[17rem_1fr] xl:grid-cols-[18rem_1fr]">
+            <AccountSidebar
+              className="hidden lg:flex"
+              activeSection={activeSection}
+              onNavigate={navigateSection}
+              displayName={displayName}
+              email={user.email}
+              photoURL={user.photoURL}
+              profileDisplayName={profile?.displayName ?? user.displayName}
+              memberSinceLabel={memberSinceLabel}
+              isAdmin={isAdmin}
+              signingOut={signingOut}
+              onLogout={handleLogout}
+            />
 
             <div className="min-w-0 rounded-2xl border border-border/60 bg-card p-5 shadow-sm ring-1 ring-black/[0.02] sm:p-7 lg:p-8">
+              <p className="mb-5 text-sm text-muted-foreground lg:hidden">
+                {sectionMeta.description}
+              </p>
+              <div className="mb-6 hidden border-b border-border/50 pb-5 lg:block">
+                <h1 className="text-2xl font-semibold tracking-tight">{sectionMeta.label}</h1>
+                <p className="mt-1 text-sm text-muted-foreground">{sectionMeta.description}</p>
+              </div>
               {activeSection === 'overview' && (
                 <div className="space-y-6">
-                  <SectionHeader
-                    title="Overview"
-                    description="A snapshot of your SheQueen account activity."
-                  />
-
                   <div className="grid gap-4 sm:grid-cols-3">
                     <StatCard
                       label="Orders"
@@ -659,11 +561,6 @@ export function AccountDashboard() {
 
               {activeSection === 'orders' && (
                 <div>
-                  <SectionHeader
-                    title="Order history"
-                    description="Track purchases, totals, and delivery details."
-                  />
-
                   {ordersLoading ? (
                     <div className="flex justify-center py-16">
                       <Loader2 className="h-7 w-7 animate-spin text-primary" />
@@ -691,11 +588,6 @@ export function AccountDashboard() {
 
               {activeSection === 'wishlist' && (
                 <div>
-                  <SectionHeader
-                    title="Wishlist"
-                    description="Items you have saved for later."
-                  />
-
                   {productsLoading ? (
                     <div className="flex justify-center py-16">
                       <Loader2 className="h-7 w-7 animate-spin text-primary" />
@@ -783,11 +675,6 @@ export function AccountDashboard() {
 
               {activeSection === 'settings' && (
                 <div className="space-y-6">
-                  <SectionHeader
-                    title="Account settings"
-                    description="Profile details and sign-in information."
-                  />
-
                   <PanelCard title="Profile" description="Your personal account details.">
                     <div className="mb-5 flex items-center gap-4 rounded-xl bg-gradient-to-br from-primary/[0.06] via-muted/30 to-transparent p-4 ring-1 ring-border/50">
                       <AccountAvatar

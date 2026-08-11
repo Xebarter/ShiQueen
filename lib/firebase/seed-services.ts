@@ -14,6 +14,7 @@ import {
   SEED_SERVICE_LISTINGS,
   SEED_SERVICE_PROVIDERS,
 } from '@/lib/firebase/seed-services-data';
+import { ensureSuppliersReady } from '@/lib/firebase/suppliers';
 
 let servicesSeedPromise: Promise<void> | null = null;
 
@@ -23,6 +24,8 @@ export async function ensureServicesSeeded(): Promise<void> {
   servicesSeedPromise = (async () => {
     const db = getFirebaseDb();
     if (!db) return;
+
+    await ensureSuppliersReady();
 
     const categoriesSnap = await getDocs(collection(db, COLLECTIONS.serviceCategories));
     if (!categoriesSnap.empty) return;

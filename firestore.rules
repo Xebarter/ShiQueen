@@ -71,6 +71,11 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    match /suppliers/{supplierId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
     // Token in the URL is the secret; rules limit what clients can change.
     match /serviceCategories/{categoryId} {
       allow read: if true;

@@ -18,6 +18,7 @@ import { stripUndefined } from '@/lib/firebase/sanitize';
 import { toDate } from '@/lib/firebase/timestamp';
 import { isValidPackageCategory } from '@/lib/package-catalog';
 import { Package, BulkOrder, WholesaleAccount } from '@/lib/types/wholesale';
+import { DEFAULT_SUPPLIER_ID } from '@/lib/types/suppliers';
 
 function sanitizePackageUpdateData(data: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(
@@ -33,6 +34,7 @@ function mapPackage(id: string, data: Record<string, unknown>): Package {
     id,
     name: String(data.name ?? ''),
     description: String(data.description ?? ''),
+    supplierId: String(data.supplierId ?? DEFAULT_SUPPLIER_ID),
     items: Array.isArray(data.items) ? data.items : [],
     rule: data.rule as Package['rule'],
     pricingMode: data.pricingMode === 'auto' ? 'auto' : 'custom',

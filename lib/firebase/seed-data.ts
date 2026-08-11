@@ -1,5 +1,6 @@
 import { Product } from '@/lib/types/database';
 import { Package } from '@/lib/types/wholesale';
+import { DEFAULT_SUPPLIER_ID } from '@/lib/types/suppliers';
 
 const now = new Date();
 
@@ -10,6 +11,7 @@ export const SEED_PRODUCTS: Omit<Product, 'createdAt' | 'updatedAt'>[] = [
     sku: 'SLB-001',
     description: 'Elegant silk blouse crafted for timeless sophistication.',
     category: 'Clothing',
+    supplierId: DEFAULT_SUPPLIER_ID,
     price: 450000,
     originalPrice: 600000,
     stock: 45,
@@ -31,6 +33,7 @@ export const SEED_PRODUCTS: Omit<Product, 'createdAt' | 'updatedAt'>[] = [
     sku: 'CSW-002',
     description: 'Premium cashmere blend sweater for luxurious comfort.',
     category: 'Clothing',
+    supplierId: DEFAULT_SUPPLIER_ID,
     price: 850000,
     originalPrice: 1200000,
     stock: 28,
@@ -52,6 +55,7 @@ export const SEED_PRODUCTS: Omit<Product, 'createdAt' | 'updatedAt'>[] = [
     sku: 'LFC-003',
     description: 'Rich hydrating face cream with botanical extracts.',
     category: 'Beauty',
+    supplierId: DEFAULT_SUPPLIER_ID,
     price: 280000,
     originalPrice: 350000,
     stock: 62,
@@ -73,6 +77,7 @@ export const SEED_PRODUCTS: Omit<Product, 'createdAt' | 'updatedAt'>[] = [
     sku: 'WRS-004',
     description: 'Complete wellness kit for daily self-care rituals.',
     category: 'Wellness',
+    supplierId: DEFAULT_SUPPLIER_ID,
     price: 200000,
     stock: 35,
     rating: 4.6,
@@ -93,6 +98,7 @@ export const SEED_PRODUCTS: Omit<Product, 'createdAt' | 'updatedAt'>[] = [
     sku: 'DSG-005',
     description: 'UV-protected designer sunglasses with premium frames.',
     category: 'Accessories',
+    supplierId: DEFAULT_SUPPLIER_ID,
     price: 700000,
     stock: 18,
     rating: 4.7,
@@ -113,6 +119,7 @@ export const SEED_PRODUCTS: Omit<Product, 'createdAt' | 'updatedAt'>[] = [
     sku: 'PLW-006',
     description: 'Hand-stitched leather wallet with card slots.',
     category: 'Accessories',
+    supplierId: DEFAULT_SUPPLIER_ID,
     price: 320000,
     stock: 8,
     rating: 4.5,
@@ -133,6 +140,7 @@ export const SEED_PRODUCTS: Omit<Product, 'createdAt' | 'updatedAt'>[] = [
     sku: 'OST-007',
     description: 'Three-step organic skincare routine set.',
     category: 'Beauty',
+    supplierId: DEFAULT_SUPPLIER_ID,
     price: 350000,
     originalPrice: 450000,
     stock: 40,
@@ -154,6 +162,7 @@ export const SEED_PRODUCTS: Omit<Product, 'createdAt' | 'updatedAt'>[] = [
     sku: 'SPK-008',
     description: 'Mulberry silk pillowcase for hair and skin care.',
     category: 'Home',
+    supplierId: DEFAULT_SUPPLIER_ID,
     price: 180000,
     stock: 55,
     rating: 4.4,
@@ -175,6 +184,7 @@ export const SEED_PACKAGES: Omit<Package, 'createdAt' | 'updatedAt'>[] = [
     id: 'pkg-1',
     name: 'Beauty Essentials Bundle',
     description: 'Complete skincare starter pack with luxury products',
+    supplierId: DEFAULT_SUPPLIER_ID,
     items: [
       { productId: '3', quantity: 1 },
       { productId: '7', quantity: 1 },
@@ -190,6 +200,7 @@ export const SEED_PACKAGES: Omit<Package, 'createdAt' | 'updatedAt'>[] = [
     id: 'pkg-2',
     name: 'Clothing Collection',
     description: 'Mix and match premium clothing pieces',
+    supplierId: DEFAULT_SUPPLIER_ID,
     items: [
       { productId: '1', quantity: 1 },
       { productId: '2', quantity: 1 },
@@ -205,6 +216,7 @@ export const SEED_PACKAGES: Omit<Package, 'createdAt' | 'updatedAt'>[] = [
     id: 'pkg-3',
     name: 'Wellness Starter Kit',
     description: 'Everything you need for daily wellness',
+    supplierId: DEFAULT_SUPPLIER_ID,
     items: [
       { productId: '4', quantity: 2 },
       { productId: '8', quantity: 1 },

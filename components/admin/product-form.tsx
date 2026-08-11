@@ -14,6 +14,8 @@ import { uploadProductImages } from '@/lib/firebase/storage';
 import { isRemoteProductImage } from '@/components/product-image';
 import { ArrowLeft, Save, Loader2, Upload, X, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { SupplierSelect } from '@/components/admin/supplier-select';
+import { useSuppliers } from '@/lib/suppliers-context';
 
 const CATEGORIES = ['Clothing', 'Beauty', 'Wellness', 'Accessories', 'Home'];
 
@@ -24,11 +26,12 @@ type ProductFormProps = {
   onSaved?: () => void;
 };
 
-function emptyForm() {
+function emptyForm(defaultSupplierId = '') {
   return {
     name: '',
     sku: '',
     category: 'Clothing',
+    supplierId: defaultSupplierId,
     price: '',
     originalPrice: '',
     stock: '',
@@ -46,6 +49,7 @@ function productToFormState(product: Product) {
     name: product.name,
     sku: product.sku,
     category: product.category,
+    supplierId: product.supplierId,
     price: String(product.price),
     originalPrice: product.originalPrice ? String(product.originalPrice) : '',
     stock: String(product.stock),
@@ -85,10 +89,11 @@ function computeStatus(stock: number): Product['status'] {
 }
 
 export function ProductForm({ mode, productId, initialProduct, onSaved }: ProductFormProps) {
+  const { defaultSupplierId } = useSuppliers();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState(() =>
-    initialProduct ? productToFormState(initialProduct) : emptyForm()
+    initialProduct ? productToFormState(initialProduct) : emptyForm(defaultSupplierId)
   );
   const [imageUrls, setImageUrls] = useState<string[]>(() =>
     initialProduct ? productToImageUrls(initialProduct) : []
@@ -99,6 +104,12 @@ export function ProductForm({ mode, productId, initialProduct, onSaved }: Produc
     () => pendingFiles.map((file) => URL.createObjectURL(file)),
     [pendingFiles]
   );
+
+  useEffect(() => {
+    if (mode === 'create' && !formData.supplierId && defaultSupplierId) {
+      setFormData((prev) => ({ ...prev, supplierId: defaultSupplierId }));
+    }
+  }, [mode, formData.supplierId, defaultSupplierId]);
 
   useEffect(() => {
     return () => {
@@ -145,6 +156,10 @@ export function ProductForm({ mode, productId, initialProduct, onSaved }: Produc
       toast.error('Name and SKU are required.');
       return;
     }
+    if (!formData.supplierId) {
+      toast.error('Select a supplier.');
+      return;
+    }
 
     setSaving(true);
     try {
@@ -161,6 +176,7 @@ export function ProductForm({ mode, productId, initialProduct, onSaved }: Produc
         name: formData.name.trim(),
         sku: formData.sku.trim(),
         category: formData.category,
+        supplierId: formData.supplierId,
         price,
         originalPrice: originalPrice && originalPrice > price ? originalPrice : undefined,
         stock,
@@ -362,6 +378,10 @@ export function ProductForm({ mode, productId, initialProduct, onSaved }: Produc
                   </select>
                 </div>
               </div>
+              <SupplierSelect
+                value={formData.supplierId}
+                onChange={(supplierId) => setFormData((prev) => ({ ...prev, supplierId }))}
+              />
               <div>
                 <Label htmlFor="description">Description</Label>
                 <textarea

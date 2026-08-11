@@ -4,7 +4,11 @@ import { useMemo, useState } from 'react';
 import { AdminPage, AdminPageHeader } from '@/components/admin/admin-page';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { SupplierSelect } from '@/components/admin/supplier-select';
 import { useServices } from '@/lib/services-context';
+import { useSuppliers } from '@/lib/suppliers-context';
 import {
   updateServiceCategory,
   deleteServiceCategory,
@@ -35,9 +39,11 @@ import {
   FolderOpen,
   Loader2,
   MessageSquare,
+  Plus,
   Scissors,
   Star,
   Users,
+  X,
 } from 'lucide-react';
 import type { ServiceBookingStatus } from '@/lib/types/services';
 
@@ -67,8 +73,19 @@ export function AdminServicesPage() {
     availability,
     loading,
   } = useServices();
+  const { defaultSupplierId, getSupplierById } = useSuppliers();
   const [tab, setTab] = useState<TabId>('overview');
   const [busy, setBusy] = useState(false);
+  const [showServiceForm, setShowServiceForm] = useState(false);
+  const [serviceForm, setServiceForm] = useState({
+    name: '',
+    categoryId: '',
+    providerId: '',
+    supplierId: '',
+    basePrice: '100000',
+    durationMinutes: '60',
+    location: 'Kampala',
+  });
 
   const stats = useMemo(() => {
     const completed = bookings.filter((b) => b.status === 'completed');
@@ -167,31 +184,49 @@ export function AdminServicesPage() {
     }
   };
 
+  const openServiceForm = () => {
+    setServiceForm({
+      name: '',
+      categoryId: categories.find((c) => c.isActive)?.id ?? categories[0]?.id ?? '',
+      providerId: providers.find((p) => p.isActive)?.id ?? providers[0]?.id ?? '',
+      supplierId: defaultSupplierId,
+      basePrice: '100000',
+      durationMinutes: '60',
+      location: 'Kampala',
+    });
+    setShowServiceForm(true);
+  };
+
   const handleCreateService = async () => {
-    const name = prompt('Service name?');
-    if (!name?.trim()) return;
-    const providerId = providers[0]?.id;
-    const categoryId = categories[0]?.id;
-    if (!providerId || !categoryId) {
-      toast.error('Add a provider and category first');
+    if (!serviceForm.name.trim()) {
+      toast.error('Service name is required');
       return;
     }
-    const priceStr = prompt('Base price (UGX)?', '100000');
-    const id = `svc-${slugifyServiceName(name)}-${Date.now().toString(36).slice(-4)}`;
-    const slug = slugifyServiceName(name);
+    if (!serviceForm.providerId || !serviceForm.categoryId) {
+      toast.error('Select a provider and category');
+      return;
+    }
+    if (!serviceForm.supplierId) {
+      toast.error('Select a supplier');
+      return;
+    }
+
+    const id = `svc-${slugifyServiceName(serviceForm.name)}-${Date.now().toString(36).slice(-4)}`;
+    const slug = slugifyServiceName(serviceForm.name);
     setBusy(true);
     try {
       await createServiceListing({
         id,
         slug,
-        name: name.trim(),
+        name: serviceForm.name.trim(),
         description: '',
         benefits: [],
-        categoryId,
-        serviceType: name.trim(),
-        providerId,
-        durationMinutes: 60,
-        basePrice: Number(priceStr) || 100000,
+        categoryId: serviceForm.categoryId,
+        serviceType: serviceForm.name.trim(),
+        providerId: serviceForm.providerId,
+        supplierId: serviceForm.supplierId,
+        durationMinutes: Number(serviceForm.durationMinutes) || 60,
+        basePrice: Number(serviceForm.basePrice) || 100000,
         galleryImages: [],
         isFeatured: false,
         isPopular: false,
@@ -199,7 +234,7 @@ export function AdminServicesPage() {
         isArchived: false,
         supportsMobile: true,
         supportsInStudio: true,
-        location: 'Kampala',
+        location: serviceForm.location.trim() || 'Kampala',
         bookingCount: 0,
         viewCount: 0,
         rating: 0,
@@ -207,6 +242,7 @@ export function AdminServicesPage() {
         sortOrder: listings.length + 1,
       });
       toast.success('Service created');
+      setShowServiceForm(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed');
     } finally {
@@ -340,12 +376,150 @@ export function AdminServicesPage() {
 
       {tab === 'services' && (
         <div className="space-y-4">
-          <Button onClick={handleCreateService} disabled={busy}>Add service</Button>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              Assign a catalog supplier and delivery provider for every listing.
+            </p>
+            <Button onClick={openServiceForm} disabled={busy} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add service
+            </Button>
+          </div>
+
+          {showServiceForm && (
+            <Card className="border-primary/20 shadow-sm">
+              <CardHeader className="flex flex-row items-start justify-between gap-4 border-b border-border/60">
+                <div>
+                  <CardTitle>New service listing</CardTitle>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Choose supplier and provider, then save.
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowServiceForm(false)}
+                  aria-label="Close form"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </CardHeader>
+              <CardContent className="grid gap-4 pt-6 sm:grid-cols-2">
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="service-name">Service name *</Label>
+                  <Input
+                    id="service-name"
+                    value={serviceForm.name}
+                    onChange={(e) =>
+                      setServiceForm((prev) => ({ ...prev, name: e.target.value }))
+                    }
+                    placeholder="Bridal Makeup"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="service-category">Category *</Label>
+                  <select
+                    id="service-category"
+                    value={serviceForm.categoryId}
+                    onChange={(e) =>
+                      setServiceForm((prev) => ({ ...prev, categoryId: e.target.value }))
+                    }
+                    className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="">Select category…</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="service-provider">Provider *</Label>
+                  <select
+                    id="service-provider"
+                    value={serviceForm.providerId}
+                    onChange={(e) =>
+                      setServiceForm((prev) => ({ ...prev, providerId: e.target.value }))
+                    }
+                    className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="">Select provider…</option>
+                    {providers.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.businessName || p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <SupplierSelect
+                    value={serviceForm.supplierId}
+                    onChange={(supplierId) =>
+                      setServiceForm((prev) => ({ ...prev, supplierId }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="service-price">Base price (UGX)</Label>
+                  <Input
+                    id="service-price"
+                    type="number"
+                    value={serviceForm.basePrice}
+                    onChange={(e) =>
+                      setServiceForm((prev) => ({ ...prev, basePrice: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="service-duration">Duration (minutes)</Label>
+                  <Input
+                    id="service-duration"
+                    type="number"
+                    value={serviceForm.durationMinutes}
+                    onChange={(e) =>
+                      setServiceForm((prev) => ({
+                        ...prev,
+                        durationMinutes: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="service-location">Location</Label>
+                  <Input
+                    id="service-location"
+                    value={serviceForm.location}
+                    onChange={(e) =>
+                      setServiceForm((prev) => ({ ...prev, location: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2 sm:col-span-2">
+                  <Button onClick={handleCreateService} disabled={busy}>
+                    {busy ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating…
+                      </>
+                    ) : (
+                      'Create service'
+                    )}
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowServiceForm(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="overflow-x-auto rounded-xl border">
             <table className="w-full text-sm">
               <thead className="bg-muted/50">
                 <tr>
                   <th className="px-4 py-3 text-left">Name</th>
+                  <th className="px-4 py-3 text-left">Supplier</th>
                   <th className="px-4 py-3 text-left">Price</th>
                   <th className="px-4 py-3 text-left">Status</th>
                   <th className="px-4 py-3 text-left">Actions</th>
@@ -355,6 +529,9 @@ export function AdminServicesPage() {
                 {listings.map((s) => (
                   <tr key={s.id} className="border-t">
                     <td className="px-4 py-3">{s.name}</td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {getSupplierById(s.supplierId)?.name ?? 'SheQueen'}
+                    </td>
                     <td className="px-4 py-3">{formatUGX(s.basePrice)}</td>
                     <td className="px-4 py-3">
                       {s.isArchived ? 'Archived' : s.isActive ? 'Active' : 'Inactive'}

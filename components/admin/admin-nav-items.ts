@@ -9,6 +9,7 @@ import {
   Building2,
   Megaphone,
   Scissors,
+  Truck,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -22,6 +23,7 @@ export const ADMIN_NAV_ITEMS: AdminNavItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/admin' },
   { icon: Package, label: 'Products', href: '/admin/products' },
   { icon: Boxes, label: 'Packages', href: '/admin/packages' },
+  { icon: Truck, label: 'Suppliers', href: '/admin/suppliers' },
   { icon: Megaphone, label: 'Ads', href: '/admin/ads' },
   { icon: Scissors, label: 'Services', href: '/admin/services' },
   { icon: ShoppingCart, label: 'Orders', href: '/admin/orders' },

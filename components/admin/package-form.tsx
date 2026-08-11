@@ -45,6 +45,8 @@ import {
   type PackageTierId,
 } from '@/lib/package-catalog';
 import { cn } from '@/lib/utils';
+import { SupplierSelect } from '@/components/admin/supplier-select';
+import { useSuppliers } from '@/lib/suppliers-context';
 import {
   ArrowLeft,
   Boxes,
@@ -93,6 +95,7 @@ const BUNDLE_TYPES: {
 
 export function PackageForm({ mode, packageId, initialData, onSubmit }: PackageFormProps) {
   const { products } = useProducts();
+  const { defaultSupplierId } = useSuppliers();
   const catalog = productsToCatalog(products);
   const retailPrices = getRetailPricesMap(catalog);
   const coverFileRef = useRef<HTMLInputElement>(null);
@@ -103,6 +106,9 @@ export function PackageForm({ mode, packageId, initialData, onSubmit }: PackageF
 
   const [category, setCategory] = useState<PackageCategoryId | ''>(
     initialData?.category ?? ''
+  );
+  const [supplierId, setSupplierId] = useState(
+    initialData?.supplierId ?? defaultSupplierId
   );
   const [nameTemplate, setNameTemplate] = useState('');
   const [name, setName] = useState(initialData?.name ?? '');
@@ -138,6 +144,12 @@ export function PackageForm({ mode, packageId, initialData, onSubmit }: PackageF
     initialData?.discountedPrice?.toString() ?? ''
   );
   const [isActive, setIsActive] = useState(initialData?.isActive ?? true);
+
+  useEffect(() => {
+    if (mode === 'create' && !supplierId && defaultSupplierId) {
+      setSupplierId(defaultSupplierId);
+    }
+  }, [mode, supplierId, defaultSupplierId]);
 
   const { productNames: itemNames, retailPrices: itemRetailPrices } = useMemo(
     () =>
@@ -193,6 +205,7 @@ export function PackageForm({ mode, packageId, initialData, onSubmit }: PackageF
           id: packageId,
           name,
           description,
+          supplierId,
           items,
           rule: { type: ruleType },
           pricingMode,
@@ -212,6 +225,7 @@ export function PackageForm({ mode, packageId, initialData, onSubmit }: PackageF
       packageId,
       name,
       description,
+      supplierId,
       items,
       ruleType,
       pricingMode,
@@ -398,6 +412,11 @@ export function PackageForm({ mode, packageId, initialData, onSubmit }: PackageF
     const finalPrice = pricingMode === 'auto' ? calculatedPrice : parseInt(discountedPrice);
     if (!category || !name || !finalPrice || items.length === 0) return;
 
+    if (!supplierId) {
+      toast.error('Select a supplier');
+      return;
+    }
+
     if (!tagline.trim() && !description.trim()) {
       toast.error('Add a tagline or description explaining what need this bundle solves');
       return;
@@ -435,6 +454,7 @@ export function PackageForm({ mode, packageId, initialData, onSubmit }: PackageF
       await onSubmit({
         name,
         description,
+        supplierId,
         category,
         tagline: tagline.trim() || undefined,
         highlights: highlights.filter((h) => h.trim()).length
@@ -537,6 +557,8 @@ export function PackageForm({ mode, packageId, initialData, onSubmit }: PackageF
                     </p>
                   )}
                 </div>
+
+                <SupplierSelect value={supplierId} onChange={setSupplierId} />
 
                 {nameTemplates.length > 0 && (
                   <div className="space-y-2">
