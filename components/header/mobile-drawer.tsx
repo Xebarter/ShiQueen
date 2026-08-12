@@ -181,7 +181,7 @@ export function MobileDrawer({ onClose, user, itemCount, wishlistCount }: Mobile
   const pathname = usePathname();
   const shopFilters = useShopFilters();
   const showShopMenuFilters = pathname === '/shop' && shopFilters !== null;
-  const { shopCategories, destinations } = useMobileMenuCatalog();
+  const { shopCategories, serviceCategories, destinations } = useMobileMenuCatalog();
 
   const [shopDestination, packagesDestination, servicesDestination, wholesaleDestination] =
     destinations;
@@ -315,6 +315,42 @@ export function MobileDrawer({ onClose, user, itemCount, wishlistCount }: Mobile
               ))}
             </div>
           </section>
+
+          {serviceCategories.length > 0 && (
+            <section>
+              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Services by category
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {serviceCategories.map((cat, index) => (
+                  <motion.div
+                    key={cat.id}
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.18 + index * 0.03, duration: 0.3 }}
+                  >
+                    <Link
+                      href={cat.href}
+                      onClick={onClose}
+                      className="group block overflow-hidden rounded-xl border border-border/50 bg-card shadow-sm transition hover:border-primary/30 hover:shadow-md"
+                    >
+                      <div className="relative aspect-square w-full">
+                        <MenuImage
+                          src={cat.image}
+                          alt={cat.productName ?? cat.label}
+                          icon={Sparkles}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+                        <span className="absolute bottom-1.5 left-0 right-0 px-1.5 text-center text-[10px] font-semibold leading-tight text-white drop-shadow-sm">
+                          {cat.label}
+                        </span>
+                      </div>
+                    </Link>
+                  </motion.div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {showShopMenuFilters && (
             <section className="-mx-4 overflow-hidden rounded-2xl border border-border/50 bg-muted/20">

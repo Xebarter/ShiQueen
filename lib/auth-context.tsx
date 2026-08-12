@@ -23,12 +23,15 @@ interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   isAdmin: boolean;
+  isSupplier: boolean;
+  supplierId: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithGoogleCredential: (idToken: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -217,6 +220,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const refreshProfile = async () => {
+    const auth = getFirebaseAuth();
+    const currentUser = auth?.currentUser;
+    if (!currentUser?.email) {
+      setProfile(null);
+      return;
+    }
+    const userProfile = await loadUserProfile(currentUser);
+    setProfile(userProfile);
+  };
+
   const logout = async () => {
     const auth = getFirebaseAuth();
     if (!auth) throw new Error('Firebase Auth not initialized');
@@ -231,12 +245,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         profile,
         isAdmin: profile?.role === 'admin',
+        isSupplier: profile?.role === 'supplier',
+        supplierId: profile?.supplierId ?? null,
         loading,
         signIn,
         signUp,
         signInWithGoogle,
         signInWithGoogleCredential,
         logout,
+        refreshProfile,
       }}
     >
       {children}

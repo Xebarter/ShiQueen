@@ -8,6 +8,8 @@ import { PackageCategoryIcon } from '@/components/packages/package-category-icon
 import { isRemoteProductImage } from '@/components/product-image';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { useServices } from '@/lib/services-context';
+
 interface PackageDiscoveryCategoriesProps {
   packages: PackageType[];
   products: Product[];
@@ -19,6 +21,7 @@ export function PackageDiscoveryCategories({
   products,
   onSelectCategory,
 }: PackageDiscoveryCategoriesProps) {
+  const { activeListings } = useServices();
   const categoriesWithPackages = PACKAGE_CATEGORIES.filter((cat) =>
     packages.some((p) => p.category === cat.id)
   );
@@ -46,7 +49,7 @@ export function PackageDiscoveryCategories({
           {categoriesWithPackages.map((cat, i) => {
             const firstPkg = packages.find((p) => p.category === cat.id);
             const cover = firstPkg
-              ? getPackageCoverImages(firstPkg, products)[0]
+              ? getPackageCoverImages(firstPkg, products, activeListings)[0]
               : undefined;
             const count = packages.filter((p) => p.category === cat.id).length;
 
@@ -61,7 +64,7 @@ export function PackageDiscoveryCategories({
                 onClick={() => onSelectCategory(cat.id)}
                 className="group relative aspect-[4/5] overflow-hidden rounded-2xl border border-border/60 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
               >
-                {isRemoteProductImage(cover) ? (
+                {cover && isRemoteProductImage(cover) ? (
                   <Image
                     src={cover}
                     alt={cat.discoveryLabel}

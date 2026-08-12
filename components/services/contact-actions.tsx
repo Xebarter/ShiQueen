@@ -64,7 +64,7 @@ export function ContactActions({
       </a>
       {showBook && onBook && (
         <Button type="button" className="gap-2 rounded-xl shadow-md shadow-primary/20" onClick={onBook}>
-          Book Now
+          Book &amp; pay
         </Button>
       )}
     </div>

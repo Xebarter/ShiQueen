@@ -35,6 +35,16 @@ function mapSupplier(id: string, data: Record<string, unknown>): Supplier {
       )
     : (['products', 'packages', 'services'] as SupplierCategory[]);
 
+  const rawStatus = String(data.approvalStatus ?? '');
+  const approvalStatus =
+    rawStatus === 'pending' ||
+    rawStatus === 'approved' ||
+    rawStatus === 'rejected' ||
+    rawStatus === 'suspended'
+      ? rawStatus
+      : // Legacy docs without approvalStatus were admin-managed and public.
+        'approved';
+
   return {
     id,
     name: String(data.name ?? ''),
@@ -49,6 +59,13 @@ function mapSupplier(id: string, data: Record<string, unknown>): Supplier {
     categories,
     isDefault: Boolean(data.isDefault ?? false),
     isActive: Boolean(data.isActive ?? true),
+    approvalStatus,
+    ownerUid: data.ownerUid ? String(data.ownerUid) : null,
+    approvedAt: data.approvedAt ? toDate(data.approvedAt) : undefined,
+    rejectedAt: data.rejectedAt ? toDate(data.rejectedAt) : undefined,
+    rejectionReason: data.rejectionReason
+      ? String(data.rejectionReason)
+      : undefined,
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
   };
@@ -69,6 +86,9 @@ export function buildDefaultSupplier(): Omit<Supplier, 'createdAt' | 'updatedAt'
     categories: ['products', 'packages', 'services'],
     isDefault: true,
     isActive: true,
+    approvalStatus: 'approved',
+    ownerUid: null,
+    approvedAt: new Date(),
   };
 }
 
@@ -311,9 +331,24 @@ export async function ensureDefaultSupplier(): Promise<Supplier> {
 
   const existing = await getSupplier(DEFAULT_SUPPLIER_ID);
   if (existing) {
-    if (!existing.isDefault || !existing.isActive) {
-      await updateSupplier(DEFAULT_SUPPLIER_ID, { isDefault: true, isActive: true });
-      return { ...existing, isDefault: true, isActive: true };
+    const needsPatch =
+      !existing.isDefault ||
+      !existing.isActive ||
+      existing.approvalStatus !== 'approved';
+    if (needsPatch) {
+      await updateSupplier(DEFAULT_SUPPLIER_ID, {
+        isDefault: true,
+        isActive: true,
+        approvalStatus: 'approved',
+        approvedAt: existing.approvedAt ?? new Date(),
+      });
+      return {
+        ...existing,
+        isDefault: true,
+        isActive: true,
+        approvalStatus: 'approved',
+        approvedAt: existing.approvedAt ?? new Date(),
+      };
     }
     return existing;
   }
@@ -321,6 +356,124 @@ export async function ensureDefaultSupplier(): Promise<Supplier> {
   const defaults = buildDefaultSupplier();
   await createSupplier(defaults);
   return { ...defaults, createdAt: new Date(), updatedAt: new Date() };
+}
+
+/** Backfill approvalStatus on legacy supplier docs missing it. */
+export async function backfillSupplierApprovalStatus(): Promise<number> {
+  const db = getFirebaseDb();
+  if (!db) return 0;
+
+  const snapshot = await getDocs(collection(db, COLLECTIONS.suppliers));
+  let batch = writeBatch(db);
+  let ops = 0;
+  let updated = 0;
+
+  for (const docSnap of snapshot.docs) {
+    if (docSnap.data().approvalStatus != null) continue;
+    batch.update(docSnap.ref, {
+      approvalStatus: 'approved',
+      ownerUid: docSnap.data().ownerUid ?? null,
+      updatedAt: serverTimestamp(),
+    });
+    ops += 1;
+    updated += 1;
+    if (ops >= 400) {
+      await batch.commit();
+      batch = writeBatch(db);
+      ops = 0;
+    }
+  }
+
+  if (ops > 0) await batch.commit();
+  return updated;
+}
+
+export async function setSupplierApprovalStatus(
+  id: string,
+  approvalStatus: Supplier['approvalStatus'],
+  options?: { rejectionReason?: string }
+): Promise<void> {
+  const patch: Partial<Omit<Supplier, 'id' | 'createdAt' | 'updatedAt'>> = {
+    approvalStatus,
+  };
+
+  if (approvalStatus === 'approved') {
+    patch.isActive = true;
+    patch.approvedAt = new Date();
+    patch.rejectionReason = '';
+  } else if (approvalStatus === 'rejected') {
+    patch.isActive = false;
+    patch.rejectedAt = new Date();
+    patch.rejectionReason = options?.rejectionReason?.trim() || '';
+  } else if (approvalStatus === 'suspended') {
+    patch.isActive = false;
+  } else if (approvalStatus === 'pending') {
+    patch.isActive = false;
+  }
+
+  await updateSupplier(id, patch);
+}
+
+export type SupplierRegistrationInput = {
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone: string;
+  whatsapp?: string;
+  address?: string;
+  city: string;
+  notes?: string;
+  categories: SupplierCategory[];
+};
+
+/** Create a pending supplier owned by the given auth user and link the user profile. */
+export async function linkSupplierRegistration(
+  uid: string,
+  input: SupplierRegistrationInput
+): Promise<{ supplierId: string }> {
+  const email = input.email.trim().toLowerCase();
+  const companyName = input.companyName.trim();
+  const contactName = input.contactName.trim();
+  const phone = input.phone.trim();
+  const supplierId = generateSupplierId();
+
+  await createSupplier({
+    id: supplierId,
+    name: companyName,
+    companyName,
+    contactName,
+    email,
+    phone,
+    whatsapp: (input.whatsapp || phone).trim(),
+    address: (input.address || '').trim(),
+    city: input.city.trim(),
+    notes: (input.notes || '').trim(),
+    categories: input.categories.length > 0 ? input.categories : ['products', 'packages'],
+    isDefault: false,
+    isActive: false,
+    approvalStatus: 'pending',
+    ownerUid: uid,
+  });
+
+  const { createUserProfile, getUserProfile, updateUserProfile } = await import(
+    '@/lib/firebase/users'
+  );
+
+  const existing = await getUserProfile(uid);
+  if (existing) {
+    await updateUserProfile(uid, {
+      role: 'supplier',
+      supplierId,
+      displayName: contactName,
+    });
+  } else {
+    await createUserProfile(uid, email, contactName, {
+      role: 'supplier',
+      supplierId,
+    });
+  }
+
+  return { supplierId };
 }
 
 /** Assign default supplierId to any catalog docs missing it. Idempotent. */
@@ -386,6 +539,7 @@ export async function ensureSuppliersReady(): Promise<Supplier> {
   try {
     const supplier = await ensureDefaultSupplier();
     try {
+      await backfillSupplierApprovalStatus();
       await backfillCatalogSupplierIds(supplier.id);
     } catch (error) {
       // Backfill needs admin write access on catalog collections.

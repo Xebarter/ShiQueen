@@ -3,11 +3,13 @@
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Heart, ShoppingBag, Eye, Zap, Clock, Flame } from 'lucide-react';
+import { Heart, ShoppingCart, Eye, Zap, Clock, Flame } from 'lucide-react';
 import { Product } from '@/lib/types/database';
 import { useCart } from '@/lib/cart-context';
 import {
   getDiscountPercent,
+  isNewArrival,
+  isSellingFast,
   toggleStoredWishlist,
 } from '@/lib/home-merchandising';
 import { formatUGX } from '@/lib/wholesale-data';
@@ -32,16 +34,30 @@ interface HomeProductCardProps {
 function getAutoBadges(product: Product): ProductBadge[] {
   const badges: ProductBadge[] = [];
   if (getDiscountPercent(product) > 0) badges.push('sale');
+  if (isNewArrival(product)) badges.push('new');
   if (product.stock > 0 && product.stock <= 10) badges.push('limited');
-  return badges;
+  else if (isSellingFast(product)) badges.push('selling-fast');
+  return badges.slice(0, 2);
 }
 
 const BADGE_CONFIG: Record<ProductBadge, { label: string; className: string; icon?: typeof Zap }> = {
   sale: { label: 'Sale', className: 'bg-accent text-accent-foreground' },
   new: { label: 'New', className: 'bg-primary text-primary-foreground' },
-  'selling-fast': { label: 'Selling fast', className: 'bg-accent/90 text-accent-foreground', icon: Flame },
-  limited: { label: 'Only a few left', className: 'bg-primary/85 text-primary-foreground', icon: Clock },
-  trending: { label: 'Trending', className: 'bg-secondary text-secondary-foreground ring-1 ring-primary/15', icon: Zap },
+  'selling-fast': {
+    label: 'Selling fast',
+    className: 'bg-accent/90 text-accent-foreground',
+    icon: Flame,
+  },
+  limited: {
+    label: 'Few left',
+    className: 'bg-primary/85 text-primary-foreground',
+    icon: Clock,
+  },
+  trending: {
+    label: 'Trending',
+    className: 'bg-secondary text-secondary-foreground ring-1 ring-primary/15',
+    icon: Zap,
+  },
 };
 
 export function HomeProductCard({
@@ -60,6 +76,9 @@ export function HomeProductCard({
   const discount = getDiscountPercent(product);
   const displayBadges = badges ?? getAutoBadges(product);
   const imageHeight = variant === 'compact' ? 'h-44' : variant === 'editorial' ? 'h-80' : 'h-56';
+  const showOriginal =
+    Boolean(product.originalPrice) &&
+    (product.originalPrice as number) > product.price;
 
   const handleQuickAdd = useCallback(
     (e: React.MouseEvent) => {
@@ -89,91 +108,122 @@ export function HomeProductCard({
     <>
       <Link href={`/products/${product.id}`} className="block">
         <div
-          className={`relative ${imageHeight} overflow-hidden rounded-2xl bg-secondary shadow-sm ring-1 ring-border/50 transition-shadow duration-300 group-hover:shadow-xl`}
+          className={`relative ${imageHeight} overflow-hidden rounded-sm bg-secondary ring-1 ring-border/40 transition-shadow duration-300 group-hover:shadow-md`}
         >
           <ProductImage
             product={product}
             className="absolute inset-0"
-            imageClassName={`transition-transform duration-500 ${hovered && !lightScroll ? 'scale-105' : ''}`}
+            imageClassName={`transition-transform duration-500 ${hovered && !lightScroll ? 'scale-[1.03]' : ''}`}
             sizes="(max-width: 768px) 50vw, 25vw"
           />
 
-          <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 max-w-[70%]">
+          <div className="absolute top-2 left-2 flex max-w-[70%] flex-wrap gap-1">
             {displayBadges.slice(0, 2).map((badge, badgeIndex) => {
               const config = BADGE_CONFIG[badge];
               const Icon = config.icon;
               return (
                 <span
                   key={`${product.id}-${badge}-${badgeIndex}`}
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide ${config.className}`}
+                  className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${config.className}`}
                 >
-                  {Icon && <Icon className="w-3 h-3" />}
+                  {Icon && <Icon className="h-3 w-3" />}
                   {config.label}
                 </span>
               );
             })}
             {discount > 0 && !displayBadges.includes('sale') && (
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-accent text-accent-foreground">
+              <span className="rounded-md bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-accent-foreground">
                 -{discount}%
               </span>
             )}
           </div>
 
-          <div className="absolute top-3 right-3 z-10 flex gap-1.5">
+          <div className="absolute top-2 right-2 z-10 flex gap-1">
             <ShareProductButton product={product} />
             <button
               onClick={handleWishlist}
-              className="rounded-full border border-border/50 bg-background/70 p-2 max-md:backdrop-blur-none md:backdrop-blur-md transition hover:bg-background"
+              className="rounded-md border border-border/50 bg-background/80 p-1.5 transition hover:bg-background max-md:backdrop-blur-none md:backdrop-blur-md"
               aria-label="Toggle wishlist"
             >
               <Heart
-                className={`w-4 h-4 ${isWishlisted ? 'fill-accent text-accent' : 'text-muted-foreground'}`}
+                className={`h-4 w-4 ${isWishlisted ? 'fill-accent text-accent' : 'text-muted-foreground'}`}
               />
             </button>
           </div>
 
+          {/* Mobile: always-visible quick add */}
+          <div className="absolute bottom-2 right-2 z-10 flex gap-1 md:hidden">
+            <Button
+              size="icon"
+              className="h-9 w-9 rounded-md shadow-md"
+              onClick={handleQuickAdd}
+              aria-label={`Add ${product.name} to cart`}
+            >
+              <ShoppingCart className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Desktop: hover actions */}
           {!lightScroll && (
             <motion.div
               initial={false}
               animate={{ opacity: hovered ? 1 : 0, y: hovered ? 0 : 8 }}
-              className="absolute bottom-3 inset-x-3 hidden gap-2 z-10 md:flex"
+              className="absolute inset-x-2 bottom-2 z-10 hidden gap-1.5 md:flex"
             >
               <Button
                 size="sm"
-                className="flex-1 h-9 text-xs backdrop-blur-md bg-primary/90 hover:bg-primary shadow-lg"
+                className="h-9 flex-1 rounded-md bg-primary/95 text-xs shadow-md hover:bg-primary"
                 onClick={handleQuickAdd}
               >
-                <ShoppingBag className="w-3.5 h-3.5 mr-1.5" />
+                <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
                 Quick Add
               </Button>
               {onQuickView && (
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-9 px-3 backdrop-blur-md bg-background/80"
+                  className="h-9 rounded-md bg-background/90 px-3"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     onQuickView(product);
                   }}
                 >
-                  <Eye className="w-3.5 h-3.5" />
+                  <Eye className="h-3.5 w-3.5" />
                 </Button>
               )}
             </motion.div>
           )}
         </div>
 
-        <div className={`pt-3 ${variant === 'compact' ? 'space-y-0.5' : 'space-y-1'}`}>
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{product.category}</p>
-          <h3 className={`font-medium leading-snug group-hover:text-primary transition line-clamp-2 ${variant === 'editorial' ? 'text-lg' : 'text-sm'}`}>
+        <div className={`pt-2.5 ${variant === 'compact' ? 'space-y-0.5' : 'space-y-1'}`}>
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground">
+            {product.category}
+          </p>
+          <h3
+            className={`line-clamp-2 font-medium leading-snug transition group-hover:text-primary ${variant === 'editorial' ? 'text-lg' : 'text-sm'}`}
+          >
             {product.name}
           </h3>
-          <div className="flex items-baseline gap-2 pt-0.5">
-            <span className="font-semibold text-sm">{formatUGX(product.price)}</span>
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 pt-0.5">
+            <span className="text-sm font-semibold tabular-nums text-accent">
+              {formatUGX(product.price)}
+            </span>
+            {showOriginal && (
+              <>
+                <span className="text-xs tabular-nums text-muted-foreground line-through">
+                  {formatUGX(product.originalPrice as number)}
+                </span>
+                {discount > 0 && (
+                  <span className="text-[10px] font-semibold text-accent">-{discount}%</span>
+                )}
+              </>
+            )}
           </div>
           {product.stock <= 10 && product.stock > 0 && (
-            <p className="text-[10px] text-orange-600 font-medium">Only {product.stock} left in stock</p>
+            <p className="text-[10px] font-medium text-orange-600">
+              Only {product.stock} left in stock
+            </p>
           )}
         </div>
       </Link>
@@ -181,19 +231,15 @@ export function HomeProductCard({
   );
 
   if (lightScroll) {
-    return (
-      <article className="group relative">
-        {cardContent}
-      </article>
-    );
+    return <article className="group relative">{cardContent}</article>;
   }
 
   return (
     <motion.article
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 12 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: 0.35, delay: Math.min(index, 3) * 0.04 }}
+      transition={{ duration: 0.3, delay: Math.min(index, 3) * 0.03 }}
       className="group relative"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -203,15 +249,19 @@ export function HomeProductCard({
   );
 }
 
-export function ProductCardSkeleton({ variant = 'default' }: { variant?: 'default' | 'compact' | 'editorial' }) {
+export function ProductCardSkeleton({
+  variant = 'default',
+}: {
+  variant?: 'default' | 'compact' | 'editorial';
+}) {
   const imageHeight = variant === 'compact' ? 'h-44' : variant === 'editorial' ? 'h-80' : 'h-56';
   return (
     <div className="animate-pulse">
-      <div className={`${imageHeight} rounded-2xl bg-muted`} />
-      <div className="pt-3 space-y-2">
-        <div className="h-2 w-16 bg-muted rounded" />
-        <div className="h-4 w-full bg-muted rounded" />
-        <div className="h-3 w-20 bg-muted rounded" />
+      <div className={`${imageHeight} rounded-sm bg-muted`} />
+      <div className="space-y-2 pt-2.5">
+        <div className="h-2 w-16 rounded bg-muted" />
+        <div className="h-4 w-full rounded bg-muted" />
+        <div className="h-3 w-20 rounded bg-muted" />
       </div>
     </div>
   );

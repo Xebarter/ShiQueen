@@ -3,25 +3,27 @@
 import { useCallback, useMemo } from 'react';
 import { createProductSearchIndex } from '@/lib/product-search';
 import { createPackageSearchIndex } from '@/lib/package-search';
+import { createServiceSearchIndex } from '@/lib/service-search';
 import { mergeCatalogSearchHits, type CatalogSearchHit } from '@/lib/catalog-search';
-import { useProducts } from '@/lib/products-context';
-import { useWholesale } from '@/lib/wholesale-context';
-import {
-  getProductNameMap,
-  productsToCatalog,
-} from '@/lib/wholesale-data';
-import { mergePackageItemMaps } from '@/lib/package-utils';
+import { usePublicProducts, usePublicPackages } from '@/lib/hooks/use-public-catalog';
+import { useServices } from '@/lib/services-context';
+import { buildPackageCatalogMaps } from '@/lib/package-utils';
 
 export function useCatalogSearch() {
-  const { products, loading: productsLoading } = useProducts();
-  const { packages, loading: packagesLoading } = useWholesale();
+  const { products, loading: productsLoading } = usePublicProducts();
+  const { packages, loading: packagesLoading } = usePublicPackages();
+  const {
+    activeListings,
+    activeProviders,
+    activeCategories,
+    loading: servicesLoading,
+  } = useServices();
 
-  const catalog = useMemo(() => productsToCatalog(products), [products]);
-  const activePackages = useMemo(() => packages.filter((pkg) => pkg.isActive), [packages]);
+  const activePackages = useMemo(() => packages, [packages]);
 
   const { productNames } = useMemo(
-    () => mergePackageItemMaps(activePackages, getProductNameMap(catalog), {}),
-    [activePackages, catalog]
+    () => buildPackageCatalogMaps(products, activeListings, activePackages),
+    [activePackages, products, activeListings]
   );
 
   const productIndex = useMemo(() => createProductSearchIndex(products), [products]);
@@ -29,21 +31,27 @@ export function useCatalogSearch() {
     () => createPackageSearchIndex(activePackages, productNames),
     [activePackages, productNames]
   );
+  const serviceIndex = useMemo(
+    () => createServiceSearchIndex(activeListings, activeProviders, activeCategories),
+    [activeListings, activeProviders, activeCategories]
+  );
 
   const search = useCallback(
     (query: string, limit = 8): CatalogSearchHit[] => {
       const productHits = productIndex.search(query, limit);
       const packageHits = packageIndex.search(query, limit);
-      return mergeCatalogSearchHits(productHits, packageHits, limit);
+      const serviceHits = serviceIndex.search(query, limit);
+      return mergeCatalogSearchHits(productHits, packageHits, serviceHits, limit);
     },
-    [packageIndex, productIndex]
+    [packageIndex, productIndex, serviceIndex]
   );
 
   return {
     search,
-    loading: productsLoading || packagesLoading,
-    catalogCount: productIndex.count + packageIndex.count,
+    loading: productsLoading || packagesLoading || servicesLoading,
+    catalogCount: productIndex.count + packageIndex.count + serviceIndex.count,
     productCount: productIndex.count,
     packageCount: packageIndex.count,
+    serviceCount: serviceIndex.count,
   };
 }

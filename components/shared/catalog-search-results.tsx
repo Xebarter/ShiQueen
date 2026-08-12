@@ -11,17 +11,14 @@ import {
   PackageDiscoveryCardSkeleton,
 } from '@/components/packages/package-discovery-card';
 import { PackageQuickViewModal } from '@/components/packages/package-quick-view-modal';
-import { useProducts } from '@/lib/products-context';
+import { ServiceCard } from '@/components/services/service-card';
+import { usePublicProducts, usePublicPackages } from '@/lib/hooks/use-public-catalog';
 import { useWholesale } from '@/lib/wholesale-context';
 import { useCart } from '@/lib/cart-context';
+import { useServices } from '@/lib/services-context';
 import {
-  getProductNameMap,
-  getRetailPricesMap,
-  productsToCatalog,
-} from '@/lib/wholesale-data';
-import {
+  buildPackageCatalogMaps,
   getPackageImage,
-  mergePackageItemMaps,
   resolvePackageSavings,
 } from '@/lib/package-utils';
 import { trackPackageView } from '@/lib/package-merchandising';
@@ -43,21 +40,22 @@ export function CatalogSearchResults({
   loading = false,
   emptyMessage,
 }: CatalogSearchResultsProps) {
-  const { products } = useProducts();
-  const { packages, setSelectedPackage } = useWholesale();
+  const { products } = usePublicProducts();
+  const { packages } = usePublicPackages();
+  const { activeListings, activeProviders } = useServices();
+  const { setSelectedPackage } = useWholesale();
   const { addItem } = useCart();
   const [quickViewPkg, setQuickViewPkg] = useState<Package | null>(null);
 
-  const catalog = useMemo(() => productsToCatalog(products), [products]);
-  const activePackages = useMemo(() => packages.filter((pkg) => pkg.isActive), [packages]);
+  const activePackages = useMemo(() => packages, [packages]);
   const { productNames, retailPrices } = useMemo(
-    () =>
-      mergePackageItemMaps(
-        activePackages,
-        getProductNameMap(catalog),
-        getRetailPricesMap(catalog)
-      ),
-    [activePackages, catalog]
+    () => buildPackageCatalogMaps(products, activeListings, activePackages),
+    [activePackages, products, activeListings]
+  );
+
+  const providerById = useMemo(
+    () => new Map(activeProviders.map((p) => [p.id, p])),
+    [activeProviders]
   );
 
   const handleAddPackageToCart = useCallback(
@@ -69,13 +67,13 @@ export function CatalogSearchResults({
         id: pkg.id,
         name: pkg.name,
         price: resolvePackageSavings(pkg, retailPrices).packagePrice,
-        image: getPackageImage(pkg, products),
+        image: getPackageImage(pkg, products, activeListings),
         quantity: 1,
       });
       trackPackageView(pkg.id);
       toast.success('Bundle added to cart!');
     },
-    [addItem, products, retailPrices, setSelectedPackage]
+    [addItem, activeListings, products, retailPrices, setSelectedPackage]
   );
 
   const handlePackageQuickView = useCallback((pkg: Package) => {
@@ -85,7 +83,7 @@ export function CatalogSearchResults({
 
   if (loading) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 md:gap-3">
         {Array.from({ length: 8 }).map((_, i) => (
           <PackageDiscoveryCardSkeleton key={i} />
         ))}
@@ -97,7 +95,9 @@ export function CatalogSearchResults({
     return (
       emptyMessage ?? (
         <div className="text-center py-16">
-          <p className="text-muted-foreground">No products or bundles match your search</p>
+          <p className="text-muted-foreground">
+            No products, bundles, or services match your search
+          </p>
         </div>
       )
     );
@@ -105,19 +105,35 @@ export function CatalogSearchResults({
 
   return (
     <>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
-        {hits.map((hit, index) =>
-          hit.type === 'product' ? (
-            <HomeProductCard
-              key={`product-${hit.product.id}`}
-              product={hit.product}
-              variant="default"
-              index={index}
-              onQuickView={onQuickView}
-              wishlistIds={wishlistIds}
-              onWishlistChange={onWishlistChange}
-            />
-          ) : (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 md:gap-3">
+        {hits.map((hit, index) => {
+          if (hit.type === 'product') {
+            return (
+              <HomeProductCard
+                key={`product-${hit.product.id}`}
+                product={hit.product}
+                variant="default"
+                index={index}
+                onQuickView={onQuickView}
+                wishlistIds={wishlistIds}
+                onWishlistChange={onWishlistChange}
+              />
+            );
+          }
+
+          if (hit.type === 'service') {
+            return (
+              <ServiceCard
+                key={`service-${hit.listing.id}`}
+                listing={hit.listing}
+                provider={providerById.get(hit.listing.providerId)}
+                variant="compact"
+                index={index}
+              />
+            );
+          }
+
+          return (
             <PackageDiscoveryCard
               key={`package-${hit.pkg.id}`}
               pkg={hit.pkg}
@@ -128,8 +144,8 @@ export function CatalogSearchResults({
               onQuickView={handlePackageQuickView}
               onAddToCart={handleAddPackageToCart}
             />
-          )
-        )}
+          );
+        })}
       </div>
 
       <PackageQuickViewModal

@@ -16,7 +16,8 @@ const VARIANT_CONFIG: Record<
   PaymentResultVariant,
   {
     title: string;
-    description: string;
+    orderDescription: string;
+    bookingDescription: string;
     icon: typeof CheckCircle;
     iconClass: string;
     clearCart: boolean;
@@ -24,21 +25,25 @@ const VARIANT_CONFIG: Record<
 > = {
   success: {
     title: 'Payment successful',
-    description: 'Thank you! Your payment was received and your order is being confirmed.',
+    orderDescription: 'Thank you! Your payment was received and your order is being confirmed.',
+    bookingDescription:
+      'Thank you! Your payment was received and your service booking is being confirmed.',
     icon: CheckCircle,
     iconClass: 'bg-emerald-500/10 text-emerald-600',
     clearCart: true,
   },
   failure: {
     title: 'Payment failed',
-    description: 'We could not process your payment. You can try again from checkout.',
+    orderDescription: 'We could not process your payment. You can try again from checkout.',
+    bookingDescription: 'We could not process your payment. You can try booking again.',
     icon: XCircle,
     iconClass: 'bg-red-500/10 text-red-600',
     clearCart: false,
   },
   cancel: {
     title: 'Payment cancelled',
-    description: 'You cancelled the payment. Your order was not charged.',
+    orderDescription: 'You cancelled the payment. Your order was not charged.',
+    bookingDescription: 'You cancelled the payment. Your booking was not charged.',
     icon: AlertCircle,
     iconClass: 'bg-amber-500/10 text-amber-600',
     clearCart: false,
@@ -48,15 +53,17 @@ const VARIANT_CONFIG: Record<
 export function PaymentResultPage({ variant }: { variant: PaymentResultVariant }) {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
+  const bookingId = searchParams.get('bookingId');
+  const isBooking = Boolean(bookingId);
   const { clearCart } = useCart();
   const config = VARIANT_CONFIG[variant];
   const Icon = config.icon;
 
   useEffect(() => {
-    if (config.clearCart) {
+    if (config.clearCart && !isBooking) {
       clearCart();
     }
-  }, [clearCart, config.clearCart]);
+  }, [clearCart, config.clearCart, isBooking]);
 
   return (
     <main>
@@ -73,9 +80,22 @@ export function PaymentResultPage({ variant }: { variant: PaymentResultVariant }
           </div>
 
           <h1 className="text-3xl font-light tracking-tight">{config.title}</h1>
-          <p className="mt-3 text-muted-foreground">{config.description}</p>
+          <p className="mt-3 text-muted-foreground">
+            {isBooking ? config.bookingDescription : config.orderDescription}
+          </p>
 
-          {orderId ? (
+          {bookingId ? (
+            <div className="mt-8 rounded-xl border border-border/70 bg-card p-6">
+              <p className="text-sm text-muted-foreground">Booking reference</p>
+              <p className="mt-1 font-mono text-lg font-semibold text-primary">{bookingId}</p>
+              {variant === 'success' && (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  If confirmation takes a moment, your booking will update automatically once
+                  Paytota notifies us.
+                </p>
+              )}
+            </div>
+          ) : orderId ? (
             <div className="mt-8 rounded-xl border border-border/70 bg-card p-6">
               <p className="text-sm text-muted-foreground">Order reference</p>
               <p className="mt-1 font-mono text-lg font-semibold text-primary">{orderId}</p>
@@ -89,25 +109,30 @@ export function PaymentResultPage({ variant }: { variant: PaymentResultVariant }
           ) : (
             <div className="mt-8 flex items-center justify-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Loading order details…
+              Loading details…
             </div>
           )}
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-            {orderId && variant === 'success' && (
+            {bookingId && variant === 'success' && (
+              <Link href={`/services/booking-confirmation?bookingId=${encodeURIComponent(bookingId)}`}>
+                <Button size="lg">View booking</Button>
+              </Link>
+            )}
+            {orderId && variant === 'success' && !bookingId && (
               <Link href={`/order-confirmation?orderId=${encodeURIComponent(orderId)}`}>
                 <Button size="lg">View order</Button>
               </Link>
             )}
             {variant !== 'success' && (
-              <Link href="/checkout">
+              <Link href={isBooking ? '/services' : '/checkout'}>
                 <Button size="lg">Try again</Button>
               </Link>
             )}
-            <Link href="/shop">
+            <Link href={isBooking ? '/services' : '/shop'}>
               <Button size="lg" variant="outline" className="gap-2">
                 <ArrowLeft className="h-4 w-4" />
-                Continue shopping
+                {isBooking ? 'Back to services' : 'Continue shopping'}
               </Button>
             </Link>
           </div>

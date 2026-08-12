@@ -1,7 +1,7 @@
 'use client';
 
 import { useMarketingAds } from '@/lib/marketing-ads-context';
-import { useProducts } from '@/lib/products-context';
+import { usePublicProducts } from '@/lib/hooks/use-public-catalog';
 import { MarketingAdPlacement } from '@/lib/types/database';
 import { MarketingPromoCard, MarketingPromoFallback } from '@/components/home/marketing-promo-card';
 
@@ -18,7 +18,7 @@ export function HeroMarketingSlot({
   compact,
 }: HeroMarketingSlotProps) {
   const { getActiveAdForPlacements, loading: adsLoading } = useMarketingAds();
-  const { getProductById, loading: productsLoading } = useProducts();
+  const { getProductById, loading: productsLoading } = usePublicProducts();
 
   const ad = getActiveAdForPlacements([placement, ...fallbackPlacements]);
   const product = ad ? getProductById(ad.productId) : undefined;

@@ -291,7 +291,7 @@ export function Header() {
 
               <Link
                 href={wishlistHref}
-                className="relative inline-flex rounded-full border border-transparent p-2.5 text-foreground/75 transition-all duration-200 hover:border-border/60 hover:bg-secondary/80 hover:text-primary hover:shadow-sm lg:hidden"
+                className="relative hidden rounded-full border border-transparent p-2.5 text-foreground/75 transition-all duration-200 hover:border-border/60 hover:bg-secondary/80 hover:text-primary hover:shadow-sm md:inline-flex"
                 aria-label={`Wishlist${wishlistCount > 0 ? `, ${wishlistCount} items` : ''}`}
               >
                 <Heart className="h-5 w-5" />
@@ -350,7 +350,7 @@ export function Header() {
           'md:top-[var(--header-primary-height,4.25rem)]'
         )}
       >
-        <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-2.5 sm:gap-3 sm:px-6">
+        <div className="mx-auto flex max-w-7xl items-center gap-1.5 px-4 py-2.5 sm:gap-2 sm:px-6">
           <div
             className={cn(
               'shrink-0 overflow-hidden transition-[width,opacity] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] md:hidden',
@@ -368,8 +368,21 @@ export function Header() {
           <SearchBar className="max-w-none flex-1" />
 
           <Link
+            href={wishlistHref}
+            className="relative flex shrink-0 items-center justify-center rounded-full border border-transparent p-2 text-foreground/75 transition-all duration-200 hover:border-border/60 hover:bg-secondary/80 hover:text-primary hover:shadow-sm md:hidden"
+            aria-label={`Wishlist${wishlistCount > 0 ? `, ${wishlistCount} items` : ''}`}
+          >
+            <Heart className="h-5 w-5" />
+            {wishlistCount > 0 && (
+              <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                {wishlistCount > 9 ? '9+' : wishlistCount}
+              </span>
+            )}
+          </Link>
+
+          <Link
             href="/cart"
-            className="relative flex shrink-0 items-center justify-center rounded-full border border-transparent p-2.5 text-foreground/75 transition-all duration-200 hover:border-border/60 hover:bg-secondary/80 hover:text-primary hover:shadow-sm lg:hidden"
+            className="relative flex shrink-0 items-center justify-center rounded-full border border-transparent p-2 text-foreground/75 transition-all duration-200 hover:border-border/60 hover:bg-secondary/80 hover:text-primary hover:shadow-sm lg:hidden"
             aria-label={`Cart${itemCount > 0 ? `, ${itemCount} items` : ''}`}
           >
             <ShoppingCart className="h-5 w-5" />

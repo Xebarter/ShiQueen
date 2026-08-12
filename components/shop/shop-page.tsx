@@ -8,7 +8,7 @@ import { ArrowRight, Sparkles, X, Grid3X3, LayoutGrid } from 'lucide-react';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
-import { useProducts } from '@/lib/products-context';
+import { usePublicProducts } from '@/lib/hooks/use-public-catalog';
 import { HomeProductCard, ProductCardSkeleton } from '@/components/home/home-product-card';
 import { QuickViewModal } from '@/components/home/quick-view-modal';
 import { MerchandisingBlocks, AllProductsGrid } from '@/components/shared/merchandising-blocks';
@@ -58,7 +58,7 @@ const PRICE_FILTERS = [
 
 export function ShopPage() {
   const router = useRouter();
-  const { products, loading } = useProducts();
+  const { products, loading } = usePublicProducts();
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get('q')?.trim() ?? '';
 
@@ -198,7 +198,21 @@ export function ShopPage() {
                       )}
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {isSearchMode ? searchResultCounts.total : filteredProducts.length} items
+                      {isSearchMode
+                        ? [
+                            searchResultCounts.products > 0
+                              ? `${searchResultCounts.products} product${searchResultCounts.products === 1 ? '' : 's'}`
+                              : null,
+                            searchResultCounts.packages > 0
+                              ? `${searchResultCounts.packages} bundle${searchResultCounts.packages === 1 ? '' : 's'}`
+                              : null,
+                            searchResultCounts.services > 0
+                              ? `${searchResultCounts.services} service${searchResultCounts.services === 1 ? '' : 's'}`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ') || '0 items'
+                        : `${filteredProducts.length} items`}
                     </p>
                   </div>
                   <Button variant="outline" size="sm" onClick={clearFilters} className="shrink-0 gap-1.5">
@@ -371,7 +385,7 @@ export function ShopPage() {
                 emptyMessage={
                   <div className="text-center py-16 col-span-full">
                     <p className="text-muted-foreground mb-4">
-                      {`No products or bundles found for "${searchQuery}"`}
+                      {`No products, bundles, or services found for "${searchQuery}"`}
                     </p>
                     <Button onClick={clearFilters}>Clear search</Button>
                   </div>

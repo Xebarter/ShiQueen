@@ -19,11 +19,16 @@ import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  CONTACT_PHONE_DISPLAY,
+  CONTACT_PHONE_HREF,
+  contactWhatsAppHref,
+} from '@/lib/contact-info';
 import { cn } from '@/lib/utils';
 
-const PHONE_DISPLAY = '+256 779 490162';
-const PHONE_HREF = 'tel:+256779490162';
-const WHATSAPP_HREF = 'https://wa.me/256779490162?text=Hi%20SheQueen%2C%20I%27d%20like%20to%20get%20in%20touch.';
+const WHATSAPP_HREF = contactWhatsAppHref(
+  "Hi SheQueen, I'd like to get in touch."
+);
 const EMAIL = 'hello@shequeen.com';
 
 const TOPICS = [
@@ -45,8 +50,8 @@ const CONTACT_CHANNELS = [
   {
     icon: Phone,
     title: 'Phone',
-    value: PHONE_DISPLAY,
-    href: PHONE_HREF,
+    value: CONTACT_PHONE_DISPLAY,
+    href: CONTACT_PHONE_HREF,
     hint: 'Mon–Sat, 9am–6pm EAT',
   },
   {

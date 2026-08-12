@@ -4,11 +4,14 @@ import { useMemo } from 'react';
 import { isRemoteProductImage } from '@/components/product-image';
 import { getPackageCoverImages } from '@/lib/package-utils';
 import { getTrending } from '@/lib/home-merchandising';
-import { resolveListingImage } from '@/lib/services-utils';
-import { useProducts } from '@/lib/products-context';
-import { useWholesale } from '@/lib/wholesale-context';
+import {
+  countCategoryServices,
+  resolveListingImage,
+} from '@/lib/services-utils';
+import { usePublicProducts, usePublicPackages } from '@/lib/hooks/use-public-catalog';
 import { useServices } from '@/lib/services-context';
 import type { Product } from '@/lib/types/database';
+import type { ServiceListing } from '@/lib/types/services';
 
 export type MobileMenuCategory = {
   id: string;
@@ -34,6 +37,15 @@ function pickBestProduct(
     .sort((a, b) => b.rating * b.reviews - a.rating * a.reviews)[0];
 }
 
+function pickBestListing(
+  listings: ServiceListing[],
+  predicate: (listing: ServiceListing) => boolean
+): ServiceListing | undefined {
+  return listings
+    .filter((l) => predicate(l) && resolveListingImage(l))
+    .sort((a, b) => b.rating * b.reviewCount - a.rating * a.reviewCount)[0];
+}
+
 const SHOP_CATEGORY_DEFS = [
   { id: 'all', label: 'All', href: '/shop' },
   { id: 'clothing', label: 'Clothing', href: '/shop?category=clothing' },
@@ -44,9 +56,9 @@ const SHOP_CATEGORY_DEFS = [
 ] as const;
 
 export function useMobileMenuCatalog() {
-  const { products } = useProducts();
-  const { packages } = useWholesale();
-  const { activeListings } = useServices();
+  const { products } = usePublicProducts();
+  const { packages } = usePublicPackages();
+  const { activeListings, activeCategories } = useServices();
 
   return useMemo(() => {
     const shopCategories: MobileMenuCategory[] = SHOP_CATEGORY_DEFS.map((cat) => {
@@ -63,6 +75,26 @@ export function useMobileMenuCatalog() {
         productName: product?.name,
       };
     });
+
+    const serviceCategories: MobileMenuCategory[] = [...activeCategories]
+      .filter((cat) => cat.isActive)
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
+      .filter((cat) => countCategoryServices(cat.id, activeListings) > 0)
+      .map((cat) => {
+        const listing = pickBestListing(
+          activeListings,
+          (l) => l.categoryId === cat.id
+        );
+        const image = listing ? resolveListingImage(listing) : null;
+
+        return {
+          id: cat.id,
+          label: cat.name,
+          href: `/services/category/${cat.id}`,
+          image: image && isRemoteProductImage(image) ? image : null,
+          productName: listing?.name,
+        };
+      });
 
     const shopHero = getTrending(products, 1)[0];
     const shopDestination: MobileMenuDestination = {
@@ -81,7 +113,9 @@ export function useMobileMenuCatalog() {
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
 
     const packageCovers = featuredPackage
-      ? getPackageCoverImages(featuredPackage, products).filter(isRemoteProductImage)
+      ? getPackageCoverImages(featuredPackage, products, activeListings).filter(
+          isRemoteProductImage
+        )
       : [];
 
     const packagesDestination: MobileMenuDestination = {
@@ -115,8 +149,9 @@ export function useMobileMenuCatalog() {
 
     return {
       shopCategories,
+      serviceCategories,
       destinations: [shopDestination, packagesDestination, servicesDestination, wholesaleDestination],
       productCount: products.length,
     };
-  }, [products, packages, activeListings]);
+  }, [products, packages, activeListings, activeCategories]);
 }

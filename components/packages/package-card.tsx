@@ -18,6 +18,8 @@ import {
   getPackageTierLabel,
 } from '@/lib/package-catalog';
 import { SharePackageButton } from '@/components/shared/share-button';
+import { useServices } from '@/lib/services-context';
+
 interface PackageCardProps {
   pkg: PackageType;
   productNames: Record<string, string>;
@@ -35,7 +37,8 @@ export function PackageCard({
   index = 0,
   onAddToCart,
 }: PackageCardProps) {
-  const coverImages = getPackageCoverImages(pkg, products);
+  const { activeListings } = useServices();
+  const coverImages = getPackageCoverImages(pkg, products, activeListings);
   const { retailTotal, packagePrice, savingsAmount, savingsPercentage } =
     resolvePackageSavings(pkg, retailPrices);
   const itemCount = pkg.items.reduce((sum, item) => sum + item.quantity, 0);

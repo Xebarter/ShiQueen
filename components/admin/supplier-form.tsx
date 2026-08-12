@@ -237,10 +237,21 @@ export function SupplierForm({
         categories: form.categories,
         isDefault: form.isDefault || isProtectedDefault,
         isActive: form.isActive,
+        approvalStatus: initialSupplier?.approvalStatus ?? 'approved',
+        ownerUid: initialSupplier?.ownerUid ?? null,
+        approvedAt: initialSupplier?.approvedAt,
+        rejectedAt: initialSupplier?.rejectedAt,
+        rejectionReason: initialSupplier?.rejectionReason,
       };
 
       if (mode === 'create') {
-        await create({ ...payload, id: supplierId });
+        await create({
+          ...payload,
+          id: supplierId,
+          approvalStatus: 'approved',
+          ownerUid: null,
+          approvedAt: new Date(),
+        });
         toast.success('Supplier created');
       } else {
         await update(supplierId, payload);

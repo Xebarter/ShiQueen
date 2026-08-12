@@ -49,7 +49,7 @@ export function MerchandisingBlocks({
     variant: ProductCardVariant = 'default',
     badges?: (i: number) => ('trending' | 'new' | 'selling-fast' | 'limited')[] | undefined
   ) => (
-    <div className={`grid ${cols} gap-4 md:gap-5`}>
+    <div className={`grid ${cols} gap-2.5 md:gap-3`}>
       {items.map((product, i) => (
         <HomeProductCard
           key={product.id}
@@ -74,7 +74,7 @@ export function MerchandisingBlocks({
   );
 
   const renderSkeletons = (count: number) => (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3">
       {Array.from({ length: count }).map((_, i) => (
         <ProductCardSkeleton key={i} />
       ))}
@@ -126,7 +126,7 @@ export function MerchandisingBlocks({
       </ProductSection>
 
       <ProductSection title="New" href="/shop">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-5">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3">
           {sections.newArrivals.slice(0, 4).map((product, i) => (
             <div key={product.id} className={i === 0 ? 'md:col-span-2' : ''}>
               <HomeProductCard
@@ -151,7 +151,7 @@ export function MerchandisingBlocks({
       </ProductSection>
 
       <ProductSection title="Staff Picks" className="bg-secondary/30">
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid gap-3 md:grid-cols-2 md:gap-4">
           <div>
             {sections.staffPicks[0] && (
               <HomeProductCard
@@ -162,7 +162,7 @@ export function MerchandisingBlocks({
               />
             )}
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-2.5 md:gap-3">
             {sections.staffPicks.slice(1, 5).map((product, i) => (
               <HomeProductCard key={product.id} product={product} variant="compact" index={i} {...cardProps} />
             ))}
@@ -178,9 +178,9 @@ export function MerchandisingBlocks({
 
       {sections.boughtTogether.length >= 2 && (
         <ProductSection title="Pairs well with">
-          <div className="flex flex-col md:flex-row items-center gap-4 md:gap-6">
+          <div className="flex flex-col items-center gap-3 md:flex-row md:gap-4">
             {sections.boughtTogether.map((product, i) => (
-              <div key={product.id} className="flex items-center gap-4 md:gap-6 w-full md:w-auto">
+              <div key={product.id} className="flex w-full items-center gap-3 md:w-auto md:gap-4">
                 {i > 0 && <span className="hidden md:block text-2xl text-muted-foreground">+</span>}
                 <div className="flex-1 md:w-48">
                   <HomeProductCard product={product} variant="compact" index={i} {...cardProps} />
@@ -253,7 +253,7 @@ export function AllProductsGrid({
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 md:gap-3">
       {products.map((product, i) => (
         <HomeProductCard
           key={product.id}

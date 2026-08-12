@@ -1,9 +1,33 @@
 import type { CartItem } from '@/lib/cart-context';
 import type { OrderItem, Product } from '@/lib/types/database';
-import { Package, PackageItem, PricingTier } from '@/lib/types/wholesale';
+import type { ServiceListing } from '@/lib/types/services';
+import {
+  Package,
+  PackageItem,
+  PackageItemKind,
+  PricingTier,
+} from '@/lib/types/wholesale';
+import { resolveListingImage } from '@/lib/services-utils';
+
+export function getPackageItemKind(item: PackageItem): PackageItemKind {
+  if (item.isCustom === true || item.itemType === 'custom') return 'custom';
+  if (item.itemType === 'service' || Boolean(item.serviceId)) return 'service';
+  return 'product';
+}
 
 export function isCustomPackageItem(item: PackageItem): boolean {
-  return item.isCustom === true;
+  return getPackageItemKind(item) === 'custom';
+}
+
+export function isServicePackageItem(item: PackageItem): boolean {
+  return getPackageItemKind(item) === 'service';
+}
+
+export function getPackageItemRefId(item: PackageItem): string {
+  if (isServicePackageItem(item)) {
+    return item.serviceId || item.productId;
+  }
+  return item.productId;
 }
 
 export function createCustomPackageItemId(): string {
@@ -17,7 +41,8 @@ export function getPackageItemName(
   if (isCustomPackageItem(item)) {
     return item.customName?.trim() || 'Custom item';
   }
-  return catalogNames[item.productId] ?? 'Product';
+  const refId = getPackageItemRefId(item);
+  return catalogNames[refId] ?? (isServicePackageItem(item) ? 'Service' : 'Product');
 }
 
 export function getPackageItemRetailUnit(
@@ -27,14 +52,42 @@ export function getPackageItemRetailUnit(
   if (isCustomPackageItem(item)) {
     return item.customRetailPrice ?? 0;
   }
-  return catalogPrices[item.productId] ?? 0;
+  return catalogPrices[getPackageItemRefId(item)] ?? 0;
 }
 
-export function getPackageItemImage(item: PackageItem, products: Product[]): string | undefined {
+export function getPackageItemImage(
+  item: PackageItem,
+  products: Product[],
+  services: ServiceListing[] = []
+): string | undefined {
   if (isCustomPackageItem(item)) {
     return item.customImage;
   }
+  if (isServicePackageItem(item)) {
+    const service = services.find((s) => s.id === getPackageItemRefId(item));
+    return service ? resolveListingImage(service) ?? undefined : undefined;
+  }
   return products.find((p) => p.id === item.productId)?.image;
+}
+
+export function buildPackageCatalogMaps(
+  products: Product[],
+  services: ServiceListing[] = [],
+  packages: Package[] = []
+): { productNames: Record<string, string>; retailPrices: Record<string, number> } {
+  const names: Record<string, string> = {};
+  const prices: Record<string, number> = {};
+
+  for (const product of products) {
+    names[product.id] = product.name;
+    prices[product.id] = product.price;
+  }
+  for (const service of services) {
+    names[service.id] = service.name;
+    prices[service.id] = service.basePrice;
+  }
+
+  return mergePackageItemMaps(packages, names, prices);
 }
 
 export function mergePackageItemMaps(
@@ -48,8 +101,9 @@ export function mergePackageItemMaps(
   for (const pkg of packages) {
     for (const item of pkg.items) {
       if (!isCustomPackageItem(item)) continue;
-      productNames[item.productId] = item.customName?.trim() || 'Custom item';
-      retailPrices[item.productId] = item.customRetailPrice ?? 0;
+      const refId = getPackageItemRefId(item);
+      productNames[refId] = item.customName?.trim() || 'Custom item';
+      retailPrices[refId] = item.customRetailPrice ?? 0;
     }
   }
 
@@ -220,15 +274,16 @@ export function getUniquePackageProductIds(items: PackageItem[]): string[] {
   const seen = new Set<string>();
   const ids: string[] = [];
   for (const item of items) {
-    if (!seen.has(item.productId)) {
-      seen.add(item.productId);
-      ids.push(item.productId);
+    const refId = getPackageItemRefId(item);
+    if (!seen.has(refId)) {
+      seen.add(refId);
+      ids.push(refId);
     }
   }
   return ids;
 }
 
-/** Up to 4 product IDs for a collage — explicit picks first, then fills from package items. */
+/** Up to 4 catalog IDs for a collage — explicit picks first, then fills from package items. */
 export function resolveCoverProductIds(
   pkg: Pick<Package, 'items' | 'coverProductIds' | 'coverMode'>
 ): string[] {
@@ -253,7 +308,11 @@ export function resolveCoverProductIds(
   return merged.slice(0, 4);
 }
 
-export function getPackageCoverImages(pkg: Package, products: Product[]): string[] {
+export function getPackageCoverImages(
+  pkg: Package,
+  products: Product[],
+  services: ServiceListing[] = []
+): string[] {
   const mode = resolvePackageCoverMode(pkg);
 
   if (mode === 'upload' && pkg.image) {
@@ -261,7 +320,10 @@ export function getPackageCoverImages(pkg: Package, products: Product[]): string
   }
 
   const productMap = new Map(products.map((p) => [p.id, p]));
-  const itemByProductId = new Map(pkg.items.map((item) => [item.productId, item]));
+  const serviceMap = new Map(services.map((s) => [s.id, s]));
+  const itemByRefId = new Map(
+    pkg.items.map((item) => [getPackageItemRefId(item), item])
+  );
   const priorityIds = resolveCoverProductIds(pkg);
   const allItemIds = getUniquePackageProductIds(pkg.items);
   const idQueue = [...priorityIds];
@@ -270,12 +332,13 @@ export function getPackageCoverImages(pkg: Package, products: Product[]): string
   }
 
   const images: string[] = [];
-  for (const productId of idQueue) {
+  for (const refId of idQueue) {
     if (images.length >= 4) break;
-    const item = itemByProductId.get(productId);
+    const item = itemByRefId.get(refId);
     const image = item
-      ? getPackageItemImage(item, products)
-      : productMap.get(productId)?.image;
+      ? getPackageItemImage(item, products, services)
+      : productMap.get(refId)?.image ||
+        (serviceMap.get(refId) ? resolveListingImage(serviceMap.get(refId)!) ?? undefined : undefined);
     if (image) images.push(image);
   }
 
@@ -286,8 +349,12 @@ export function getPackageCoverImages(pkg: Package, products: Product[]): string
   return images;
 }
 
-export function getPackageImage(pkg: Package, products: Product[]): string {
-  return getPackageCoverImages(pkg, products)[0] ?? '';
+export function getPackageImage(
+  pkg: Package,
+  products: Product[],
+  services: ServiceListing[] = []
+): string {
+  return getPackageCoverImages(pkg, products, services)[0] ?? '';
 }
 
 export function isPackageCartItem(item: { id: string }): boolean {
@@ -303,7 +370,8 @@ export function getPackageTypeLabel(type: string): string {
 export function expandPackageCartItems(
   cartItems: CartItem[],
   packages: Package[],
-  products: Product[]
+  products: Product[],
+  services: ServiceListing[] = []
 ): OrderItem[] {
   const result: OrderItem[] = [];
 
@@ -317,6 +385,7 @@ export function expandPackageCartItems(
         size: cartItem.size,
         color: cartItem.color,
         image: cartItem.image,
+        itemType: 'product',
       });
       continue;
     }
@@ -334,14 +403,10 @@ export function expandPackageCartItems(
       continue;
     }
 
-    const catalogPrices: Record<string, number> = {};
-    for (const product of products) {
-      catalogPrices[product.id] = product.price;
-    }
-    const { productNames, retailPrices } = mergePackageItemMaps(
-      [pkg],
-      Object.fromEntries(products.map((p) => [p.id, p.name])),
-      catalogPrices
+    const { productNames, retailPrices } = buildPackageCatalogMaps(
+      products,
+      services,
+      [pkg]
     );
 
     const packageUnitPrice = resolvePackagePrice(pkg, retailPrices);
@@ -358,14 +423,18 @@ export function expandPackageCartItems(
         Math.round((lineRetailWeight / weightSum) * totalPackageValue) || 0;
       const lineQty = pkgItem.quantity * cartItem.quantity;
       const unitPrice = lineQty > 0 ? Math.round(allocatedTotal / lineQty) : 0;
+      const kind = getPackageItemKind(pkgItem);
+      const refId = getPackageItemRefId(pkgItem);
 
       result.push({
-        productId: pkgItem.productId,
+        productId: refId,
         name: getPackageItemName(pkgItem, productNames),
         price: unitPrice,
         quantity: lineQty,
-        image: getPackageItemImage(pkgItem, products),
+        image: getPackageItemImage(pkgItem, products, services),
         packageId: index === 0 ? pkg.id : undefined,
+        itemType: kind,
+        serviceId: kind === 'service' ? refId : undefined,
       });
     });
   }

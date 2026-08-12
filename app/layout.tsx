@@ -10,7 +10,7 @@ import { WholesaleProvider } from '@/lib/wholesale-context'
 import { ServicesProvider } from '@/lib/services-context'
 import { SuppliersProvider } from '@/lib/suppliers-context'
 import { BRAND_ASSETS, BRAND_NAME, BRAND_TAGLINE, BRAND_THEME } from '@/lib/brand'
-import { figtree, playfair } from '@/lib/fonts'
+import { figtree, playfair, workSans } from '@/lib/fonts'
 import { getDefaultOgImageUrl } from '@/lib/metadata/resolve-og-image'
 import { getSiteUrl } from '@/lib/site-url'
 import { Toaster } from 'react-hot-toast'
@@ -72,7 +72,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${figtree.variable} ${playfair.variable} bg-background`}>
+    <html lang="en" className={`${figtree.variable} ${playfair.variable} ${workSans.variable} bg-background`}>
       <body className="font-sans antialiased">
         <AuthProvider>
           <ProductsProvider>

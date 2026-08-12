@@ -276,21 +276,39 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
             Back to shop
           </Link>
 
-          <div className="mb-8">
-            <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary/80">
-              Gift payment
-            </p>
-            <h1 className="mt-2 text-3xl font-light tracking-tight sm:text-4xl">
-              Pay for {checkout.recipientFirstName}&apos;s order
-            </h1>
-            <p className="mt-2 text-base text-muted-foreground">
-              Items will be delivered to {checkout.recipientFirstName} in {checkout.deliveryCity}.
-            </p>
+          <div className="mb-8 overflow-hidden rounded-3xl border-2 border-accent/35 bg-gradient-to-br from-accent/15 via-card to-card shadow-lg shadow-accent/10">
+            <div className="border-b border-accent/20 bg-accent/10 px-6 py-5">
+              <div className="flex items-start gap-3">
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent/30 text-accent-foreground">
+                  <Gift className="h-6 w-6" />
+                </span>
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-accent-foreground/80">
+                    You&apos;re covering this order
+                  </p>
+                  <h1 className="mt-1 font-[family-name:var(--font-brand)] text-2xl font-medium tracking-tight sm:text-3xl">
+                    Pay for {checkout.recipientFirstName}&apos;s order
+                  </h1>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Items deliver to {checkout.recipientFirstName} in {checkout.deliveryCity}. Enter
+                    your mobile money details below to complete payment.
+                  </p>
+                </div>
+              </div>
+            </div>
             {checkout.senderMessage && (
-              <blockquote className="mt-4 rounded-xl border border-border/60 bg-card px-4 py-3 text-sm italic text-foreground/90">
+              <blockquote className="border-b border-border/50 px-6 py-4 text-sm italic text-muted-foreground">
                 &ldquo;{checkout.senderMessage}&rdquo;
               </blockquote>
             )}
+            <div className="px-6 py-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Amount to pay
+              </p>
+              <p className="mt-1 text-3xl font-semibold tracking-tight text-primary">
+                {formatUGX(checkout.total)}
+              </p>
+            </div>
           </div>
 
           <div className="mb-6 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm">
@@ -313,7 +331,7 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
                         sizes="56px"
                       />
                     ) : (
-                      <div className="flex h-full items-center justify-center text-xl">✨</div>
+                      <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -326,14 +344,6 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
                 </li>
               ))}
             </ul>
-            <div className="border-t border-border/50 bg-primary px-5 py-4 text-primary-foreground">
-              <div className="flex items-center justify-between">
-                <span className="font-medium opacity-90">Total to pay</span>
-                <span className="text-2xl font-semibold tabular-nums">
-                  {formatUGX(checkout.total)}
-                </span>
-              </div>
-            </div>
           </div>
 
           <form id="gift-pay-form" onSubmit={handlePay} className="space-y-6">

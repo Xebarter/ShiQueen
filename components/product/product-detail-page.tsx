@@ -22,7 +22,7 @@ import { PricingTiers } from '@/components/pricing-tiers';
 import { ProductImage, isRemoteProductImage } from '@/components/product-image';
 import { ShareProductButton } from '@/components/shared/share-button';
 import { useCart } from '@/lib/cart-context';
-import { useProducts } from '@/lib/products-context';
+import { usePublicProducts } from '@/lib/hooks/use-public-catalog';
 import { createDefaultPricingTiers, formatUGX } from '@/lib/wholesale-data';
 import { cn } from '@/lib/utils';
 import { useSmartBack } from '@/lib/hooks/use-smart-back';
@@ -73,7 +73,7 @@ export function ProductDetailPage() {
   const params = useParams();
   const id = params.id as string;
   const goBack = useSmartBack('/shop');
-  const { getProductById, loading } = useProducts();
+  const { getProductById, loading } = usePublicProducts();
   const product = getProductById(id);
 
   const [quantity, setQuantity] = useState(1);

@@ -14,7 +14,6 @@ import {
   Shield,
   ShoppingBag,
   ShoppingCart,
-  Trash2,
   Truck,
   User,
 } from 'lucide-react';
@@ -34,9 +33,9 @@ import { isRemoteProductImage, ProductImage } from '@/components/product-image';
 import { useAuth } from '@/lib/auth-context';
 import { useCart } from '@/lib/cart-context';
 import { subscribeUserOrders } from '@/lib/firebase/orders';
-import { getStoredWishlist, removeFromStoredWishlist } from '@/lib/home-merchandising';
+import { getStoredWishlist, removeFromStoredWishlist, getDiscountPercent } from '@/lib/home-merchandising';
 import { useProducts } from '@/lib/products-context';
-import { Order } from '@/lib/types/database';
+import { Order, Product } from '@/lib/types/database';
 import { formatUGX } from '@/lib/wholesale-data';
 import { getDisplayName } from '@/lib/user-display';
 import { ShareProductButton } from '@/components/shared/share-button';
@@ -265,6 +264,106 @@ function OrderCard({ order }: { order: Order }) {
   );
 }
 
+function WishlistCard({
+  product,
+  onAddToCart,
+  onRemove,
+}: {
+  product: Product;
+  onAddToCart: (productId: string) => void;
+  onRemove: (productId: string) => void;
+}) {
+  const discount = getDiscountPercent(product);
+  const outOfStock = product.stock <= 0;
+  const showOriginal =
+    Boolean(product.originalPrice) &&
+    (product.originalPrice as number) > product.price;
+
+  return (
+    <article className="group flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm ring-1 ring-black/[0.02] transition duration-300 hover:border-primary/20 hover:shadow-md">
+      <div className="relative aspect-[4/5] overflow-hidden bg-muted/40">
+        <Link href={`/products/${product.id}`} className="absolute inset-0 block">
+          {isRemoteProductImage(product.image) ? (
+            <ProductImage
+              product={product}
+              className="absolute inset-0 transition duration-500 ease-out group-hover:scale-[1.03]"
+              sizes="(max-width: 640px) 50vw, (max-width: 1280px) 33vw, 280px"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center text-muted-foreground">
+              <Heart className="h-8 w-8 opacity-30" />
+            </div>
+          )}
+        </Link>
+
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/35 to-transparent opacity-80" />
+
+        <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
+          {discount > 0 && (
+            <span className="rounded-md bg-accent px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-foreground shadow-sm">
+              −{discount}%
+            </span>
+          )}
+          {outOfStock && (
+            <span className="rounded-md bg-background/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground shadow-sm ring-1 ring-border/60">
+              Out of stock
+            </span>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => onRemove(product.id)}
+          className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-background/90 text-primary shadow-sm ring-1 ring-border/50 backdrop-blur-sm transition hover:bg-background hover:text-destructive"
+          aria-label={`Remove ${product.name} from wishlist`}
+        >
+          <Heart className="h-4 w-4 fill-current" />
+        </button>
+      </div>
+
+      <div className="flex flex-1 flex-col p-4 sm:p-5">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          {product.category}
+        </p>
+        <Link
+          href={`/products/${product.id}`}
+          className="mt-1.5 line-clamp-2 text-[15px] font-medium leading-snug tracking-tight transition-colors hover:text-primary"
+        >
+          {product.name}
+        </Link>
+
+        <div className="mt-2.5 flex flex-wrap items-baseline gap-2">
+          <p className="text-base font-semibold tabular-nums text-accent">
+            {formatUGX(product.price)}
+          </p>
+          {showOriginal && (
+            <p className="text-sm tabular-nums text-muted-foreground line-through">
+              {formatUGX(product.originalPrice as number)}
+            </p>
+          )}
+        </div>
+
+        <div className="mt-auto flex gap-2 pt-4">
+          <Button
+            size="sm"
+            className="h-9 flex-1 gap-1.5 rounded-xl"
+            disabled={outOfStock}
+            onClick={() => onAddToCart(product.id)}
+          >
+            <ShoppingCart className="h-3.5 w-3.5" />
+            {outOfStock ? 'Unavailable' : 'Add to cart'}
+          </Button>
+          <ShareProductButton
+            product={product}
+            size="sm"
+            className="h-9 w-9 shrink-0 rounded-xl p-0"
+          />
+        </div>
+      </div>
+    </article>
+  );
+}
+
 function PanelCard({
   title,
   description,
@@ -318,6 +417,11 @@ export function AccountDashboard() {
         .map((id) => getProductById(id))
         .filter((product): product is NonNullable<typeof product> => Boolean(product)),
     [wishlistIds, getProductById, products]
+  );
+
+  const wishlistTotal = useMemo(
+    () => wishlistProducts.reduce((sum, product) => sum + product.price, 0),
+    [wishlistProducts]
   );
 
   const navigateSection = useCallback((section: AccountSection) => {
@@ -446,9 +550,6 @@ export function AccountDashboard() {
             onNavigate={navigateSection}
             displayName={displayName}
             email={user.email}
-            photoURL={user.photoURL}
-            profileDisplayName={profile?.displayName ?? user.displayName}
-            isAdmin={isAdmin}
             signingOut={signingOut}
             onLogout={handleLogout}
           />
@@ -460,10 +561,7 @@ export function AccountDashboard() {
               onNavigate={navigateSection}
               displayName={displayName}
               email={user.email}
-              photoURL={user.photoURL}
-              profileDisplayName={profile?.displayName ?? user.displayName}
               memberSinceLabel={memberSinceLabel}
-              isAdmin={isAdmin}
               signingOut={signingOut}
               onLogout={handleLogout}
             />
@@ -587,7 +685,7 @@ export function AccountDashboard() {
               )}
 
               {activeSection === 'wishlist' && (
-                <div>
+                <div className="space-y-6">
                   {productsLoading ? (
                     <div className="flex justify-center py-16">
                       <Loader2 className="h-7 w-7 animate-spin text-primary" />
@@ -595,80 +693,63 @@ export function AccountDashboard() {
                   ) : wishlistProducts.length === 0 ? (
                     <EmptyState
                       icon={Heart}
-                      title="Your wishlist is empty"
-                      description="Tap the heart on any product while shopping to save it here."
+                      title="Nothing saved yet"
+                      description="Save pieces you love while browsing — they will wait here until you are ready."
                       action={
-                        <Link href="/shop" className={buttonVariants()}>
-                          Discover products
-                        </Link>
+                        <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                          <Link href="/shop" className={buttonVariants()}>
+                            Browse the shop
+                          </Link>
+                          <Link
+                            href="/packages"
+                            className={buttonVariants({ variant: 'outline' })}
+                          >
+                            Explore packages
+                          </Link>
+                        </div>
                       }
                     />
                   ) : (
-                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                      {wishlistProducts.map((product) => (
-                        <div
-                          key={product.id}
-                          className="group overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm ring-1 ring-border/40 transition hover:border-primary/20 hover:shadow-md"
-                        >
-                          <Link
-                            href={`/products/${product.id}`}
-                            className="relative block aspect-[4/5] overflow-hidden bg-secondary"
-                          >
-                            {isRemoteProductImage(product.image) ? (
-                              <ProductImage
-                                product={product}
-                                className="absolute inset-0 transition duration-300 group-hover:scale-105"
-                                sizes="(max-width: 640px) 50vw, 240px"
-                              />
-                            ) : (
-                              <div className="flex h-full items-center justify-center text-3xl">
-                                ✨
-                              </div>
-                            )}
-                          </Link>
-
-                          <div className="p-4">
-                            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                              {product.category}
-                            </p>
-                            <Link
-                              href={`/products/${product.id}`}
-                              className="mt-1 line-clamp-2 font-medium leading-snug tracking-tight hover:text-primary"
-                            >
-                              {product.name}
-                            </Link>
-                            <p className="mt-1.5 text-sm font-semibold tabular-nums">
-                              {formatUGX(product.price)}
-                            </p>
-
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              <Button
-                                size="sm"
-                                className="h-8 flex-1 gap-1.5 rounded-lg sm:flex-none"
-                                onClick={() => handleAddToCart(product.id)}
-                              >
-                                <ShoppingCart className="h-3.5 w-3.5" />
-                                Add to cart
-                              </Button>
-                              <ShareProductButton
-                                product={product}
-                                size="sm"
-                                className="h-8 w-8 rounded-lg p-0"
-                              />
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-8 rounded-lg px-2.5"
-                                onClick={() => handleRemoveWishlist(product.id)}
-                                aria-label={`Remove ${product.name} from wishlist`}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          </div>
+                    <>
+                      <div className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-gradient-to-br from-primary/[0.05] via-muted/20 to-transparent px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+                            Saved for later
+                          </p>
+                          <p className="mt-1 text-lg font-semibold tracking-tight">
+                            {wishlistProducts.length}{' '}
+                            {wishlistProducts.length === 1 ? 'piece' : 'pieces'}
+                            <span className="mx-2 text-muted-foreground/40">·</span>
+                            <span className="tabular-nums text-accent">
+                              {formatUGX(wishlistTotal)}
+                            </span>
+                          </p>
+                          <p className="mt-0.5 text-sm text-muted-foreground">
+                            Estimated value of your wishlist
+                          </p>
                         </div>
-                      ))}
-                    </div>
+                        <Link
+                          href="/shop"
+                          className={cn(
+                            buttonVariants({ variant: 'outline' }),
+                            'shrink-0 rounded-xl'
+                          )}
+                        >
+                          Continue shopping
+                        </Link>
+                      </div>
+
+                      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        {wishlistProducts.map((product) => (
+                          <WishlistCard
+                            key={product.id}
+                            product={product}
+                            onAddToCart={handleAddToCart}
+                            onRemove={handleRemoveWishlist}
+                          />
+                        ))}
+                      </div>
+                    </>
                   )}
                 </div>
               )}
@@ -677,12 +758,7 @@ export function AccountDashboard() {
                 <div className="space-y-6">
                   <PanelCard title="Profile" description="Your personal account details.">
                     <div className="mb-5 flex items-center gap-4 rounded-xl bg-gradient-to-br from-primary/[0.06] via-muted/30 to-transparent p-4 ring-1 ring-border/50">
-                      <AccountAvatar
-                        displayName={profile?.displayName ?? user.displayName}
-                        email={user.email}
-                        photoURL={user.photoURL}
-                        size="md"
-                      />
+                      <AccountAvatar email={user.email} variant="email-letter" size="md" />
                       <div className="min-w-0">
                         <p className="truncate font-semibold tracking-tight">{displayName}</p>
                         <p className="truncate text-sm text-muted-foreground">{user.email}</p>

@@ -56,7 +56,7 @@ export default function EditSupplierPage() {
       supplierId={supplier.id}
       initialSupplier={supplier}
       catalogCounts={counts}
-      onSaved={() => router.push('/admin/suppliers')}
+      onSaved={() => router.push(`/admin/suppliers/${supplier.id}`)}
     />
   );
 }

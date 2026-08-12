@@ -13,6 +13,7 @@ import { getPackageCoverImages, resolvePackageSavings } from '@/lib/package-util
 import { getPackageCategoryDiscoveryLabel } from '@/lib/package-catalog';
 import { SharePackageButton } from '@/components/shared/share-button';
 import { cn } from '@/lib/utils';
+import { useServices } from '@/lib/services-context';
 
 interface PackageHeroCarouselProps {
   packages: PackageType[];
@@ -31,6 +32,7 @@ export function PackageHeroCarousel({
 }: PackageHeroCarouselProps) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const { activeListings } = useServices();
 
   const slide = packages[index];
 
@@ -67,7 +69,7 @@ export function PackageHeroCarousel({
   }
 
   const savings = resolvePackageSavings(slide, retailPrices);
-  const coverImages = getPackageCoverImages(slide, products);
+  const coverImages = getPackageCoverImages(slide, products, activeListings);
 
   return (
     <section

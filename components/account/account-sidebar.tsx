@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { AccountAvatar } from '@/components/account/account-avatar';
 import {
   ACCOUNT_BACK_LINK,
@@ -16,10 +16,7 @@ type AccountSidebarProps = {
   onNavigate: (section: AccountSection) => void;
   displayName: string;
   email: string | null | undefined;
-  photoURL: string | null | undefined;
-  profileDisplayName?: string | null;
   memberSinceLabel?: string | null;
-  isAdmin?: boolean;
   signingOut?: boolean;
   onLogout: () => void;
   className?: string;
@@ -30,10 +27,7 @@ export function AccountSidebar({
   onNavigate,
   displayName,
   email,
-  photoURL,
-  profileDisplayName,
   memberSinceLabel,
-  isAdmin,
   signingOut,
   onLogout,
   className,
@@ -51,18 +45,9 @@ export function AccountSidebar({
       <div className="overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/[0.06] via-card to-card shadow-sm ring-1 ring-black/[0.02]">
         <div className="border-b border-border/50 px-5 py-5">
           <div className="flex items-center gap-3">
-            <AccountAvatar
-              displayName={profileDisplayName}
-              email={email}
-              photoURL={photoURL}
-              size="md"
-            />
+            <AccountAvatar email={email} variant="email-letter" size="md" />
             <div className="min-w-0">
-              <span className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-primary">
-                <Sparkles className="h-2.5 w-2.5" />
-                {isAdmin ? 'Admin' : 'Member'}
-              </span>
-              <p className="mt-1.5 truncate font-semibold tracking-tight">{displayName}</p>
+              <p className="truncate font-semibold tracking-tight">{displayName}</p>
               <p className="truncate text-xs text-muted-foreground">{email}</p>
             </div>
           </div>

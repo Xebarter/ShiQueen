@@ -23,16 +23,12 @@ import { PackageQuizModal, type PackageQuizResult } from '@/components/packages/
 import { PackageMobileActionBar } from '@/components/packages/package-mobile-action-bar';
 import { useWholesale } from '@/lib/wholesale-context';
 import { useCart } from '@/lib/cart-context';
-import { useProducts } from '@/lib/products-context';
+import { usePublicProducts, usePublicPackages } from '@/lib/hooks/use-public-catalog';
+import { useServices } from '@/lib/services-context';
 import {
-  getProductNameMap,
-  getRetailPricesMap,
-  productsToCatalog,
-} from '@/lib/wholesale-data';
-import {
+  buildPackageCatalogMaps,
   getPackageImage,
   getPackageItemName,
-  mergePackageItemMaps,
   resolvePackageSavings,
 } from '@/lib/package-utils';
 import {
@@ -57,20 +53,16 @@ import type { Package } from '@/lib/types/wholesale';
 
 export function PackagesPage() {
   const searchParams = useSearchParams();
-  const { packages, setSelectedPackage, loading } = useWholesale();
+  const { setSelectedPackage } = useWholesale();
+  const { packages, loading } = usePublicPackages();
   const { addItem, itemCount } = useCart();
-  const { products } = useProducts();
-  const catalog = productsToCatalog(products);
+  const { products } = usePublicProducts();
+  const { activeListings } = useServices();
 
-  const activePackages = useMemo(() => packages.filter((p) => p.isActive), [packages]);
+  const activePackages = useMemo(() => packages, [packages]);
   const { productNames, retailPrices } = useMemo(
-    () =>
-      mergePackageItemMaps(
-        activePackages,
-        getProductNameMap(catalog),
-        getRetailPricesMap(catalog)
-      ),
-    [activePackages, catalog]
+    () => buildPackageCatalogMaps(products, activeListings, activePackages),
+    [activePackages, products, activeListings]
   );
 
   const [search, setSearch] = useState('');
@@ -213,14 +205,14 @@ export function PackagesPage() {
         id: pkg.id,
         name: pkg.name,
         price: packagePrice,
-        image: getPackageImage(pkg, products),
+        image: getPackageImage(pkg, products, activeListings),
         quantity: 1,
       });
       trackPackageView(pkg.id);
       setViewedIds(getStoredViewedPackageIds());
       toast.success('Bundle added to cart!');
     },
-    [addItem, products, retailPrices, setSelectedPackage]
+    [addItem, activeListings, products, retailPrices, setSelectedPackage]
   );
 
   const handleQuickView = useCallback((pkg: Package) => {

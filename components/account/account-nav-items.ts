@@ -30,7 +30,7 @@ export const ACCOUNT_SECTIONS: {
   {
     id: 'wishlist',
     label: 'Wishlist',
-    description: 'Items saved for later',
+    description: 'Pieces you have saved for later',
     icon: Heart,
   },
   {

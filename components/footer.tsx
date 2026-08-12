@@ -1,11 +1,14 @@
 import Link from 'next/link';
 import { Mail, Phone, MapPin } from 'lucide-react';
 import { BrandLogo } from './brand-logo';
+import {
+  CONTACT_PHONE_DISPLAY,
+  CONTACT_PHONE_HREF,
+  contactWhatsAppHref,
+} from '@/lib/contact-info';
 import { cn } from '@/lib/utils';
 
-const PHONE_DISPLAY = '+256 779 490162';
-const PHONE_HREF = 'tel:+256779490162';
-const WHATSAPP_HREF = 'https://wa.me/256779490162';
+const WHATSAPP_HREF = contactWhatsAppHref();
 
 function InstagramIcon({ className }: { className?: string }) {
   return (
@@ -96,8 +99,13 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/shop?sale=true" className="hover:text-foreground transition">
-                  Sale
+                <Link href="/wholesale" className="hover:text-foreground transition">
+                  Wholesale
+                </Link>
+              </li>
+              <li>
+                <Link href="/supplier" className="hover:text-foreground transition">
+                  Sell with us
                 </Link>
               </li>
             </ul>
@@ -142,8 +150,8 @@ export function Footer() {
               </li>
               <li className="flex items-center gap-2">
                 <Phone className="w-4 h-4 shrink-0" />
-                <a href={PHONE_HREF} className="hover:text-foreground transition">
-                  {PHONE_DISPLAY}
+                <a href={CONTACT_PHONE_HREF} className="hover:text-foreground transition">
+                  {CONTACT_PHONE_DISPLAY}
                 </a>
               </li>
               <li className="flex items-start gap-2">
@@ -169,19 +177,37 @@ export function Footer() {
         </div>
 
         {/* Bottom */}
-        <div className="border-t border-border pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-muted-foreground">
-          <p>&copy; 2026 SheQueen. All rights reserved.</p>
-          <div className="flex gap-6 mt-4 md:mt-0">
-            <Link href="/privacy" className="hover:text-foreground transition">
+        <div className="border-t border-border pt-8 flex flex-col md:flex-row md:items-center md:justify-between text-sm text-muted-foreground">
+          <p className="text-center md:text-left">&copy; 2026 SheQueen. All rights reserved.</p>
+          <nav
+            aria-label="Legal"
+            className="mt-5 grid w-full grid-cols-2 gap-x-3 gap-y-3 md:mt-0 md:flex md:w-auto md:flex-wrap md:justify-end md:gap-x-6 md:gap-y-2"
+          >
+            <Link
+              href="/privacy"
+              className="rounded-lg border border-border/60 bg-background/40 px-3 py-2.5 text-center text-[13px] transition hover:border-primary/25 hover:text-foreground md:border-0 md:bg-transparent md:p-0 md:text-left md:text-sm"
+            >
               Privacy Policy
             </Link>
-            <Link href="/terms" className="hover:text-foreground transition">
+            <Link
+              href="/terms"
+              className="rounded-lg border border-border/60 bg-background/40 px-3 py-2.5 text-center text-[13px] transition hover:border-primary/25 hover:text-foreground md:border-0 md:bg-transparent md:p-0 md:text-left md:text-sm"
+            >
               Terms of Service
             </Link>
-            <Link href="/cookies" className="hover:text-foreground transition">
+            <Link
+              href="/refunds"
+              className="rounded-lg border border-border/60 bg-background/40 px-3 py-2.5 text-center text-[13px] transition hover:border-primary/25 hover:text-foreground md:border-0 md:bg-transparent md:p-0 md:text-left md:text-sm"
+            >
+              Refund Policy
+            </Link>
+            <Link
+              href="/cookies"
+              className="rounded-lg border border-border/60 bg-background/40 px-3 py-2.5 text-center text-[13px] transition hover:border-primary/25 hover:text-foreground md:border-0 md:bg-transparent md:p-0 md:text-left md:text-sm"
+            >
               Cookie Policy
             </Link>
-          </div>
+          </nav>
         </div>
       </div>
     </footer>

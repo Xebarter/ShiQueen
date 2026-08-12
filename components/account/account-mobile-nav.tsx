@@ -20,9 +20,6 @@ type AccountMobileNavProps = {
   onNavigate: (section: AccountSection) => void;
   displayName: string;
   email: string | null | undefined;
-  photoURL: string | null | undefined;
-  profileDisplayName?: string | null;
-  isAdmin?: boolean;
   signingOut?: boolean;
   onLogout: () => void;
 };
@@ -32,9 +29,6 @@ export function AccountMobileNav({
   onNavigate,
   displayName,
   email,
-  photoURL,
-  profileDisplayName,
-  isAdmin,
   signingOut,
   onLogout,
 }: AccountMobileNavProps) {
@@ -138,12 +132,7 @@ export function AccountMobileNav({
                 >
                   <div className="border-b border-border/50 bg-gradient-to-br from-primary/[0.06] via-card to-card px-4 py-3.5">
                     <div className="flex items-center gap-3">
-                      <AccountAvatar
-                        displayName={profileDisplayName}
-                        email={email}
-                        photoURL={photoURL}
-                        size="sm"
-                      />
+                      <AccountAvatar email={email} variant="email-letter" size="sm" />
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold tracking-tight">
                           {displayName}
@@ -151,9 +140,6 @@ export function AccountMobileNav({
                         <p className="truncate text-xs text-muted-foreground">{email}</p>
                       </div>
                     </div>
-                    <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                      {isAdmin ? 'Admin account' : 'My account'}
-                    </p>
                   </div>
 
                   <nav className="flex flex-col p-1.5" aria-label="Account menu">
@@ -244,12 +230,7 @@ export function AccountMobileNav({
           </p>
         </div>
 
-        <AccountAvatar
-          displayName={profileDisplayName}
-          email={email}
-          photoURL={photoURL}
-          size="sm"
-        />
+        <AccountAvatar email={email} variant="email-letter" size="sm" />
       </header>
     </div>
   );

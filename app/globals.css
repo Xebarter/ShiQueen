@@ -5,8 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-heading: var(--font-sans);
-  --font-sans: var(--font-playfair), 'Playfair Display', Georgia, serif;
+  --font-heading: var(--font-work-sans), 'Work Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-work-sans), 'Work Sans', ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, 'Cascadia Code', 'Segoe UI Mono', Menlo, Monaco, Consolas, monospace;
   --font-brand: var(--font-playfair), 'Playfair Display', Georgia, serif;
   --color-sidebar-ring: var(--sidebar-ring);
@@ -154,7 +154,7 @@
   .admin-app {
     font-family: var(--font-figtree), 'Figtree', ui-sans-serif, system-ui, sans-serif;
   }
-  /* @theme inline bakes Playfair into font-sans/heading — force Figtree in admin */
+  /* Public UI is Work Sans; keep admin on Figtree */
   .admin-app :is(.font-sans, .font-heading, .font-brand) {
     font-family: var(--font-figtree), 'Figtree', ui-sans-serif, system-ui, sans-serif;
   }

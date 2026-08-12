@@ -27,20 +27,33 @@ import { verifyPaytotaWebhookSignature } from '@/lib/paytota/verify-signature';
 function mapPaymentStatus(status: string): {
   paymentStatus: 'paid' | 'failed' | 'cancelled' | 'awaiting_payment';
   orderStatus?: 'processing' | 'cancelled' | 'pending';
+  bookingStatus?: 'confirmed' | 'cancelled' | 'pending';
 } {
   switch (status) {
     case 'paid':
-      return { paymentStatus: 'paid', orderStatus: 'processing' };
+      return {
+        paymentStatus: 'paid',
+        orderStatus: 'processing',
+        bookingStatus: 'confirmed',
+      };
     case 'error':
-      return { paymentStatus: 'failed', orderStatus: 'pending' };
+      return { paymentStatus: 'failed', orderStatus: 'pending', bookingStatus: 'pending' };
     case 'cancelled':
-      return { paymentStatus: 'cancelled', orderStatus: 'cancelled' };
+      return {
+        paymentStatus: 'cancelled',
+        orderStatus: 'cancelled',
+        bookingStatus: 'cancelled',
+      };
     case 'pending':
     case 'pending_execute':
     case 'created':
     default:
       return { paymentStatus: 'awaiting_payment' };
   }
+}
+
+function looksLikeBookingReference(reference: string): boolean {
+  return reference.startsWith('bk-');
 }
 
 export async function POST(request: NextRequest) {
@@ -69,6 +82,44 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true, updated: false });
     }
 
+    const mapped = mapPaymentStatus(payload.status);
+
+    const {
+      getServiceBookingByPaytotaReference,
+      updateServiceBookingPaymentServer,
+    } = await import('@/lib/firebase/service-bookings-server');
+
+    const booking = await getServiceBookingByPaytotaReference(reference);
+    if (booking) {
+      await updateServiceBookingPaymentServer(booking.id, {
+        paymentStatus: mapped.paymentStatus,
+        paytotaPurchaseId: payload.id,
+        paytotaReference: reference,
+        ...(mapped.bookingStatus ? { status: mapped.bookingStatus } : {}),
+      });
+
+      if (mapped.paymentStatus === 'paid') {
+        const { markSharedBookingPaidByBookingId } = await import(
+          '@/lib/firebase/shared-bookings-server'
+        );
+        await markSharedBookingPaidByBookingId(booking.id);
+      }
+
+      return NextResponse.json({
+        received: true,
+        updated: true,
+        bookingId: booking.id,
+      });
+    }
+
+    if (looksLikeBookingReference(reference)) {
+      console.warn(
+        '[SheQueen] paytota webhook: booking not found for reference',
+        reference
+      );
+      return NextResponse.json({ received: true, updated: false });
+    }
+
     const { getOrderByPaytotaReference, updateOrderPaymentServer } = await import(
       '@/lib/firebase/orders-server'
     );
@@ -78,8 +129,6 @@ export async function POST(request: NextRequest) {
       console.warn('[SheQueen] paytota webhook: order not found for reference', reference);
       return NextResponse.json({ received: true, updated: false });
     }
-
-    const mapped = mapPaymentStatus(payload.status);
 
     await updateOrderPaymentServer(order.id, {
       paymentStatus: mapped.paymentStatus,

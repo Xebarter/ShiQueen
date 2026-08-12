@@ -13,16 +13,12 @@ import {
 } from '@/components/packages/package-discovery-card';
 import { PackageQuickViewModal } from '@/components/packages/package-quick-view-modal';
 import { useWholesale } from '@/lib/wholesale-context';
-import { useProducts } from '@/lib/products-context';
+import { usePublicProducts, usePublicPackages } from '@/lib/hooks/use-public-catalog';
 import { useCart } from '@/lib/cart-context';
+import { useServices } from '@/lib/services-context';
 import {
-  getProductNameMap,
-  getRetailPricesMap,
-  productsToCatalog,
-} from '@/lib/wholesale-data';
-import {
+  buildPackageCatalogMaps,
   getPackageImage,
-  mergePackageItemMaps,
   resolvePackageSavings,
 } from '@/lib/package-utils';
 import {
@@ -92,22 +88,18 @@ export function PackageSpotlightSection({
   limit = 6,
   className = 'bg-primary/5',
 }: PackageSpotlightSectionProps) {
-  const { packages, setSelectedPackage, loading: wholesaleLoading } = useWholesale();
-  const { products, loading: productsLoading } = useProducts();
+  const { setSelectedPackage, loading: wholesaleLoading } = useWholesale();
+  const { packages } = usePublicPackages();
+  const { products, loading: productsLoading } = usePublicProducts();
+  const { activeListings } = useServices();
   const { addItem } = useCart();
   const [quickViewPkg, setQuickViewPkg] = useState<Package | null>(null);
 
-  const catalog = useMemo(() => productsToCatalog(products), [products]);
-  const activePackages = useMemo(() => packages.filter((p) => p.isActive), [packages]);
+  const activePackages = useMemo(() => packages, [packages]);
 
   const { productNames, retailPrices } = useMemo(
-    () =>
-      mergePackageItemMaps(
-        activePackages,
-        getProductNameMap(catalog),
-        getRetailPricesMap(catalog)
-      ),
-    [activePackages, catalog]
+    () => buildPackageCatalogMaps(products, activeListings, activePackages),
+    [activePackages, products, activeListings]
   );
 
   const spotlightPackages = useMemo(() => {
@@ -147,13 +139,13 @@ export function PackageSpotlightSection({
         id: pkg.id,
         name: pkg.name,
         price: resolvePackageSavings(pkg, retailPrices).packagePrice,
-        image: getPackageImage(pkg, products),
+        image: getPackageImage(pkg, products, activeListings),
         quantity: 1,
       });
       trackPackageView(pkg.id);
       toast.success('Bundle added to cart!');
     },
-    [addItem, products, retailPrices, setSelectedPackage]
+    [addItem, activeListings, products, retailPrices, setSelectedPackage]
   );
 
   const handleQuickView = useCallback((pkg: Package) => {

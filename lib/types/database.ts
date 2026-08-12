@@ -1,12 +1,13 @@
 import { Package, BulkOrder, WholesaleAccount } from '@/lib/types/wholesale';
 
-export type UserRole = 'customer' | 'admin';
+export type UserRole = 'customer' | 'admin' | 'supplier';
 
 export interface UserProfile {
   uid: string;
   email: string;
   displayName?: string;
   role: UserRole;
+  supplierId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -45,6 +46,9 @@ export interface OrderItem {
   color?: string;
   image?: string;
   packageId?: string;
+  /** Distinguishes catalog products vs service listings inside expanded packages. */
+  itemType?: 'product' | 'service' | 'custom';
+  serviceId?: string;
 }
 
 export interface ShippingAddress {

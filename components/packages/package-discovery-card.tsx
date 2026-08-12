@@ -24,6 +24,7 @@ import {
 } from '@/lib/package-merchandising';
 import { SharePackageButton } from '@/components/shared/share-button';
 import { cn } from '@/lib/utils';
+import { useServices } from '@/lib/services-context';
 
 interface PackageDiscoveryCardProps {
   pkg: PackageType;
@@ -52,7 +53,8 @@ export function PackageDiscoveryCard({
   minimal = false,
 }: PackageDiscoveryCardProps) {
   const router = useRouter();
-  const coverImages = getPackageCoverImages(pkg, products);
+  const { activeListings } = useServices();
+  const coverImages = getPackageCoverImages(pkg, products, activeListings);
   const { retailTotal, packagePrice, savingsAmount, savingsPercentage } =
     resolvePackageSavings(pkg, retailPrices);
   const itemCount = getPackageItemCount(pkg);

@@ -203,11 +203,13 @@ function getWeekdayFromDate(dateStr: string): Weekday {
 
 export function getAvailableTimeSlots(
   availability: ProviderAvailability | null,
-  bookings: ServiceBooking[],
+  bookedTimeSlots: string[] | ServiceBooking[],
   date: string
 ): string[] {
   if (!availability) {
-    return ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'];
+    return ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'].filter(
+      (slot) => !toBookedSet(bookedTimeSlots, date).has(slot)
+    );
   }
 
   if (availability.blackoutDates.includes(date)) return [];
@@ -218,11 +220,7 @@ export function getAvailableTimeSlots(
 
   const duration = availability.slotDurationMinutes || 60;
   const slots: string[] = [];
-  const booked = new Set(
-    bookings
-      .filter((b) => b.date === date && b.status !== 'cancelled')
-      .map((b) => b.timeSlot)
-  );
+  const booked = toBookedSet(bookedTimeSlots, date);
 
   for (const range of ranges) {
     let cursor = parseTimeToMinutes(range.start);
@@ -235,6 +233,25 @@ export function getAvailableTimeSlots(
   }
 
   return slots;
+}
+
+function toBookedSet(
+  bookedTimeSlots: string[] | ServiceBooking[],
+  date: string
+): Set<string> {
+  if (bookedTimeSlots.length === 0) return new Set();
+  if (typeof bookedTimeSlots[0] === 'string') {
+    return new Set(bookedTimeSlots as string[]);
+  }
+  return new Set(
+    (bookedTimeSlots as ServiceBooking[])
+      .filter((b) => {
+        if (b.date !== date || b.status === 'cancelled') return false;
+        if (b.paymentStatus === 'failed' || b.paymentStatus === 'cancelled') return false;
+        return true;
+      })
+      .map((b) => b.timeSlot)
+  );
 }
 
 export function getDefaultWeeklySlots(): ProviderAvailability['weeklySlots'] {

@@ -1,3 +1,5 @@
+import type { PaymentMethod, PaymentStatus } from '@/lib/types/database';
+
 export type ServiceBookingStatus =
   | 'pending'
   | 'confirmed'
@@ -102,6 +104,19 @@ export interface ServiceBooking {
   customerAddress?: string;
   notes?: string;
   status: ServiceBookingStatus;
+  /** Base service price (UGX) */
+  amount: number;
+  /** Travel fee when mobile (UGX) */
+  travelFee: number;
+  /** amount + travelFee */
+  total: number;
+  serviceName: string;
+  providerName: string;
+  paymentMethod?: PaymentMethod;
+  paymentStatus?: PaymentStatus;
+  paytotaPurchaseId?: string;
+  paytotaReference?: string;
+  sharedBookingToken?: string;
   createdAt: Date;
   updatedAt: Date;
 }

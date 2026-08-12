@@ -86,12 +86,13 @@ export function ServicesResultsGrid({
 
   return (
     <div className={cn('grid gap-6 sm:grid-cols-2 xl:grid-cols-3', className)}>
-      {listings.map((listing) => (
+      {listings.map((listing, index) => (
         <ServiceCard
           key={listing.id}
           listing={listing}
           provider={getProviderById(providers, listing.providerId)}
           onBook={() => onBook(listing)}
+          index={index}
         />
       ))}
     </div>

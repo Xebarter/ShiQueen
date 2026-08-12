@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Edit, Loader2, Package, Plus, Search, Trash2 } from 'lucide-react';
+import { Edit, Loader2, Package as PackageIcon, Plus, Search, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import {
 import { PackageCoverDisplay } from '@/components/packages/package-cover-display';
 import { useProducts } from '@/lib/products-context';
 import { useWholesale } from '@/lib/wholesale-context';
+import { useServices } from '@/lib/services-context';
 import { getPackageCoverImages } from '@/lib/package-utils';
 import {
   PACKAGE_CATEGORIES,
@@ -22,10 +23,19 @@ import {
 } from '@/lib/package-catalog';
 import { formatUGX } from '@/lib/wholesale-data';
 import type { Product } from '@/lib/types/database';
+import type { ServiceListing } from '@/lib/types/services';
 import type { Package } from '@/lib/types/wholesale';
 
-function AdminPackageCoverThumb({ pkg, products }: { pkg: Package; products: Product[] }) {
-  const coverImages = getPackageCoverImages(pkg, products);
+function AdminPackageCoverThumb({
+  pkg,
+  products,
+  services,
+}: {
+  pkg: Package;
+  products: Product[];
+  services: ServiceListing[];
+}) {
+  const coverImages = getPackageCoverImages(pkg, products, services);
 
   return (
     <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border/70 bg-muted">
@@ -42,6 +52,7 @@ function AdminPackageCoverThumb({ pkg, products }: { pkg: Package; products: Pro
 export function AdminWholesalePackagesPage() {
   const { packages, deletePackage, loading } = useWholesale();
   const { products } = useProducts();
+  const { activeListings } = useServices();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
@@ -103,10 +114,10 @@ export function AdminWholesalePackagesPage() {
         <>
           {packages.length > 0 && (
             <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <StatCard label="Total" value={stats.total} icon={Package} accent="text-foreground" />
-              <StatCard label="Active" value={stats.active} icon={Package} accent="text-emerald-600" />
-              <StatCard label="Inactive" value={stats.inactive} icon={Package} accent="text-slate-500" />
-              <StatCard label="Signature" value={stats.signature} icon={Package} accent="text-primary" />
+              <StatCard label="Total" value={stats.total} icon={PackageIcon} accent="text-foreground" />
+              <StatCard label="Active" value={stats.active} icon={PackageIcon} accent="text-emerald-600" />
+              <StatCard label="Inactive" value={stats.inactive} icon={PackageIcon} accent="text-slate-500" />
+              <StatCard label="Signature" value={stats.signature} icon={PackageIcon} accent="text-primary" />
             </div>
           )}
 
@@ -149,7 +160,7 @@ export function AdminWholesalePackagesPage() {
             <CardContent className="p-0">
               {packages.length === 0 ? (
                 <div className="px-6 py-14 text-center">
-                  <Package className="mx-auto mb-3 h-9 w-9 text-muted-foreground/40" />
+                  <PackageIcon className="mx-auto mb-3 h-9 w-9 text-muted-foreground/40" />
                   <h3 className="text-lg font-semibold">No packages yet</h3>
                   <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
                     Create your first curated bundle — a complete solution customers can buy in one order.
@@ -176,7 +187,11 @@ export function AdminWholesalePackagesPage() {
                         key={pkg.id}
                         className="flex items-center gap-3 border-b border-border/60 px-4 py-3 last:border-0"
                       >
-                        <AdminPackageCoverThumb pkg={pkg} products={products} />
+                        <AdminPackageCoverThumb
+                          pkg={pkg}
+                          products={products}
+                          services={activeListings}
+                        />
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="truncate font-medium">{pkg.name}</p>
@@ -250,7 +265,11 @@ export function AdminWholesalePackagesPage() {
                           >
                             <td className="px-5 py-3.5">
                               <div className="flex items-center gap-3">
-                                <AdminPackageCoverThumb pkg={pkg} products={products} />
+                                <AdminPackageCoverThumb
+                          pkg={pkg}
+                          products={products}
+                          services={activeListings}
+                        />
                                 <div className="min-w-0">
                                   <p className="font-medium">{pkg.name}</p>
                                   <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">

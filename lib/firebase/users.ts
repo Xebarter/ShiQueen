@@ -27,16 +27,22 @@ export function resolveUserRole(email: string): UserRole {
   return getAdminEmails().includes(email.toLowerCase()) ? 'admin' : 'customer';
 }
 
+function isAdminEmail(email: string): boolean {
+  return getAdminEmails().includes(email.toLowerCase());
+}
+
 function buildOfflineProfile(
   uid: string,
   email: string,
-  displayName?: string
+  displayName?: string,
+  extras?: Pick<UserProfile, 'role' | 'supplierId'>
 ): UserProfile {
   return {
     uid,
     email,
     displayName,
-    role: resolveUserRole(email),
+    role: extras?.role ?? resolveUserRole(email),
+    supplierId: extras?.supplierId,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -48,6 +54,7 @@ function mapUserProfile(uid: string, data: Record<string, unknown>): UserProfile
     email: String(data.email ?? ''),
     displayName: data.displayName ? String(data.displayName) : undefined,
     role: (data.role as UserRole) ?? 'customer',
+    supplierId: data.supplierId ? String(data.supplierId) : undefined,
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
   };
@@ -65,20 +72,28 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 export async function createUserProfile(
   uid: string,
   email: string,
-  displayName?: string
+  displayName?: string,
+  options?: { role?: UserRole; supplierId?: string }
 ): Promise<UserProfile> {
   const db = getFirebaseDb();
   if (!db) throw new Error('Firebase not initialized');
+
+  const role = isAdminEmail(email) ? 'admin' : options?.role ?? resolveUserRole(email);
 
   const profile: Omit<UserProfile, 'createdAt' | 'updatedAt'> = {
     uid,
     email,
     displayName,
-    role: resolveUserRole(email),
+    role,
+    supplierId: options?.supplierId,
   };
 
   await setDoc(doc(db, COLLECTIONS.users, uid), {
-    ...profile,
+    uid: profile.uid,
+    email: profile.email,
+    displayName: profile.displayName ?? null,
+    role: profile.role,
+    supplierId: profile.supplierId ?? null,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -90,24 +105,26 @@ export async function createUserProfile(
   };
 }
 
+/**
+ * Sync profile on login. Admin emails always become admin.
+ * Existing supplier (and admin) roles are preserved when not an admin email.
+ */
 export async function ensureUserProfile(
   uid: string,
   email: string,
   displayName?: string
 ): Promise<UserProfile> {
-  const expectedRole = resolveUserRole(email);
-
   try {
     const existing = await getUserProfile(uid);
 
     if (existing) {
-      if (existing.role !== expectedRole) {
+      if (isAdminEmail(email) && existing.role !== 'admin') {
         try {
-          await updateUserRole(uid, expectedRole);
-          return { ...existing, role: expectedRole, updatedAt: new Date() };
+          await updateUserRole(uid, 'admin');
+          return { ...existing, role: 'admin', updatedAt: new Date() };
         } catch (error) {
           if (isFirestoreOfflineError(error)) {
-            return { ...existing, role: expectedRole, updatedAt: new Date() };
+            return { ...existing, role: 'admin', updatedAt: new Date() };
           }
           throw error;
         }
@@ -194,7 +211,7 @@ export async function createCustomerProfile(data: {
 
 export async function updateUserProfile(
   uid: string,
-  updates: Partial<Pick<UserProfile, 'displayName' | 'email' | 'role'>>
+  updates: Partial<Pick<UserProfile, 'displayName' | 'email' | 'role' | 'supplierId'>>
 ): Promise<void> {
   const db = getFirebaseDb();
   if (!db) throw new Error('Firebase not initialized');
@@ -209,8 +226,11 @@ export async function updateUserProfile(
   if (updates.role !== undefined) {
     payload.role = updates.role;
   }
+  if (updates.supplierId !== undefined) {
+    payload.supplierId = updates.supplierId || null;
+  }
 
-  await updateDoc(doc(db, COLLECTIONS.users, uid), payload);
+  await updateDoc(doc(db, COLLECTIONS.users, uid), payload as Record<string, import('firebase/firestore').FieldValue | string | null>);
 }
 
 export async function deleteUserProfile(uid: string): Promise<void> {

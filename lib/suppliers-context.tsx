@@ -118,6 +118,11 @@ export function SuppliersProvider({ children }: { children: ReactNode }) {
         categories: data.categories,
         isDefault: data.isDefault,
         isActive: data.isActive,
+        approvalStatus: data.approvalStatus ?? 'approved',
+        ownerUid: data.ownerUid ?? null,
+        approvedAt: data.approvedAt,
+        rejectedAt: data.rejectedAt,
+        rejectionReason: data.rejectionReason,
       });
       return id;
     },

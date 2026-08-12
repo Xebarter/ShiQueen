@@ -88,18 +88,15 @@ export function ServicesPage() {
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
         <section
           id="services-browse"
-          className="scroll-mt-36 rounded-3xl border border-border/60 bg-card/50 p-5 shadow-sm ring-1 ring-black/[0.02] backdrop-blur-sm sm:p-6 lg:scroll-mt-32 lg:p-8"
+          className="scroll-mt-36 rounded-3xl border border-border/50 bg-card/40 p-5 sm:p-6 lg:scroll-mt-32 lg:p-8"
         >
-          <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-border/50 pb-5">
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-border/40 pb-5">
             <div>
-              <h2 className="text-2xl font-light tracking-tight sm:text-3xl">
-                {search.hasActiveFilters ? (
-                  <>Results</>
-                ) : (
-                  <>
-                    All <span className="font-semibold text-primary">services</span>
-                  </>
-                )}
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
+                Browse
+              </p>
+              <h2 className="mt-1 font-[family-name:var(--font-brand)] text-2xl font-medium tracking-tight sm:text-3xl">
+                {search.hasActiveFilters ? 'Results' : 'All services'}
               </h2>
               {search.categoryId && (
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -222,12 +219,15 @@ export function ServicesPage() {
         )}
 
         {showCategoryGrid && (
-          <section className="border-t border-border/50 pt-10">
-            <h2 className="text-2xl font-light tracking-tight">
-              Browse by <span className="font-semibold text-primary">category</span>
+          <section className="border-t border-border/40 pt-12">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
+              Categories
+            </p>
+            <h2 className="mt-1 font-[family-name:var(--font-brand)] text-2xl font-medium tracking-tight sm:text-3xl">
+              Browse by category
             </h2>
             <p className="mt-1 mb-8 text-sm text-muted-foreground">
-              16 categories · beauty, wellness &amp; lifestyle
+              Beauty, wellness &amp; lifestyle across Uganda
             </p>
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {activeCategories.map((category) => (
@@ -245,23 +245,26 @@ export function ServicesPage() {
 
       <ServicesTrustStrip />
 
-      <section className="relative overflow-hidden border-t border-border/50 bg-primary py-16 text-primary-foreground">
+      <section className="relative overflow-hidden border-t border-border/40 bg-primary py-16 text-primary-foreground sm:py-20">
         <div
-          className="pointer-events-none absolute inset-0 opacity-20 [background-image:radial-gradient(circle_at_20%_50%,white_1px,transparent_1px)] [background-size:24px_24px]"
+          className="pointer-events-none absolute inset-0 opacity-15 [background-image:radial-gradient(circle_at_20%_50%,white_1px,transparent_1px)] [background-size:24px_24px]"
           aria-hidden
         />
         <div className="relative mx-auto max-w-3xl px-4 text-center">
-          <h2 className="text-3xl font-light tracking-tight sm:text-4xl">
-            Are you a <span className="font-semibold">service provider</span>?
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] opacity-80">
+            Partners
+          </p>
+          <h2 className="mt-2 font-[family-name:var(--font-brand)] text-3xl font-medium tracking-tight sm:text-4xl">
+            Are you a service provider?
           </h2>
           <p className="mt-3 text-sm opacity-90 sm:text-base">
-            List on SheQueen and reach customers across Uganda.
+            List on SheQueen and reach customers ready to book and pay.
           </p>
           <Link href="/contact" className="mt-8 inline-block">
             <Button
               variant="secondary"
               size="lg"
-              className="h-12 rounded-2xl px-8 font-semibold shadow-lg"
+              className="h-12 rounded-xl px-8 font-semibold shadow-lg"
             >
               Get listed
             </Button>

@@ -29,9 +29,11 @@ import { useCart, type CartItem } from '@/lib/cart-context';
 import { useAuth } from '@/lib/auth-context';
 import { useProducts } from '@/lib/products-context';
 import { useWholesale } from '@/lib/wholesale-context';
+import { useServices } from '@/lib/services-context';
 import { createOrder, generateOrderId } from '@/lib/firebase/orders';
 import { expandPackageCartItems, isPackageCartItem } from '@/lib/package-utils';
 import { SendPaymentLinkCard } from '@/components/checkout/send-payment-link-card';
+import { GiftPayChoice, type GiftPayMode } from '@/components/payments/gift-pay-choice';
 import { getWholesaleSavings } from '@/lib/wholesale-cart';
 import { formatUGX } from '@/lib/wholesale-data';
 import type { ShippingAddress } from '@/lib/types/database';
@@ -260,6 +262,7 @@ function OrderSummaryPanel({
   loading,
   submitLabel,
   paymentMethod,
+  payMode,
 }: {
   items: CartItem[];
   total: number;
@@ -269,6 +272,7 @@ function OrderSummaryPanel({
   loading: boolean;
   submitLabel: string;
   paymentMethod: PaymentMethod;
+  payMode: GiftPayMode;
 }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-lg shadow-primary/5 ring-1 ring-primary/5">
@@ -328,7 +332,11 @@ function OrderSummaryPanel({
           <div>
             <p className="text-sm font-medium opacity-90">Total due</p>
             <p className="text-xs opacity-75">
-              {paymentMethod === 'mobile_money' ? 'Mobile money' : 'Cash on delivery'}
+              {payMode === 'gift'
+                ? 'Someone else will pay'
+                : paymentMethod === 'mobile_money'
+                  ? 'Mobile money'
+                  : 'Cash on delivery'}
             </p>
           </div>
           <p className="text-2xl font-bold tracking-tight tabular-nums">{formatUGX(orderTotal)}</p>
@@ -336,20 +344,28 @@ function OrderSummaryPanel({
       </div>
 
       <div className="hidden px-5 pb-5 sm:block sm:px-6 sm:pb-6">
-        <Button
-          type="submit"
-          form="checkout-form"
-          className="h-12 w-full rounded-xl text-base font-semibold shadow-lg shadow-primary/25 transition hover:shadow-xl hover:shadow-primary/30"
-          disabled={loading}
-          size="lg"
-        >
-          {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-          {submitLabel}
-        </Button>
-        <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
-          <Lock className="h-3 w-3" />
-          Encrypted & secure payment
-        </p>
+        {payMode === 'gift' ? (
+          <p className="rounded-xl border border-accent/25 bg-accent/10 px-4 py-3 text-center text-sm text-muted-foreground">
+            Create and share the payment link in the form — no need to place the order yourself.
+          </p>
+        ) : (
+          <>
+            <Button
+              type="submit"
+              form="checkout-form"
+              className="h-12 w-full rounded-xl text-base font-semibold shadow-lg shadow-primary/25 transition hover:shadow-xl hover:shadow-primary/30"
+              disabled={loading}
+              size="lg"
+            >
+              {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+              {submitLabel}
+            </Button>
+            <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
+              <Lock className="h-3 w-3" />
+              Encrypted & secure payment
+            </p>
+          </>
+        )}
       </div>
     </div>
   );
@@ -425,9 +441,11 @@ export function CheckoutPage() {
   const { user } = useAuth();
   const { products } = useProducts();
   const { packages } = useWholesale();
+  const { activeListings } = useServices();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('mobile_money');
+  const [payMode, setPayMode] = useState<GiftPayMode>('self');
   const [form, setForm] = useState({
     fullName: '',
     phone: '',
@@ -441,7 +459,7 @@ export function CheckoutPage() {
   }
 
   const orderTotal = total;
-  const orderItems = expandPackageCartItems(items, packages, products);
+  const orderItems = expandPackageCartItems(items, packages, products, activeListings);
   const wholesaleSavings = getWholesaleSavings(items);
   const isWholesaleOrder = items.some((item) => item.quantity >= 10);
   const isPackageOrder = items.some((item) => item.id.startsWith('pkg-'));
@@ -454,6 +472,10 @@ export function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (payMode === 'gift') {
+      toast.error('Create and share a payment link below, or switch to “I’ll pay”.');
+      return;
+    }
     setLoading(true);
 
     const shippingAddress = buildShippingAddress(form);
@@ -734,71 +756,77 @@ export function CheckoutPage() {
                 </div>
               </SectionCard>
 
-              <SendPaymentLinkCard
-                cartItems={items}
-                orderItems={orderItems}
-                subtotal={total}
-                total={orderTotal}
-                orderType={orderType}
-                deliveryDetails={{
-                  fullName: form.fullName,
-                  email: form.email,
-                  phone: form.phone,
-                  address: form.address,
-                  city: form.city,
-                }}
-                senderUserId={user?.uid ?? null}
-              />
-
               <SectionCard
                 step={2}
                 icon={Sparkles}
-                title="Payment method"
-                subtitle="Pick how you'd like to pay. You can switch anytime before placing your order."
+                title="Who is paying?"
+                subtitle="Pay yourself with mobile money, or send a secure link so someone else can cover this order."
               >
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {PAYMENT_OPTIONS.map(({ id, label, hint, icon: Icon }) => {
-                    const selected = paymentMethod === id;
-                    return (
-                      <button
-                        key={id}
-                        type="button"
-                        onClick={() => setPaymentMethod(id)}
-                        className={cn(
-                          'group relative flex flex-col items-start rounded-2xl border-2 p-5 text-left transition-all duration-200',
-                          selected
-                            ? 'border-primary bg-gradient-to-br from-primary/[0.09] to-primary/[0.03] shadow-lg shadow-primary/15 ring-1 ring-primary/20'
-                            : 'border-border/70 bg-background hover:border-primary/35 hover:bg-muted/40 hover:shadow-md'
-                        )}
-                      >
-                        <div className="flex w-full items-start justify-between gap-3">
-                          <span
-                            className={cn(
-                              'flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-200',
-                              selected
-                                ? 'bg-primary text-primary-foreground shadow-md shadow-primary/25'
-                                : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'
-                            )}
-                          >
-                            <Icon className="h-5 w-5" />
-                          </span>
-                          <span
-                            className={cn(
-                              'flex h-6 w-6 items-center justify-center rounded-full border-2 transition-colors',
-                              selected
-                                ? 'border-primary bg-primary text-primary-foreground'
-                                : 'border-border bg-background'
-                            )}
-                          >
-                            {selected && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
-                          </span>
-                        </div>
-                        <p className="mt-4 text-base font-semibold text-foreground">{label}</p>
-                        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{hint}</p>
-                      </button>
-                    );
-                  })}
-                </div>
+                <GiftPayChoice mode={payMode} onChange={setPayMode} />
+
+                {payMode === 'gift' ? (
+                  <div className="mt-5">
+                    <SendPaymentLinkCard
+                      cartItems={items}
+                      orderItems={orderItems}
+                      subtotal={total}
+                      total={orderTotal}
+                      orderType={orderType}
+                      deliveryDetails={{
+                        fullName: form.fullName,
+                        email: form.email,
+                        phone: form.phone,
+                        address: form.address,
+                        city: form.city,
+                      }}
+                      senderUserId={user?.uid ?? null}
+                    />
+                  </div>
+                ) : (
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    {PAYMENT_OPTIONS.map(({ id, label, hint, icon: Icon }) => {
+                      const selected = paymentMethod === id;
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => setPaymentMethod(id)}
+                          className={cn(
+                            'group relative flex flex-col items-start rounded-2xl border-2 p-5 text-left transition-all duration-200',
+                            selected
+                              ? 'border-primary bg-gradient-to-br from-primary/[0.09] to-primary/[0.03] shadow-lg shadow-primary/15 ring-1 ring-primary/20'
+                              : 'border-border/70 bg-background hover:border-primary/35 hover:bg-muted/40 hover:shadow-md'
+                          )}
+                        >
+                          <div className="flex w-full items-start justify-between gap-3">
+                            <span
+                              className={cn(
+                                'flex h-11 w-11 items-center justify-center rounded-xl transition-all duration-200',
+                                selected
+                                  ? 'bg-primary text-primary-foreground shadow-md shadow-primary/25'
+                                  : 'bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary'
+                              )}
+                            >
+                              <Icon className="h-5 w-5" />
+                            </span>
+                            <span
+                              className={cn(
+                                'flex h-6 w-6 items-center justify-center rounded-full border-2 transition-colors',
+                                selected
+                                  ? 'border-primary bg-primary text-primary-foreground'
+                                  : 'border-border bg-background'
+                              )}
+                            >
+                              {selected && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+                            </span>
+                          </div>
+                          <p className="mt-4 text-base font-semibold text-foreground">{label}</p>
+                          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{hint}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </SectionCard>
 
               {/* Mobile-only compact order preview */}
@@ -837,6 +865,7 @@ export function CheckoutPage() {
                 loading={loading}
                 submitLabel={submitLabel}
                 paymentMethod={paymentMethod}
+                payMode={payMode}
               />
             </div>
           </aside>
@@ -849,7 +878,11 @@ export function CheckoutPage() {
           <div>
             <p className="text-xs text-muted-foreground">
               {itemCount} {itemCount === 1 ? 'item' : 'items'} ·{' '}
-              {paymentMethod === 'mobile_money' ? 'Mobile money' : 'Cash on delivery'}
+              {payMode === 'gift'
+                ? 'Someone else pays'
+                : paymentMethod === 'mobile_money'
+                  ? 'Mobile money'
+                  : 'Cash on delivery'}
             </p>
             <p className="text-xl font-bold tracking-tight text-primary tabular-nums">
               {formatUGX(orderTotal)}
@@ -860,16 +893,22 @@ export function CheckoutPage() {
             Free delivery
           </span>
         </div>
-        <Button
-          type="submit"
-          form="checkout-form"
-          className="h-12 w-full rounded-xl text-base font-semibold shadow-lg shadow-primary/25"
-          disabled={loading}
-          size="lg"
-        >
-          {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-          {submitLabel}
-        </Button>
+        {payMode === 'gift' ? (
+          <p className="rounded-xl border border-accent/25 bg-accent/10 px-3 py-2.5 text-center text-sm text-muted-foreground">
+            Scroll up to create &amp; share the payment link
+          </p>
+        ) : (
+          <Button
+            type="submit"
+            form="checkout-form"
+            className="h-12 w-full rounded-xl text-base font-semibold shadow-lg shadow-primary/25"
+            disabled={loading}
+            size="lg"
+          >
+            {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+            {submitLabel}
+          </Button>
+        )}
       </div>
 
       <Footer />

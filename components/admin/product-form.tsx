@@ -24,6 +24,10 @@ type ProductFormProps = {
   productId: string;
   initialProduct?: Product;
   onSaved?: () => void;
+  /** Admin catalog vs supplier portal. */
+  portal?: 'admin' | 'supplier';
+  forcedSupplierId?: string;
+  backHref?: string;
 };
 
 function emptyForm(defaultSupplierId = '') {
@@ -88,12 +92,25 @@ function computeStatus(stock: number): Product['status'] {
   return 'Active';
 }
 
-export function ProductForm({ mode, productId, initialProduct, onSaved }: ProductFormProps) {
+export function ProductForm({
+  mode,
+  productId,
+  initialProduct,
+  onSaved,
+  portal = 'admin',
+  forcedSupplierId,
+  backHref,
+}: ProductFormProps) {
   const { defaultSupplierId } = useSuppliers();
+  const resolvedSupplierId = forcedSupplierId || defaultSupplierId;
+  const isSupplierPortal = portal === 'supplier';
+  const listHref = backHref ?? (isSupplierPortal ? '/supplier/products' : '/admin/products');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState(() =>
-    initialProduct ? productToFormState(initialProduct) : emptyForm(defaultSupplierId)
+    initialProduct
+      ? productToFormState(initialProduct)
+      : emptyForm(forcedSupplierId || defaultSupplierId)
   );
   const [imageUrls, setImageUrls] = useState<string[]>(() =>
     initialProduct ? productToImageUrls(initialProduct) : []
@@ -106,10 +123,20 @@ export function ProductForm({ mode, productId, initialProduct, onSaved }: Produc
   );
 
   useEffect(() => {
-    if (mode === 'create' && !formData.supplierId && defaultSupplierId) {
-      setFormData((prev) => ({ ...prev, supplierId: defaultSupplierId }));
+    if (mode === 'create' && !formData.supplierId && resolvedSupplierId) {
+      setFormData((prev) => ({ ...prev, supplierId: resolvedSupplierId }));
     }
-  }, [mode, formData.supplierId, defaultSupplierId]);
+  }, [mode, formData.supplierId, resolvedSupplierId]);
+
+  useEffect(() => {
+    if (forcedSupplierId) {
+      setFormData((prev) =>
+        prev.supplierId === forcedSupplierId
+          ? prev
+          : { ...prev, supplierId: forcedSupplierId }
+      );
+    }
+  }, [forcedSupplierId]);
 
   useEffect(() => {
     return () => {
@@ -156,7 +183,7 @@ export function ProductForm({ mode, productId, initialProduct, onSaved }: Produc
       toast.error('Name and SKU are required.');
       return;
     }
-    if (!formData.supplierId) {
+    if (!(forcedSupplierId || formData.supplierId)) {
       toast.error('Select a supplier.');
       return;
     }
@@ -176,7 +203,7 @@ export function ProductForm({ mode, productId, initialProduct, onSaved }: Produc
         name: formData.name.trim(),
         sku: formData.sku.trim(),
         category: formData.category,
-        supplierId: formData.supplierId,
+        supplierId: forcedSupplierId || formData.supplierId,
         price,
         originalPrice: originalPrice && originalPrice > price ? originalPrice : undefined,
         stock,
@@ -234,7 +261,7 @@ export function ProductForm({ mode, productId, initialProduct, onSaved }: Produc
     <AdminPage>
       <div className="mb-6 sm:mb-8">
         <Link
-          href="/admin/products"
+          href={listHref}
           className="mb-4 flex items-center gap-2 text-primary hover:underline"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -378,10 +405,12 @@ export function ProductForm({ mode, productId, initialProduct, onSaved }: Produc
                   </select>
                 </div>
               </div>
-              <SupplierSelect
-                value={formData.supplierId}
-                onChange={(supplierId) => setFormData((prev) => ({ ...prev, supplierId }))}
-              />
+              {!isSupplierPortal && (
+                <SupplierSelect
+                  value={formData.supplierId}
+                  onChange={(supplierId) => setFormData((prev) => ({ ...prev, supplierId }))}
+                />
+              )}
               <div>
                 <Label htmlFor="description">Description</Label>
                 <textarea

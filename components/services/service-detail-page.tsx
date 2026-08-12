@@ -259,7 +259,7 @@ export function ServiceDetailPage({ slug }: ServiceDetailPageProps) {
             </Button>
           </a>
           <Button className="h-12 flex-[1.2] rounded-xl font-semibold" onClick={() => setBookingOpen(true)}>
-            Book
+            Book &amp; pay
           </Button>
         </div>
       </div>

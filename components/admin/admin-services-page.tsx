@@ -630,6 +630,8 @@ export function AdminServicesPage() {
               <tr>
                 <th className="px-4 py-3 text-left">Customer</th>
                 <th className="px-4 py-3 text-left">Date</th>
+                <th className="px-4 py-3 text-left">Total</th>
+                <th className="px-4 py-3 text-left">Payment</th>
                 <th className="px-4 py-3 text-left">Status</th>
                 <th className="px-4 py-3 text-left">Actions</th>
               </tr>
@@ -637,13 +639,47 @@ export function AdminServicesPage() {
             <tbody>
               {bookings.map((b) => {
                 const svc = listings.find((l) => l.id === b.serviceId);
+                const serviceLabel = b.serviceName || svc?.name || 'Service';
                 return (
                   <tr key={b.id} className="border-t">
                     <td className="px-4 py-3">
                       <p className="font-medium">{b.customerName}</p>
-                      <p className="text-xs text-muted-foreground">{svc?.name}</p>
+                      <p className="text-xs text-muted-foreground">{serviceLabel}</p>
+                      <p className="font-mono text-[10px] text-muted-foreground">{b.id}</p>
                     </td>
-                    <td className="px-4 py-3">{b.date} {b.timeSlot}</td>
+                    <td className="px-4 py-3">
+                      {b.date} {b.timeSlot}
+                      <p className="text-xs capitalize text-muted-foreground">{b.locationType}</p>
+                    </td>
+                    <td className="px-4 py-3 font-medium tabular-nums">
+                      {formatUGX(b.total || b.amount || svc?.basePrice || 0)}
+                      {b.travelFee > 0 && (
+                        <p className="text-[10px] text-muted-foreground">
+                          incl. {formatUGX(b.travelFee)} travel
+                        </p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={cn(
+                          'inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize',
+                          b.paymentStatus === 'paid'
+                            ? 'bg-emerald-500/15 text-emerald-700'
+                            : b.paymentStatus === 'awaiting_payment'
+                              ? 'bg-amber-500/15 text-amber-700'
+                              : b.paymentStatus === 'failed' || b.paymentStatus === 'cancelled'
+                                ? 'bg-red-500/15 text-red-700'
+                                : 'bg-muted text-muted-foreground'
+                        )}
+                      >
+                        {(b.paymentStatus ?? 'unpaid').replace(/_/g, ' ')}
+                      </span>
+                      {b.paytotaReference && (
+                        <p className="mt-1 max-w-[140px] truncate font-mono text-[10px] text-muted-foreground">
+                          {b.paytotaReference}
+                        </p>
+                      )}
+                    </td>
                     <td className="px-4 py-3 capitalize">{b.status.replace('_', ' ')}</td>
                     <td className="px-4 py-3">
                       <select
@@ -665,6 +701,9 @@ export function AdminServicesPage() {
               })}
             </tbody>
           </table>
+          {bookings.length === 0 && (
+            <p className="py-8 text-center text-muted-foreground">No bookings yet.</p>
+          )}
         </div>
       )}
 

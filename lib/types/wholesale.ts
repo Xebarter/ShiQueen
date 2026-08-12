@@ -21,11 +21,18 @@ export interface WholesaleProduct {
   leadTime?: number; // days
 }
 
+export type PackageItemKind = 'product' | 'service' | 'custom';
+
 export interface PackageItem {
+  /** Catalog product id, service id (when itemType is service), or synthetic id for custom lines. */
   productId: string;
   quantity: number;
   price?: number; // optional override
-  /** Package-only line — not in the product catalog */
+  /** Defaults: custom if isCustom, else service if serviceId, else product. */
+  itemType?: PackageItemKind;
+  /** Set when this line is a service listing. */
+  serviceId?: string;
+  /** Package-only line — not in the product/service catalog */
   isCustom?: boolean;
   customName?: string;
   customImage?: string;
@@ -39,6 +46,7 @@ export interface PackageRule {
 }
 
 export type PackagePricingMode = 'auto' | 'custom';
+/** `products` kept for back-compat; covers may include service images too. */
 export type PackageCoverMode = 'upload' | 'products';
 
 export interface Package {
@@ -63,6 +71,26 @@ export interface Package {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/** What kinds of catalog lines a package contains. */
+export type PackageComposition = 'products' | 'services' | 'mixed' | 'empty';
+
+export function getPackageComposition(items: PackageItem[]): PackageComposition {
+  let hasProduct = false;
+  let hasService = false;
+  for (const item of items) {
+    if (item.isCustom === true || item.itemType === 'custom') continue;
+    if (item.itemType === 'service' || Boolean(item.serviceId)) {
+      hasService = true;
+    } else {
+      hasProduct = true;
+    }
+  }
+  if (hasProduct && hasService) return 'mixed';
+  if (hasService) return 'services';
+  if (hasProduct) return 'products';
+  return items.length > 0 ? 'products' : 'empty';
 }
 
 export interface BulkOrder {

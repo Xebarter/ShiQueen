@@ -32,22 +32,22 @@ export function ProductSection({
   const showHeader = Boolean(title || urgency || href);
 
   const headerProps = lightScroll
-    ? { className: 'flex items-center justify-between gap-3 mb-4 md:mb-5' }
+    ? { className: 'mb-3 flex items-center justify-between gap-3 md:mb-4' }
     : {
         initial: { opacity: 0, y: 12 },
         whileInView: { opacity: 1, y: 0 },
         viewport: { once: true },
-        className: 'flex items-center justify-between gap-3 mb-4 md:mb-5',
+        className: 'mb-3 flex items-center justify-between gap-3 md:mb-4',
       };
 
   return (
-    <section className={`scroll-section py-7 md:py-10 ${className}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className={`scroll-section py-5 md:py-7 ${className}`}>
+      <div className="mx-auto max-w-[90rem] px-3 sm:px-4 lg:px-5">
         {showHeader && (
           <Header {...headerProps}>
             <div className="flex min-w-0 items-center gap-2">
               {urgency && (
-                <span className="shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
+                <span className="shrink-0 rounded-md bg-accent/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
                   {urgency}
                 </span>
               )}
@@ -66,7 +66,7 @@ export function ProductSection({
           </Header>
         )}
         {subtitle ? (
-          <p className="-mt-2 mb-4 text-sm text-muted-foreground md:mb-5">{subtitle}</p>
+          <p className="-mt-1 mb-3 text-sm text-muted-foreground md:mb-4">{subtitle}</p>
         ) : null}
         {children}
       </div>
@@ -92,28 +92,28 @@ export function ProductCarousel({ children }: ProductCarouselProps) {
   };
 
   if (lightScroll) {
-    return <div className="grid grid-cols-2 gap-4 pb-2">{children}</div>;
+    return <div className="grid grid-cols-2 gap-2.5 pb-2 md:gap-3">{children}</div>;
   }
 
   return (
-    <div className="relative group/carousel">
+    <div className="group/carousel relative">
       <button
         onClick={() => scroll('left')}
-        className="hidden md:flex absolute left-0 top-1/3 -translate-y-1/2 -translate-x-3 z-10 w-10 h-10 items-center justify-center rounded-full bg-background/90 backdrop-blur border border-border shadow-lg opacity-0 group-hover/carousel:opacity-100 transition"
+        className="absolute top-1/3 left-0 z-10 hidden h-9 w-9 -translate-x-3 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background/90 shadow-md opacity-0 backdrop-blur transition group-hover/carousel:opacity-100 md:flex"
         aria-label="Scroll left"
       >
-        <ChevronLeft className="w-5 h-5" />
+        <ChevronLeft className="h-5 w-5" />
       </button>
       <button
         onClick={() => scroll('right')}
-        className="hidden md:flex absolute right-0 top-1/3 -translate-y-1/2 translate-x-3 z-10 w-10 h-10 items-center justify-center rounded-full bg-background/90 backdrop-blur border border-border shadow-lg opacity-0 group-hover/carousel:opacity-100 transition"
+        className="absolute top-1/3 right-0 z-10 hidden h-9 w-9 translate-x-3 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background/90 shadow-md opacity-0 backdrop-blur transition group-hover/carousel:opacity-100 md:flex"
         aria-label="Scroll right"
       >
-        <ChevronRight className="w-5 h-5" />
+        <ChevronRight className="h-5 w-5" />
       </button>
       <div
         ref={scrollRef}
-        className="flex gap-4 md:gap-5 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-2 -mx-1 px-1"
+        className="-mx-1 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-1 pb-2 scrollbar-hide md:gap-3"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {children}
@@ -131,7 +131,7 @@ export function CarouselItem({
 }) {
   return (
     <div
-      className={`min-w-0 w-full md:snap-start md:shrink-0 md:w-[220px] lg:w-[240px] ${className}`}
+      className={`min-w-0 w-full md:w-[240px] md:shrink-0 md:snap-start lg:w-[260px] ${className}`}
     >
       {children}
     </div>
@@ -153,9 +153,9 @@ export function CategoryShowcase({
   children,
 }: CategoryShowcaseProps) {
   return (
-    <section className="scroll-section py-7 md:py-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-4 flex items-center justify-between gap-3 md:mb-5">
+    <section className="scroll-section py-5 md:py-7">
+      <div className="mx-auto max-w-[90rem] px-3 sm:px-4 lg:px-5">
+        <div className="mb-3 flex items-center justify-between gap-3 md:mb-4">
           <div className="min-w-0">
             <h2 className="text-xl font-light tracking-tight md:text-2xl">{title}</h2>
             {subtitle ? <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p> : null}
@@ -175,7 +175,7 @@ export function CategoryShowcase({
 
 export function SocialProofBanner({ message, children }: { message: string; children: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/50 p-3 md:p-4">
+    <div className="rounded-lg border border-border/60 bg-card/50 p-3 md:p-4">
       <p className="mb-3 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
         <span className="h-1.5 w-1.5 rounded-full bg-accent max-md:animate-none md:animate-pulse" />
         {message}

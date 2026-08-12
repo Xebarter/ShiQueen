@@ -10,20 +10,14 @@ import { PackageContentsList } from '@/components/packages/package-contents-list
 import { PackagePricingPanel } from '@/components/packages/package-pricing-panel';
 import { PackageCard } from '@/components/packages/package-card';
 import { PackageCategoryIcon } from '@/components/packages/package-category-icon';
-import { useWholesale } from '@/lib/wholesale-context';
 import { useCart } from '@/lib/cart-context';
-import { useProducts } from '@/lib/products-context';
-import {
-  formatUGX,
-  getProductNameMap,
-  getRetailPricesMap,
-  productsToCatalog,
-} from '@/lib/wholesale-data';
+import { usePublicProducts, usePublicPackages } from '@/lib/hooks/use-public-catalog';
+import { formatUGX } from '@/lib/wholesale-data';
 import { PackageCoverDisplay } from '@/components/packages/package-cover-display';
 import {
+  buildPackageCatalogMaps,
   getPackageCoverImages,
   getPackageImage,
-  mergePackageItemMaps,
   resolvePackageSavings,
 } from '@/lib/package-utils';
 import {
@@ -35,6 +29,7 @@ import toast from 'react-hot-toast';
 import { ArrowLeft, ChevronRight, Star } from 'lucide-react';
 import { SharePackageButton } from '@/components/shared/share-button';
 import { useSmartBack } from '@/lib/hooks/use-smart-back';
+import { useServices } from '@/lib/services-context';
 
 function PackageBreadcrumb({ name }: { name: string }) {
   return (
@@ -53,16 +48,16 @@ function PackageBreadcrumb({ name }: { name: string }) {
 }
 
 export function PackageDetailPage() {
-  const { packages } = useWholesale();
+  const { packages } = usePublicPackages();
   const { addItem } = useCart();
-  const { products } = useProducts();
-  const catalog = productsToCatalog(products);
+  const { products } = usePublicProducts();
+  const { activeListings } = useServices();
   const params = useParams();
   const id = params.id as string;
   const goBack = useSmartBack('/packages');
   const [quantity, setQuantity] = useState(1);
 
-  const pkg = packages.find((p) => p.id === id);
+  const pkg = packages.find((p) => p.id === id && p.isActive);
 
   const relatedPackages = useMemo(() => {
     if (!pkg) return [];
@@ -80,16 +75,16 @@ export function PackageDetailPage() {
 
   const { productNames, retailPrices } = useMemo(
     () =>
-      mergePackageItemMaps(
-        pkg ? [pkg, ...relatedPackages] : [],
-        getProductNameMap(catalog),
-        getRetailPricesMap(catalog)
+      buildPackageCatalogMaps(
+        products,
+        activeListings,
+        pkg ? [pkg, ...relatedPackages] : []
       ),
-    [pkg, relatedPackages, catalog]
+    [pkg, relatedPackages, products, activeListings]
   );
 
-  const coverImages = pkg ? getPackageCoverImages(pkg, products) : [];
-  const cartImage = pkg ? getPackageImage(pkg, products) : '';
+  const coverImages = pkg ? getPackageCoverImages(pkg, products, activeListings) : [];
+  const cartImage = pkg ? getPackageImage(pkg, products, activeListings) : '';
 
   if (!pkg) {
     return (
@@ -242,6 +237,7 @@ export function PackageDetailPage() {
                   productNames={productNames}
                   retailPrices={retailPrices}
                   products={products}
+                  services={activeListings}
                 />
               </div>
 

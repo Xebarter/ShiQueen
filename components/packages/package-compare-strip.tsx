@@ -14,6 +14,7 @@ import {
 import { getPackageTierLabel } from '@/lib/package-catalog';
 import { getPackageItemCount } from '@/lib/package-merchandising';
 import { cn } from '@/lib/utils';
+import { useServices } from '@/lib/services-context';
 
 interface PackageCompareStripProps {
   packages: PackageType[];
@@ -29,6 +30,7 @@ export function PackageCompareStrip({
   onAddToCart,
 }: PackageCompareStripProps) {
   const router = useRouter();
+  const { activeListings } = useServices();
   const compareSet = packages.slice(0, 3);
   if (compareSet.length < 2) return null;
 
@@ -59,7 +61,7 @@ export function PackageCompareStrip({
           {compareSet.map((pkg, index) => {
             const savings = savingsList[index];
             const isBest = index === bestValueIndex;
-            const coverImages = getPackageCoverImages(pkg, products);
+            const coverImages = getPackageCoverImages(pkg, products, activeListings);
             const pieces = getPackageItemCount(pkg);
 
             return (

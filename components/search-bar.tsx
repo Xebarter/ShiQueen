@@ -11,24 +11,25 @@ import {
   type KeyboardEvent,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, X, Loader2, Clock, ArrowRight, Gift } from 'lucide-react';
+import { Search, X, Loader2, Clock, ArrowRight, Gift, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useCatalogSearch } from '@/lib/hooks/use-catalog-search';
 import type { CatalogSearchHit } from '@/lib/catalog-search';
-import { formatUGX } from '@/lib/wholesale-data';
-import { ProductImage } from '@/components/product-image';
+import { ProductImage, isRemoteProductImage } from '@/components/product-image';
 import { PackageCoverDisplay } from '@/components/packages/package-cover-display';
-import { useProducts } from '@/lib/products-context';
-import { getPackageCoverImages, resolvePackageSavings } from '@/lib/package-utils';
-import { getPackageCategoryLabel } from '@/lib/package-catalog';
+import { usePublicProducts, usePublicPackages } from '@/lib/hooks/use-public-catalog';
+import { useServices } from '@/lib/services-context';
 import {
-  getProductNameMap,
-  getRetailPricesMap,
-  productsToCatalog,
-} from '@/lib/wholesale-data';
-import { useWholesale } from '@/lib/wholesale-context';
-import { mergePackageItemMaps } from '@/lib/package-utils';
+  buildPackageCatalogMaps,
+  getPackageCoverImages,
+  resolvePackageSavings,
+} from '@/lib/package-utils';
+import { getPackageCategoryLabel } from '@/lib/package-catalog';
+import { resolveListingImage } from '@/lib/services-utils';
+import { formatUGX } from '@/lib/wholesale-data';
+import type { ServiceListing } from '@/lib/types/services';
+import Image from 'next/image';
 
 const RECENT_SEARCHES_KEY = 'shequeen-recent-searches';
 const MAX_RECENT = 5;
@@ -74,7 +75,9 @@ function HighlightMatch({ text, query }: { text: string; query: string }) {
 }
 
 function getHitHref(hit: CatalogSearchHit): string {
-  return hit.type === 'product' ? `/products/${hit.product.id}` : `/packages/${hit.pkg.id}`;
+  if (hit.type === 'product') return `/products/${hit.product.id}`;
+  if (hit.type === 'package') return `/packages/${hit.pkg.id}`;
+  return `/services/${hit.listing.slug}`;
 }
 
 function SearchResultRow({
@@ -83,13 +86,15 @@ function SearchResultRow({
   active,
   onSelect,
   products,
+  services,
   retailPrices,
 }: {
   hit: CatalogSearchHit;
   query: string;
   active: boolean;
   onSelect: (hit: CatalogSearchHit) => void;
-  products: ReturnType<typeof useProducts>['products'];
+  products: ReturnType<typeof usePublicProducts>['products'];
+  services: ServiceListing[];
   retailPrices: Record<string, number>;
 }) {
   const handleSelect = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -107,32 +112,34 @@ function SearchResultRow({
         onMouseDown={(event) => event.preventDefault()}
         onClick={handleSelect}
         className={cn(
-          'flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors',
+          'flex w-full items-center gap-3.5 px-4 py-3 text-left transition-colors',
           active ? 'bg-secondary' : 'hover:bg-secondary/70'
         )}
       >
-        <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg ring-1 ring-border/60">
+        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl ring-1 ring-border/60">
           <ProductImage
             product={product}
             className="h-full w-full"
             imageClassName="object-cover"
             fallbackClassName="text-2xl"
-            sizes="44px"
+            sizes="56px"
           />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-foreground">
+          <p className="truncate text-[15px] font-medium leading-snug text-foreground">
             <HighlightMatch text={product.name} query={query} />
           </p>
-          <p className="truncate text-xs text-muted-foreground">
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">
             {product.category}
             {product.sku ? ` · ${product.sku}` : ''}
           </p>
         </div>
         <div className="shrink-0 text-right">
-          <p className="text-sm font-semibold text-foreground">{formatUGX(product.price)}</p>
+          <p className="text-[15px] font-semibold tabular-nums text-foreground">
+            {formatUGX(product.price)}
+          </p>
           {product.originalPrice && product.originalPrice > product.price && (
-            <p className="text-[11px] text-muted-foreground line-through">
+            <p className="text-xs text-muted-foreground line-through">
               {formatUGX(product.originalPrice)}
             </p>
           )}
@@ -141,8 +148,52 @@ function SearchResultRow({
     );
   }
 
+  if (hit.type === 'service') {
+    const { listing } = hit;
+    const image = resolveListingImage(listing);
+
+    return (
+      <button
+        type="button"
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={handleSelect}
+        className={cn(
+          'flex w-full items-center gap-3.5 px-4 py-3 text-left transition-colors',
+          active ? 'bg-secondary' : 'hover:bg-secondary/70'
+        )}
+      >
+        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl ring-1 ring-border/60 bg-muted">
+          {image && isRemoteProductImage(image) ? (
+            <Image src={image} alt={listing.name} fill sizes="56px" className="object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+              <Sparkles className="h-5 w-5" />
+            </div>
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[15px] font-medium leading-snug text-foreground">
+            <HighlightMatch text={listing.name} query={query} />
+          </p>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1 text-primary">
+              <Sparkles className="h-3 w-3" />
+              Service
+            </span>
+            {listing.serviceType ? ` · ${listing.serviceType}` : ''}
+          </p>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="text-[15px] font-semibold tabular-nums text-foreground">
+            {formatUGX(listing.basePrice)}
+          </p>
+        </div>
+      </button>
+    );
+  }
+
   const { pkg } = hit;
-  const coverImages = getPackageCoverImages(pkg, products);
+  const coverImages = getPackageCoverImages(pkg, products, services);
   const { packagePrice } = resolvePackageSavings(pkg, retailPrices);
 
   return (
@@ -151,24 +202,24 @@ function SearchResultRow({
       onMouseDown={(event) => event.preventDefault()}
       onClick={handleSelect}
       className={cn(
-        'flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors',
+        'flex w-full items-center gap-3.5 px-4 py-3 text-left transition-colors',
         active ? 'bg-secondary' : 'hover:bg-secondary/70'
       )}
     >
-      <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg ring-1 ring-border/60">
+      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl ring-1 ring-border/60">
         <PackageCoverDisplay
           images={coverImages}
           alt={pkg.name}
           className="h-full w-full"
           imageClassName="object-cover"
-          sizes="44px"
+          sizes="56px"
         />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-foreground">
+        <p className="truncate text-[15px] font-medium leading-snug text-foreground">
           <HighlightMatch text={pkg.name} query={query} />
         </p>
-        <p className="truncate text-xs text-muted-foreground">
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1 text-primary">
             <Gift className="h-3 w-3" />
             Bundle
@@ -177,8 +228,10 @@ function SearchResultRow({
         </p>
       </div>
       <div className="shrink-0 text-right">
-        <p className="text-sm font-semibold text-foreground">{formatUGX(packagePrice)}</p>
-        <p className="text-[11px] text-accent">Save {pkg.savingsPercentage.toFixed(0)}%</p>
+        <p className="text-[15px] font-semibold tabular-nums text-foreground">
+          {formatUGX(packagePrice)}
+        </p>
+        <p className="text-xs text-accent">Save {pkg.savingsPercentage.toFixed(0)}%</p>
       </div>
     </button>
   );
@@ -186,8 +239,9 @@ function SearchResultRow({
 
 export function SearchBar({ className }: { className?: string }) {
   const router = useRouter();
-  const { products } = useProducts();
-  const { packages } = useWholesale();
+  const { products } = usePublicProducts();
+  const { packages } = usePublicPackages();
+  const { activeListings } = useServices();
   const { search, loading, catalogCount } = useCatalogSearch();
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -205,15 +259,9 @@ export function SearchBar({ className }: { className?: string }) {
   const isSearching = query !== deferredQuery;
 
   const activePackages = useMemo(() => packages.filter((pkg) => pkg.isActive), [packages]);
-  const catalog = useMemo(() => productsToCatalog(products), [products]);
   const retailPrices = useMemo(
-    () =>
-      mergePackageItemMaps(
-        activePackages,
-        getProductNameMap(catalog),
-        getRetailPricesMap(catalog)
-      ).retailPrices,
-    [activePackages, catalog]
+    () => buildPackageCatalogMaps(products, activeListings, activePackages).retailPrices,
+    [activePackages, products, activeListings]
   );
 
   const results = useMemo(() => {
@@ -229,11 +277,27 @@ export function SearchBar({ className }: { className?: string }) {
     if (!anchor) return;
 
     const rect = anchor.getBoundingClientRect();
+    const viewportPadding = 12;
+    const viewportWidth = window.innerWidth;
+    const maxWidth = viewportWidth - viewportPadding * 2;
+    const isCompactViewport = viewportWidth < 640;
+
+    // On phones, span nearly the full screen; on larger screens keep a wide plate
+    const preferredWidth = isCompactViewport
+      ? maxWidth
+      : Math.min(maxWidth, Math.max(rect.width, 480));
+
+    let left = isCompactViewport ? viewportPadding : rect.left;
+    if (left + preferredWidth > viewportWidth - viewportPadding) {
+      left = viewportWidth - viewportPadding - preferredWidth;
+    }
+    left = Math.max(viewportPadding, left);
+
     setDropdownStyle({
       position: 'fixed',
       top: rect.bottom + 8,
-      left: rect.left,
-      width: rect.width,
+      left,
+      width: preferredWidth,
       zIndex: 200,
     });
   }, []);
@@ -378,11 +442,11 @@ export function SearchBar({ className }: { className?: string }) {
     <div
       ref={dropdownRef}
       style={dropdownStyle}
-      className="overflow-hidden rounded-xl border border-border bg-background shadow-xl"
+      className="overflow-hidden rounded-2xl border border-border/80 bg-background shadow-2xl shadow-black/10 ring-1 ring-black/5"
     >
       {!trimmedQuery && recentSearches.length > 0 && (
-        <div className="border-b border-border/60 p-2">
-          <p className="px-2 py-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+        <div className="border-b border-border/60 p-3">
+          <p className="px-2 py-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
             Recent
           </p>
           {recentSearches.map((item) => (
@@ -391,9 +455,9 @@ export function SearchBar({ className }: { className?: string }) {
               type="button"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => handleRecentSelect(item)}
-              className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm transition hover:bg-secondary"
+              className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2.5 text-left text-sm transition hover:bg-secondary"
             >
-              <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
               <span className="truncate">{item}</span>
             </button>
           ))}
@@ -402,15 +466,22 @@ export function SearchBar({ className }: { className?: string }) {
 
       {trimmedQuery && results.length > 0 && (
         <>
-          <div className="max-h-80 overflow-y-auto overscroll-contain">
+          <div className="max-h-[min(70dvh,28rem)] overflow-y-auto overscroll-contain py-1">
             {results.map((hit, index) => (
               <SearchResultRow
-                key={hit.type === 'product' ? hit.product.id : hit.pkg.id}
+                key={
+                  hit.type === 'product'
+                    ? hit.product.id
+                    : hit.type === 'package'
+                      ? hit.pkg.id
+                      : hit.listing.id
+                }
                 hit={hit}
                 query={trimmedQuery}
                 active={activeIndex === index}
                 onSelect={handleResultSelect}
                 products={products}
+                services={activeListings}
                 retailPrices={retailPrices}
               />
             ))}
@@ -420,7 +491,7 @@ export function SearchBar({ className }: { className?: string }) {
             onMouseDown={(event) => event.preventDefault()}
             onClick={handleViewAllSelect}
             className={cn(
-              'flex w-full items-center justify-center gap-2 border-t border-border px-4 py-3 text-sm font-medium text-primary transition hover:bg-secondary',
+              'flex w-full items-center justify-center gap-2 border-t border-border px-4 py-3.5 text-sm font-medium text-primary transition hover:bg-secondary',
               activeIndex === results.length && 'bg-secondary'
             )}
           >
@@ -431,18 +502,18 @@ export function SearchBar({ className }: { className?: string }) {
       )}
 
       {trimmedQuery && !loading && results.length === 0 && (
-        <div className="px-4 py-6 text-center">
+        <div className="px-5 py-8 text-center">
           <p className="text-sm text-muted-foreground">
-            No products or bundles found for &ldquo;{trimmedQuery}&rdquo;
+            No products, bundles, or services found for &ldquo;{trimmedQuery}&rdquo;
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1.5 text-xs text-muted-foreground">
             Try a different name, category, or bundle occasion
           </p>
         </div>
       )}
 
       {trimmedQuery && catalogCount === 0 && !loading && (
-        <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+        <div className="px-5 py-8 text-center text-sm text-muted-foreground">
           Nothing available to search yet.
         </div>
       )}
@@ -460,7 +531,7 @@ export function SearchBar({ className }: { className?: string }) {
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
-          placeholder={loading ? 'Loading catalog…' : 'Search products & bundles…'}
+          placeholder={loading ? 'Loading catalog…' : 'Search products, bundles & services…'}
           value={query}
           onChange={(event) => {
             setQuery(event.target.value);
