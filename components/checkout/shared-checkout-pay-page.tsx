@@ -236,7 +236,7 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
               </p>
             )}
             <Link href="/shop" className="mt-6 inline-block">
-              <Button variant="outline">Browse SheQueen</Button>
+              <Button variant="outline">Browse ShiQueen</Button>
             </Link>
           </div>
         </section>

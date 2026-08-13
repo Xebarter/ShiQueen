@@ -23,17 +23,17 @@ type BrandLogoProps = {
 
 const WORDMARK_SCALE = {
   header: {
-    she: 'text-[1.4rem]',
+    shi: 'text-[1.4rem]',
     queen: 'text-[1.75rem]',
     underline: 'mt-1.5 h-[2px] w-full',
   },
   footer: {
-    she: 'text-[1.25rem]',
+    shi: 'text-[1.25rem]',
     queen: 'text-[1.55rem]',
     underline: 'mt-1.5 h-[2px] w-full',
   },
   auth: {
-    she: 'text-[2.1rem]',
+    shi: 'text-[2.1rem]',
     queen: 'text-[2.65rem]',
     underline: 'mt-2.5 h-[2px] w-32',
   },
@@ -41,7 +41,7 @@ const WORDMARK_SCALE = {
   icon: null,
 } as const;
 
-function SheQueenWordmark({
+function ShiQueenWordmark({
   variant,
   className,
 }: {
@@ -58,14 +58,14 @@ function SheQueenWordmark({
     <span
       className={cn('font-brand inline-flex flex-col leading-[0.95]', isAuth && 'items-center', className)}
     >
-      <span className="inline-flex items-baseline whitespace-nowrap select-none" aria-hidden>
+      <span className="inline-flex items-baseline whitespace-nowrap select-none">
         <span
           className={cn(
             'relative -mr-px italic font-semibold text-primary',
-            scale.she
+            scale.shi
           )}
         >
-          She
+          Shi
         </span>
         <span
           className={cn(
@@ -130,7 +130,7 @@ export function BrandLogo({
             </span>
           </span>
         ) : (
-          <SheQueenWordmark variant={variant} />
+          <ShiQueenWordmark variant={variant} />
         ))}
     </span>
   );

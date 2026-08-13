@@ -7,7 +7,7 @@ export async function notifyPartnerClients(type: 'order' | 'booking', id: string
       body: JSON.stringify({ type, id }),
     });
   } catch (error) {
-    console.warn('[SheQueen] Client partner alert ping failed:', error);
+    console.warn('[ShiQueen] Client partner alert ping failed:', error);
   }
 }
 
@@ -23,6 +23,6 @@ export async function notifyAdminApprovalClients(
       body: JSON.stringify({ type, id }),
     });
   } catch (error) {
-    console.warn('[SheQueen] Client admin approval alert ping failed:', error);
+    console.warn('[ShiQueen] Client admin approval alert ping failed:', error);
   }
 }

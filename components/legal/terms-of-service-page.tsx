@@ -16,7 +16,7 @@ import {
 } from '@/components/legal/legal-page-shell';
 
 const TOC = [
-  { id: 'about', label: '1. About SheQueen' },
+  { id: 'about', label: '1. About ShiQueen' },
   { id: 'eligibility', label: '2. Eligibility' },
   { id: 'accounts', label: '3. Account Registration' },
   { id: 'products', label: '4. Products & Pricing' },
@@ -49,8 +49,8 @@ export function TermsOfServicePage() {
         <>
           <p>
             These Terms of Service (“Terms,” “Agreement”) constitute a legally binding
-            agreement between you (“you,” “your,” “Customer,” or “User”) and SheQueen
-            (“SheQueen,” “we,” “us,” or “our”), a company operating in Uganda.
+            agreement between you (“you,” “your,” “Customer,” or “User”) and ShiQueen
+            (“ShiQueen,” “we,” “us,” or “our”), a company operating in Uganda.
           </p>
           <p>
             By accessing, browsing, or using{' '}
@@ -85,12 +85,13 @@ export function TermsOfServicePage() {
         </p>
       </LegalCallout>
 
-      <LegalSection id="about" title="1. About SheQueen">
+      <LegalSection id="about" title="1. About ShiQueen">
         <p>
-          SheQueen is an online ecommerce platform specializing in ladies’ fashion, apparel,
-          accessories, beauty products, and related lifestyle items. We operate from Uganda
-          and sell primarily to customers within Uganda and, where available,
-          internationally.
+          ShiQueen is an online shopping and booking app specializing in ladies’ fashion, apparel,
+          accessories, beauty products, wellness items, curated packages, and lifestyle service
+          bookings. We operate from Uganda and sell primarily to customers within Uganda and,
+          where available, internationally. Customers may sign in with Google to create an
+          account, place orders, and manage bookings.
         </p>
         <p>Our business details:</p>
         <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-4 sm:px-5">
@@ -99,7 +100,7 @@ export function TermsOfServicePage() {
               <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                 Legal / trading name
               </dt>
-              <dd className="mt-1 text-sm font-medium text-foreground">SheQueen</dd>
+              <dd className="mt-1 text-sm font-medium text-foreground">ShiQueen</dd>
             </div>
             <div>
               <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
@@ -351,7 +352,7 @@ export function TermsOfServicePage() {
         <p>
           All content on the Site — including text, graphics, logos, images, product
           photographs, videos, software, designs, and trademarks — is the property of
-          SheQueen or its licensors and is protected by Ugandan and international intellectual
+          ShiQueen or its licensors and is protected by Ugandan and international intellectual
           property laws.
         </p>
         <p>
@@ -367,7 +368,7 @@ export function TermsOfServicePage() {
       <LegalSection id="user-content" title="10. User Content and Reviews">
         <p>
           You may submit reviews, comments, photos, or other content (“User Content”). By
-          submitting User Content, you grant SheQueen a worldwide, non-exclusive, royalty-free,
+          submitting User Content, you grant ShiQueen a worldwide, non-exclusive, royalty-free,
           perpetual, irrevocable license to use, reproduce, modify, adapt, publish, translate,
           distribute, and display such content in any media.
         </p>
@@ -452,7 +453,7 @@ export function TermsOfServicePage() {
           </p>
           <ul className="mt-3 space-y-2.5">
             <li>
-              SheQueen and its directors, employees, agents, and affiliates shall not be liable
+              ShiQueen and its directors, employees, agents, and affiliates shall not be liable
               for any indirect, incidental, special, consequential, punitive, or exemplary
               damages, including loss of profits, data, goodwill, or business opportunities,
               arising out of or related to your use of the Site or products.
@@ -472,7 +473,7 @@ export function TermsOfServicePage() {
 
       <LegalSection id="indemnification" title="15. Indemnification">
         <p>
-          You agree to indemnify, defend, and hold harmless SheQueen and its officers,
+          You agree to indemnify, defend, and hold harmless ShiQueen and its officers,
           directors, employees, agents, and affiliates from and against any claims,
           liabilities, damages, losses, costs, and expenses (including reasonable legal fees)
           arising out of or related to:
@@ -548,7 +549,7 @@ export function TermsOfServicePage() {
         <LegalSubHeading>Entire Agreement</LegalSubHeading>
         <p>
           These Terms, together with the Privacy Policy and any order-specific terms,
-          constitute the entire agreement between you and SheQueen and supersede all prior
+          constitute the entire agreement between you and ShiQueen and supersede all prior
           agreements.
         </p>
 
@@ -596,7 +597,7 @@ export function TermsOfServicePage() {
             and agreed to these Terms of Service.
           </p>
           <p className="mt-3">
-            Thank you for choosing SheQueen. We are committed to providing you with quality
+            Thank you for choosing ShiQueen. We are committed to providing you with quality
             products and a positive shopping experience.
           </p>
         </LegalCallout>

@@ -56,7 +56,7 @@ export default function ProviderBookingsPage() {
           description="Confirm, start, and complete appointments with a calm, clear queue."
         />
         <Suspense fallback={null}>
-          <InstallWelcomeCard appName="SheQueen Services" />
+          <InstallWelcomeCard appName="ShiQueen Services" />
         </Suspense>
         <div className="mb-5 flex flex-wrap gap-1.5">
           {FILTERS.map((item) => (

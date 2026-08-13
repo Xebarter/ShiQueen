@@ -26,8 +26,8 @@ export function ContactActions({
 }: ContactActionsProps) {
   const wa = whatsapp || phone;
   const waMessage = serviceName
-    ? `Hi, I'm interested in ${serviceName} on SheQueen.`
-    : "Hi, I'd like to inquire about your services on SheQueen.";
+    ? `Hi, I'm interested in ${serviceName} on ShiQueen.`
+    : "Hi, I'd like to inquire about your services on ShiQueen.";
 
   if (compact) {
     return (

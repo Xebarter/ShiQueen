@@ -29,7 +29,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
     return NextResponse.json(toSharedCheckoutPublicView(checkout));
   } catch (error) {
-    console.error('[SheQueen] checkout share get:', error);
+    console.error('[ShiQueen] checkout share get:', error);
     return NextResponse.json({ error: 'Failed to load payment link.' }, { status: 500 });
   }
 }

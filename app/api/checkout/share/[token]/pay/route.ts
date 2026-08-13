@@ -83,7 +83,7 @@ async function initiateGiftPayment(params: {
   try {
     stkResult = await executePaytotaStkPush(purchase.id);
   } catch (stkError) {
-    console.warn('[SheQueen] gift pay STK failed, checkout URL fallback:', stkError);
+    console.warn('[ShiQueen] gift pay STK failed, checkout URL fallback:', stkError);
   }
 
   return {
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       const created = await createCardPaymentToken({
         amount: checkout.total,
         companyRef: orderId,
-        description: `SheQueen gift · ${checkout.recipientName}`.slice(0, 120),
+        description: `ShiQueen gift · ${checkout.recipientName}`.slice(0, 120),
         customerName: body.fullName,
         customerEmail: body.email,
         customerPhone: body.phone,
@@ -352,7 +352,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         : undefined,
     });
   } catch (error) {
-    console.error('[SheQueen] checkout share pay:', error);
+    console.error('[ShiQueen] checkout share pay:', error);
     const message = error instanceof Error ? error.message : 'Failed to start payment.';
     return NextResponse.json({ error: message }, { status: 500 });
   }

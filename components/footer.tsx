@@ -178,7 +178,7 @@ export function Footer() {
 
         {/* Bottom */}
         <div className="border-t border-border pt-8 flex flex-col md:flex-row md:items-center md:justify-between text-sm text-muted-foreground">
-          <p className="text-center md:text-left">&copy; 2026 SheQueen. All rights reserved.</p>
+          <p className="text-center md:text-left">&copy; 2026 ShiQueen. All rights reserved.</p>
           <nav
             aria-label="Legal"
             className="mt-5 grid w-full grid-cols-2 gap-x-3 gap-y-3 md:mt-0 md:flex md:w-auto md:flex-wrap md:justify-end md:gap-x-6 md:gap-y-2"

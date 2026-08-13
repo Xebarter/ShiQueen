@@ -70,7 +70,7 @@ function BookingConfirmationInner() {
               <CheckCircle className="h-8 w-8" />
             </div>
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary">
-              SheQueen Services
+              ShiQueen Services
             </p>
             <h1 className="mt-2 font-[family-name:var(--font-brand)] text-3xl font-medium tracking-tight sm:text-4xl">
               {paymentOffline

@@ -339,7 +339,7 @@ function PartnerMobileHeader({
 
       <div className="min-w-0 flex-1">
         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-          SheQueen {portalLabel}
+          ShiQueen {portalLabel}
         </p>
         <p className="truncate text-base font-semibold leading-tight tracking-tight">{title}</p>
       </div>

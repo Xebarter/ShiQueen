@@ -156,7 +156,7 @@ export default function SupplierSignUpPage() {
   return (
     <AuthShell
       heading="Supplier sign up"
-      subheading="Apply to list products and packages on SheQueen"
+      subheading="Apply to list products and packages on ShiQueen"
     >
       <div className="space-y-5">
         {!user && (

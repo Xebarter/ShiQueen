@@ -44,7 +44,7 @@ export function AdminMobileHeader() {
 
       <div className="min-w-0 flex-1">
         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-          SheQueen Admin
+          ShiQueen Admin
         </p>
         <p className="truncate text-base font-semibold leading-tight tracking-tight">
           {title}

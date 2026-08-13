@@ -70,10 +70,10 @@ export async function ensureServicesSeeded(): Promise<void> {
   })().catch((error) => {
     servicesSeedPromise = null;
     if (isFirestoreOfflineError(error)) {
-      console.warn('[SheQueen] Firestore offline — skipping services seed.');
+      console.warn('[ShiQueen] Firestore offline — skipping services seed.');
       return;
     }
-    console.error('[SheQueen] Services seed failed:', error);
+    console.error('[ShiQueen] Services seed failed:', error);
   });
 
   return servicesSeedPromise;

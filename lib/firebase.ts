@@ -64,7 +64,7 @@ export function getFirebaseDb(): Firestore | null {
     }
 
     void enableNetwork(firestoreInstance).catch((error) => {
-      console.warn('[SheQueen] Firestore network enable failed:', error);
+      console.warn('[ShiQueen] Firestore network enable failed:', error);
     });
   }
 

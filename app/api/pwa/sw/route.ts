@@ -10,7 +10,7 @@ export function GET() {
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? '',
   };
 
-  const body = `/* SheQueen partner PWA service worker */
+  const body = `/* ShiQueen partner PWA service worker */
 const FIREBASE_CONFIG = ${JSON.stringify(config)};
 
 self.addEventListener('install', (event) => {
@@ -54,7 +54,7 @@ if (FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.messagingSenderId && FIREBASE_CONF
     firebase.initializeApp(FIREBASE_CONFIG);
     const messaging = firebase.messaging();
     messaging.onBackgroundMessage((payload) => {
-      const title = (payload.notification && payload.notification.title) || payload.data?.title || 'SheQueen';
+      const title = (payload.notification && payload.notification.title) || payload.data?.title || 'ShiQueen';
       const body = (payload.notification && payload.notification.body) || payload.data?.body || 'You have a new update.';
       const url = payload.data?.url || '/';
       const tag = payload.data?.tag || payload.data?.type || 'shequeen';
@@ -69,7 +69,7 @@ if (FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.messagingSenderId && FIREBASE_CONF
       });
     });
   } catch (error) {
-    console.warn('[SheQueen SW] FCM init skipped', error);
+    console.warn('[ShiQueen SW] FCM init skipped', error);
   }
 }
 `;

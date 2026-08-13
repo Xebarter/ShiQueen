@@ -161,7 +161,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     try {
       stkResult = await executePaytotaStkPush(purchase.id);
     } catch (stkError) {
-      console.warn('[SheQueen] booking gift STK failed, checkout URL fallback:', stkError);
+      console.warn('[ShiQueen] booking gift STK failed, checkout URL fallback:', stkError);
     }
 
     const markPaidOnServer = stkResult?.status === 'success';
@@ -224,7 +224,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       booking: requiresClientBooking ? bookingPayload : undefined,
     });
   } catch (error) {
-    console.error('[SheQueen] booking share pay:', error);
+    console.error('[ShiQueen] booking share pay:', error);
     const message = error instanceof Error ? error.message : 'Failed to start payment.';
     return NextResponse.json({ error: message }, { status: 500 });
   }

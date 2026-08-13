@@ -1,8 +1,8 @@
 {
   "id": "/suppliers/",
-  "name": "SheQueen Supplier",
+  "name": "ShiQueen Supplier",
   "short_name": "SQ Supplier",
-  "description": "Manage orders, products, and packages for your SheQueen catalog.",
+  "description": "Manage orders, products, and packages for your ShiQueen catalog.",
   "start_url": "/suppliers/orders",
   "scope": "/suppliers/",
   "display": "standalone",

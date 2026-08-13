@@ -188,7 +188,7 @@ export function AdminSuppliersPage() {
     approvalStatus: SupplierApprovalStatus
   ) => {
     if (supplier.id === DEFAULT_SUPPLIER_ID && approvalStatus !== 'approved') {
-      toast.error('The default SheQueen supplier must stay approved.');
+      toast.error('The default ShiQueen supplier must stay approved.');
       return;
     }
 
@@ -267,7 +267,7 @@ export function AdminSuppliersPage() {
 
   const handleDelete = async (id: string, name: string) => {
     if (id === DEFAULT_SUPPLIER_ID) {
-      toast.error('The default SheQueen supplier cannot be deleted.');
+      toast.error('The default ShiQueen supplier cannot be deleted.');
       return;
     }
     if (

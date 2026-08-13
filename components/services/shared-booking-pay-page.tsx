@@ -217,7 +217,7 @@ export function SharedBookingPayPage({ token }: SharedBookingPayPageProps) {
                       Pay for {view.recipientFirstName}&apos;s appointment
                     </h1>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      They booked on SheQueen. Enter your mobile money details below to complete
+                      They booked on ShiQueen. Enter your mobile money details below to complete
                       payment.
                     </p>
                   </div>

@@ -187,7 +187,7 @@ export function PackageDetailPage() {
                 {pkg.isSignature && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-accent/15 px-3 py-1 text-xs font-semibold text-accent">
                     <Star className="h-3.5 w-3.5" />
-                    SheQueen Signature
+                    ShiQueen Signature
                   </span>
                 )}
                 {pkg.tier && (

@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     await notifyAdminApprovalRequest(type, id);
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.warn('[SheQueen] admin alerts API:', error);
+    console.warn('[ShiQueen] admin alerts API:', error);
     return NextResponse.json({ error: 'Failed to send alert' }, { status: 500 });
   }
 }

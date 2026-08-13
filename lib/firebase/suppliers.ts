@@ -75,9 +75,9 @@ function mapSupplier(id: string, data: Record<string, unknown>): Supplier {
 export function buildDefaultSupplier(): Omit<Supplier, 'createdAt' | 'updatedAt'> {
   return {
     id: DEFAULT_SUPPLIER_ID,
-    name: 'SheQueen',
-    companyName: 'SheQueen',
-    contactName: 'SheQueen Team',
+    name: 'ShiQueen',
+    companyName: 'ShiQueen',
+    contactName: 'ShiQueen Team',
     email: 'hello@shequeen.com',
     phone: '',
     whatsapp: '',
@@ -276,7 +276,7 @@ export async function deleteSupplier(id: string): Promise<void> {
   if (!db) throw new Error('Firebase not initialized');
 
   if (id === DEFAULT_SUPPLIER_ID) {
-    throw new Error('The default SheQueen supplier cannot be deleted.');
+    throw new Error('The default ShiQueen supplier cannot be deleted.');
   }
 
   const supplier = await getSupplier(id);

@@ -249,7 +249,7 @@ export function ServiceDetailPage({ slug }: ServiceDetailPageProps) {
             </Button>
           </a>
           <a
-            href={buildWhatsAppLink(provider.whatsapp, `Hi, I'm interested in ${listing.name} on SheQueen.`)}
+            href={buildWhatsAppLink(provider.whatsapp, `Hi, I'm interested in ${listing.name} on ShiQueen.`)}
             target="_blank"
             rel="noopener noreferrer"
             className="flex-1"

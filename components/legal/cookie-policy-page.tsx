@@ -45,7 +45,7 @@ export function CookiePolicyPage() {
       title="Cookie Policy"
       summary={
         <p>
-          This Cookie Policy explains how SheQueen (“we,” “us,” or “our”) uses cookies and
+          This Cookie Policy explains how ShiQueen (“we,” “us,” or “our”) uses cookies and
           similar tracking technologies on{' '}
           <a
             href={LEGAL_SITE_URL}
@@ -350,7 +350,7 @@ export function CookiePolicyPage() {
           information about how we collect, use, and protect your personal data.
         </p>
         <LegalCallout tone="primary">
-          Thank you for visiting SheQueen. We are committed to being transparent about the
+          Thank you for visiting ShiQueen. We are committed to being transparent about the
           technologies we use to improve your shopping experience.
         </LegalCallout>
       </LegalSection>

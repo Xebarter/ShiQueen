@@ -1,8 +1,8 @@
 {
   "id": "/services/dashboard/",
-  "name": "SheQueen Services",
+  "name": "ShiQueen Services",
   "short_name": "SQ Services",
-  "description": "Manage bookings, listings, and studio hours on SheQueen.",
+  "description": "Manage bookings, listings, and studio hours on ShiQueen.",
   "start_url": "/services/dashboard/bookings",
   "scope": "/services/dashboard/",
   "display": "standalone",

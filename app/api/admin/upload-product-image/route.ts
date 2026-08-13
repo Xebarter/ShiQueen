@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: downloadUrl });
   } catch (error) {
-    console.error('[SheQueen] upload-product-image:', error);
+    console.error('[ShiQueen] upload-product-image:', error);
     const message = error instanceof Error ? error.message : 'Upload failed.';
     const status = message.includes('sign-in') || message.includes('Admin access') ? 403 : 500;
     return NextResponse.json({ error: message }, { status });

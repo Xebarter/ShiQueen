@@ -731,7 +731,7 @@ export function CheckoutPage() {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary/80">
-                SheQueen checkout
+                ShiQueen checkout
               </p>
               <h1 className="mt-2 text-3xl font-light tracking-tight text-foreground sm:text-4xl lg:text-[2.5rem]">
                 Complete your order

@@ -76,7 +76,7 @@ export function GoogleOneTap() {
         initializedRef.current = true;
       })
       .catch((error) => {
-        console.warn('[SheQueen] Google One Tap unavailable:', error);
+        console.warn('[ShiQueen] Google One Tap unavailable:', error);
       });
 
     return () => {

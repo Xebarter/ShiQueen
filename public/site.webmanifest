@@ -1,7 +1,7 @@
 {
-  "name": "SheQueen",
-  "short_name": "SheQueen",
-  "description": "Shop products, packages, and book beauty services.",
+  "name": "ShiQueen",
+  "short_name": "ShiQueen",
+  "description": "ShiQueen is an online shopping and booking app for women's fashion, beauty, wellness products, packages, and lifestyle services.",
   "start_url": "/",
   "scope": "/",
   "display": "browser",

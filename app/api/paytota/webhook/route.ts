@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     if (webhookPublicKey) {
       const valid = verifyPaytotaWebhookSignature(rawBody, signature, webhookPublicKey);
       if (!valid) {
-        console.warn('[SheQueen] paytota webhook: invalid signature');
+        console.warn('[ShiQueen] paytota webhook: invalid signature');
         return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
       }
     }
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!isFirebaseAdminConfigured()) {
-      console.warn('[SheQueen] paytota webhook received but Firebase Admin is not configured.');
+      console.warn('[ShiQueen] paytota webhook received but Firebase Admin is not configured.');
       return NextResponse.json({ received: true, updated: false });
     }
 
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
 
     if (looksLikeBookingReference(reference)) {
       console.warn(
-        '[SheQueen] paytota webhook: booking not found for reference',
+        '[ShiQueen] paytota webhook: booking not found for reference',
         reference
       );
       return NextResponse.json({ received: true, updated: false });
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
 
     const order = await getOrderByPaytotaReference(reference);
     if (!order) {
-      console.warn('[SheQueen] paytota webhook: order not found for reference', reference);
+      console.warn('[ShiQueen] paytota webhook: order not found for reference', reference);
       return NextResponse.json({ received: true, updated: false });
     }
 
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ received: true, updated: true, orderId: order.id });
   } catch (error) {
-    console.error('[SheQueen] paytota webhook:', error);
+    console.error('[ShiQueen] paytota webhook:', error);
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
   }
 }

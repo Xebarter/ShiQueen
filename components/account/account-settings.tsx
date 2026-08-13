@@ -438,7 +438,7 @@ export function AccountSettings({
         <form onSubmit={handleSaveProfile}>
           <SettingsPanel
             title="Personal details"
-            description="How we address you across SheQueen — checkout, bookings, and support."
+            description="How we address you across ShiQueen — checkout, bookings, and support."
             footer={
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-xs text-muted-foreground">
@@ -582,7 +582,7 @@ export function AccountSettings({
       {tab === 'preferences' && (
         <SettingsPanel
           title="Notifications & communication"
-          description="Choose how SheQueen keeps you informed. You can change these anytime."
+          description="Choose how ShiQueen keeps you informed. You can change these anytime."
           footer={
             <div className="flex justify-end">
               <Button
@@ -620,7 +620,7 @@ export function AccountSettings({
             />
             <PreferenceToggle
               label="Promotions & new arrivals"
-              description="Curated offers, bundles, and seasonal drops from SheQueen."
+              description="Curated offers, bundles, and seasonal drops from ShiQueen."
               checked={preferences.promotions}
               onChange={(promotions) => setPreferences((prev) => ({ ...prev, promotions }))}
               disabled={savingPreferences}
@@ -717,7 +717,7 @@ export function AccountSettings({
             </SettingsPanel>
           )}
 
-          <SettingsPanel title="Session" description="Sign out of SheQueen on this device.">
+          <SettingsPanel title="Session" description="Sign out of ShiQueen on this device.">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
@@ -759,7 +759,7 @@ export function AccountSettings({
                 <p className="mt-1 text-sm font-medium">{CONTACT_PHONE_DISPLAY}</p>
               </a>
               <a
-                href={contactWhatsAppHref('Hi SheQueen, I need help with my account settings.')}
+                href={contactWhatsAppHref('Hi ShiQueen, I need help with my account settings.')}
                 target="_blank"
                 rel="noreferrer"
                 className="rounded-xl border border-border/60 bg-muted/15 px-4 py-3.5 transition hover:border-primary/25 hover:bg-primary/[0.03]"

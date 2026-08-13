@@ -77,7 +77,7 @@ export default function SignUp() {
   };
 
   return (
-    <AuthShell heading="Create your account" subheading="to get started with SheQueen">
+    <AuthShell heading="Create your account" subheading="to get started with ShiQueen">
       <AuthGuestOnly>
       <div className="space-y-5">
         <GoogleSignInButton

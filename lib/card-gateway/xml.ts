@@ -19,7 +19,7 @@ export function formatGatewayDate(date = new Date()): string {
 
 export function splitPersonName(fullName: string): { firstName: string; lastName: string } {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return { firstName: 'Customer', lastName: 'SheQueen' };
+  if (parts.length === 0) return { firstName: 'Customer', lastName: 'ShiQueen' };
   if (parts.length === 1) return { firstName: parts[0]!, lastName: 'Customer' };
   return { firstName: parts[0]!, lastName: parts.slice(1).join(' ') };
 }

@@ -269,7 +269,7 @@ export function SupplierForm({
   const handleDelete = async () => {
     if (mode !== 'edit' || !initialSupplier) return;
     if (isProtectedDefault) {
-      toast.error('The default SheQueen supplier cannot be deleted.');
+      toast.error('The default ShiQueen supplier cannot be deleted.');
       return;
     }
     if (

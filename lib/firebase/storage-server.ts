@@ -113,7 +113,7 @@ async function ensureAdminFirestoreProfile(
 
     if (!patchResponse.ok) {
       const errorText = await patchResponse.text();
-      console.error('[SheQueen] Failed to sync admin role:', patchResponse.status, errorText);
+      console.error('[ShiQueen] Failed to sync admin role:', patchResponse.status, errorText);
       throw new Error(
         'Could not sync admin profile. In Firestore, set users/' + uid + ' → role = "admin".'
       );
@@ -141,7 +141,7 @@ async function ensureAdminFirestoreProfile(
 
     if (!createResponse.ok) {
       const errorText = await createResponse.text();
-      console.error('[SheQueen] Failed to create admin profile:', createResponse.status, errorText);
+      console.error('[ShiQueen] Failed to create admin profile:', createResponse.status, errorText);
       throw new Error(
         'Could not create admin profile. In Firestore, create users/' + uid + ' with role = "admin".'
       );
@@ -199,7 +199,7 @@ async function uploadImageToStorage(
 
     lastErrorText = await uploadResponse.text();
     console.error(
-      `[SheQueen] ${logLabel} upload failed (attempt ${attempt + 1}):`,
+      `[ShiQueen] ${logLabel} upload failed (attempt ${attempt + 1}):`,
       uploadResponse.status,
       lastErrorText
     );

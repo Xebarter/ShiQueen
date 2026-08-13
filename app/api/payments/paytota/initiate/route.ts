@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
       try {
         stkResult = await executePaytotaStkPush(purchase.id);
       } catch (stkError) {
-        console.warn('[SheQueen] paytota STK push failed, falling back to checkout URL:', stkError);
+        console.warn('[ShiQueen] paytota STK push failed, falling back to checkout URL:', stkError);
       }
     }
 
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
       returnUrl: `${appBaseUrl}/order-confirmation?orderId=${encodeURIComponent(orderId)}`,
     });
   } catch (error) {
-    console.error('[SheQueen] paytota initiate:', error);
+    console.error('[ShiQueen] paytota initiate:', error);
     const message = error instanceof Error ? error.message : 'Failed to initiate payment.';
     return NextResponse.json({ error: message }, { status: 500 });
   }

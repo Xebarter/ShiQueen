@@ -48,7 +48,7 @@ export function ServicesHero({ totalServices, totalProviders }: ServicesHeroProp
           className="max-w-xl"
         >
           <p className="font-[family-name:var(--font-brand)] text-4xl font-medium tracking-tight text-primary sm:text-5xl lg:text-6xl">
-            SheQueen
+            ShiQueen
           </p>
           <h1 className="mt-3 font-[family-name:var(--font-brand)] text-3xl font-medium leading-[1.15] tracking-tight text-foreground sm:text-4xl lg:text-[2.75rem]">
             Book beauty &amp; wellness with confidence

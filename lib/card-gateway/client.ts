@@ -77,7 +77,7 @@ function customerXml(input: CardCreateTokenInput, indent: string): string {
 
 function nestedCreateTokenXml(input: CardCreateTokenInput, serviceType: string): string {
   const config = getCardGatewayConfig();
-  const description = (input.description || 'SheQueen order').slice(0, 120);
+  const description = (input.description || 'ShiQueen order').slice(0, 120);
   const redirectUrl = cardOrderReturnUrl(input.companyRef);
   const callbackUrl = cardOrderCallbackUrl(input.companyRef);
 
@@ -107,7 +107,7 @@ function nestedCreateTokenXml(input: CardCreateTokenInput, serviceType: string):
 
 function flatCreateTokenXml(input: CardCreateTokenInput, serviceType: string): string {
   const config = getCardGatewayConfig();
-  const description = (input.description || 'SheQueen order').slice(0, 120);
+  const description = (input.description || 'ShiQueen order').slice(0, 120);
   const redirectUrl = cardOrderReturnUrl(input.companyRef);
   const callbackUrl = cardOrderCallbackUrl(input.companyRef);
 

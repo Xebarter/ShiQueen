@@ -41,7 +41,7 @@ export function ServiceCard({
   const gradient = CATEGORY_GRADIENTS[listing.categoryId] ?? CATEGORY_GRADIENTS.default;
   const isCompact = variant === 'compact';
   const wa = provider?.whatsapp || provider?.phone;
-  const waMessage = `Hi, I'm interested in ${listing.name} on SheQueen.`;
+  const waMessage = `Hi, I'm interested in ${listing.name} on ShiQueen.`;
 
   return (
     <motion.article

@@ -4,9 +4,9 @@ import { Footer } from '@/components/footer';
 import { CookiePolicyPage } from '@/components/legal/cookie-policy-page';
 
 export const metadata: Metadata = {
-  title: 'Cookie Policy | SheQueen',
+  title: 'Cookie Policy | ShiQueen',
   description:
-    'Learn how SheQueen uses cookies and similar technologies on our website, and how you can manage your preferences.',
+    'Learn how ShiQueen uses cookies and similar technologies on our website, and how you can manage your preferences.',
 };
 
 export default function Cookies() {

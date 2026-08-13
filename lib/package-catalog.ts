@@ -132,9 +132,9 @@ export const PACKAGE_CATEGORIES: PackageCategory[] = [
   },
   {
     id: 'shequeen-signature',
-    label: 'SheQueen Signature Packages',
-    discoveryLabel: 'SheQueen Exclusives',
-    shortDescription: 'Our flagship curated bundles — the best of SheQueen',
+    label: 'ShiQueen Signature Packages',
+    discoveryLabel: 'ShiQueen Exclusives',
+    shortDescription: 'Our flagship curated bundles — the best of ShiQueen',
     icon: 'star',
   },
 ];
@@ -215,7 +215,7 @@ export const PACKAGE_NAME_TEMPLATES: Record<PackageCategoryId, string[]> = {
   birthday: [
     'Birthday Package',
     'Luxury Birthday Package',
-    'SheQueen Birthday Box',
+    'ShiQueen Birthday Box',
   ],
   gift: [
     'Anniversary Gift Package',
@@ -240,7 +240,7 @@ export const PACKAGE_NAME_TEMPLATES: Record<PackageCategoryId, string[]> = {
     'Bride-to-Be Package',
     'Engagement Package',
     'Honeymoon Package',
-    'SheQueen Bridal Box',
+    'ShiQueen Bridal Box',
   ],
   'self-care': [
     'Queen Essentials Package',
@@ -319,18 +319,18 @@ export const PACKAGE_NAME_TEMPLATES: Record<PackageCategoryId, string[]> = {
     'Rainy Season Care Package',
   ],
   'shequeen-signature': [
-    'SheQueen Starter Package',
-    'SheQueen Glow Package',
-    'SheQueen Beauty Box',
-    'SheQueen Wellness Box',
-    'SheQueen Luxury Box',
-    'SheQueen Birthday Box',
-    'SheQueen Bridal Box',
-    'SheQueen Self-Care Box',
-    'SheQueen Premium Box',
-    'SheQueen Royal Collection',
-    "SheQueen Queen's Choice Package",
-    'SheQueen Ultimate Queen Bundle',
+    'ShiQueen Starter Package',
+    'ShiQueen Glow Package',
+    'ShiQueen Beauty Box',
+    'ShiQueen Wellness Box',
+    'ShiQueen Luxury Box',
+    'ShiQueen Birthday Box',
+    'ShiQueen Bridal Box',
+    'ShiQueen Self-Care Box',
+    'ShiQueen Premium Box',
+    'ShiQueen Royal Collection',
+    "ShiQueen Queen's Choice Package",
+    'ShiQueen Ultimate Queen Bundle',
   ],
 };
 
@@ -415,7 +415,7 @@ export const DEFAULT_HIGHLIGHTS: Record<PackageCategoryId, string[]> = {
     'Stay prepared without overthinking',
   ],
   'shequeen-signature': [
-    'Our flagship SheQueen curated collection',
+    'Our flagship ShiQueen curated collection',
     'The best of beauty, wellness, and lifestyle',
     'The complete queen experience in one bundle',
   ],

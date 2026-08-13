@@ -4,9 +4,9 @@ import { Footer } from '@/components/footer';
 import { RefundPolicyPage } from '@/components/legal/refund-policy-page';
 
 export const metadata: Metadata = {
-  title: 'Refund Policy | SheQueen',
+  title: 'Refund Policy | ShiQueen',
   description:
-    'Learn how SheQueen handles returns, refunds, exchanges, and order cancellations for your purchases.',
+    'Learn how ShiQueen handles returns, refunds, exchanges, and order cancellations for your purchases.',
 };
 
 export default function Refunds() {

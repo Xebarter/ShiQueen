@@ -88,12 +88,12 @@ export async function notifyPartnerOrder(orderId: string): Promise<void> {
     const total = Number(data.total ?? 0);
     await sendToTokens(tokens, {
       type: 'order',
-      title: 'New SheQueen order',
+      title: 'New ShiQueen order',
       body: `${customer} placed an order${total > 0 ? ` · UGX ${total.toLocaleString('en-UG')}` : ''}`,
       url: SUPPLIER_HOME_HREF,
     });
   } catch (error) {
-    console.warn('[SheQueen] Partner order alert failed:', error);
+    console.warn('[ShiQueen] Partner order alert failed:', error);
   }
 }
 
@@ -111,12 +111,12 @@ export async function notifyPartnerBooking(bookingId: string): Promise<void> {
     const serviceName = String(data.serviceName || 'a service');
     await sendToTokens(tokens, {
       type: 'booking',
-      title: 'New SheQueen booking',
+      title: 'New ShiQueen booking',
       body: `${customer} booked ${serviceName}`,
       url: `${PROVIDER_HOME_HREF}/${bookingId}`,
     });
   } catch (error) {
-    console.warn('[SheQueen] Partner booking alert failed:', error);
+    console.warn('[ShiQueen] Partner booking alert failed:', error);
   }
 }
 
@@ -148,6 +148,6 @@ export async function notifyAdminApprovalRequest(
       tag: `approval-${kind}-${id}`,
     });
   } catch (error) {
-    console.warn('[SheQueen] Admin approval alert failed:', error);
+    console.warn('[ShiQueen] Admin approval alert failed:', error);
   }
 }

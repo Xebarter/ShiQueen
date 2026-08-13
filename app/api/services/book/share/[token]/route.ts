@@ -28,7 +28,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
     return NextResponse.json(toSharedBookingPublicView(shared));
   } catch (error) {
-    console.error('[SheQueen] booking share get:', error);
+    console.error('[ShiQueen] booking share get:', error);
     return NextResponse.json({ error: 'Failed to load payment link.' }, { status: 500 });
   }
 }

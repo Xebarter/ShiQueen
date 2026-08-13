@@ -579,11 +579,11 @@ export function AdminServicesPage() {
                       <span className="flex items-center gap-2 text-muted-foreground">
                         <AdminEntityThumb
                           src={supplier?.logo}
-                          label={supplier?.name ?? 'SheQueen'}
+                          label={supplier?.name ?? 'ShiQueen'}
                           sizeClassName="h-12 w-12"
                         sizes="48px"
                         />
-                        <span>{supplier?.name ?? 'SheQueen'}</span>
+                        <span>{supplier?.name ?? 'ShiQueen'}</span>
                       </span>
                     </td>
                     <td className="px-4 py-3">{formatUGX(s.basePrice)}</td>

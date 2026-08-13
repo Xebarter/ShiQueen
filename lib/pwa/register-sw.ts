@@ -13,7 +13,7 @@ export function registerPartnerServiceWorker(): Promise<ServiceWorkerRegistratio
     registrationPromise = navigator.serviceWorker
       .register(SW_URL, { scope: '/' })
       .catch((error) => {
-        console.warn('[SheQueen] Service worker registration failed:', error);
+        console.warn('[ShiQueen] Service worker registration failed:', error);
         registrationPromise = null;
         return null;
       });

@@ -42,8 +42,8 @@ export async function POST(request: NextRequest) {
     const orderId = body.orderId ?? generateOrderId();
     const requiresClientOrder = !isFirebaseAdminConfigured();
     const description = body.items[0]?.name
-      ? `SheQueen · ${body.items[0].name}`.slice(0, 120)
-      : 'SheQueen order';
+      ? `ShiQueen · ${body.items[0].name}`.slice(0, 120)
+      : 'ShiQueen order';
 
     const created = await createCardPaymentToken({
       amount: body.total,
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       requiresClientOrder,
     });
   } catch (error) {
-    console.error('[SheQueen] card initiate:', error);
+    console.error('[ShiQueen] card initiate:', error);
     const message = error instanceof Error ? error.message : 'Failed to start card payment.';
     return NextResponse.json({ error: message }, { status: 500 });
   }

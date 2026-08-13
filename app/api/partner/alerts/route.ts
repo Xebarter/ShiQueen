@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.warn('[SheQueen] partner alerts API:', error);
+    console.warn('[ShiQueen] partner alerts API:', error);
     return NextResponse.json({ error: 'Failed to send alert' }, { status: 500 });
   }
 }

@@ -195,7 +195,7 @@ export async function ensureUserProfile(
     return createUserProfile(uid, email, displayName);
   } catch (error) {
     if (isFirestoreOfflineError(error)) {
-      console.warn('[SheQueen] Firestore offline — using local profile for', email);
+      console.warn('[ShiQueen] Firestore offline — using local profile for', email);
       return buildOfflineProfile(uid, email, displayName);
     }
     throw error;

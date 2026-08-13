@@ -4,9 +4,9 @@ import { Footer } from '@/components/footer';
 import { PrivacyPolicyPage } from '@/components/legal/privacy-policy-page';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy | SheQueen',
+  title: 'Privacy Policy | ShiQueen',
   description:
-    'Learn how SheQueen collects, uses, shares, and protects your personal information when you shop or use our services.',
+    'Learn how ShiQueen collects, uses, shares, and protects your personal information when you shop or use our services.',
 };
 
 export default function Privacy() {

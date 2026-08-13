@@ -69,7 +69,7 @@ export const PROVIDER_STATUS_META: Record<
     label: 'Rejected',
     className: 'bg-rose-500/15 text-rose-800 ring-rose-500/25',
     banner:
-      'Your application was not approved. Contact SheQueen support if you believe this is a mistake.',
+      'Your application was not approved. Contact ShiQueen support if you believe this is a mistake.',
   },
   suspended: {
     label: 'Suspended',

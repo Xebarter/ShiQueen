@@ -29,9 +29,11 @@ export default function About() {
 
       <section className="py-20 bg-gradient-to-br from-primary/5 to-accent/5">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-5xl font-light tracking-tight mb-6">About SheQueen</h1>
+          <h1 className="text-5xl font-light tracking-tight mb-6">About ShiQueen</h1>
           <p className="text-xl text-muted-foreground leading-relaxed">
-            We believe that every woman deserves to feel confident, beautiful, and empowered through thoughtfully curated fashion and lifestyle products.
+            ShiQueen is an online shopping and booking app for women. We help you shop fashion,
+            beauty, and wellness products, buy curated packages, and book trusted lifestyle
+            services — so every woman can feel confident, beautiful, and empowered.
           </p>
         </div>
       </section>
@@ -42,13 +44,13 @@ export default function About() {
           <h2 className="text-4xl font-light mb-8">Our Story</h2>
           <div className="space-y-6 text-muted-foreground leading-relaxed">
             <p>
-              SheQueen was founded on a simple belief: that shopping for quality products should be an enjoyable and inspiring experience. In a world of endless options, we wanted to create a curated space where women could discover items that truly resonated with them.
+              ShiQueen was founded on a simple belief: that shopping for quality products should be an enjoyable and inspiring experience. In a world of endless options, we wanted to create a curated space where women could discover items that truly resonated with them.
             </p>
             <p>
               What started as a personal passion project has grown into a thriving community of women who share our values of quality, authenticity, and self-expression. Every collection we create is designed with intention and care, featuring both emerging designers and established brands.
             </p>
             <p>
-              Today, SheQueen is more than just an e-commerce platform—it&apos;s a lifestyle destination for women seeking to elevate their everyday and create moments that matter.
+              Today, ShiQueen is more than just an e-commerce platform—it&apos;s a lifestyle destination for women seeking to elevate their everyday and create moments that matter.
             </p>
           </div>
         </div>
@@ -92,7 +94,7 @@ export default function About() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl font-light mb-4">Join Our Community</h2>
           <p className="text-lg mb-8 opacity-90">
-            Become part of something special. Discover, explore, and express yourself with SheQueen.
+            Become part of something special. Discover, explore, and express yourself with ShiQueen.
           </p>
           <Link href="/shop">
             <Button size="lg" variant="secondary">

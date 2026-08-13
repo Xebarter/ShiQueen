@@ -218,7 +218,7 @@ export default function SupplierProfilePage() {
         <PartnerPageHeader
           eyebrow="Account"
           title="Business profile"
-          description="How SheQueen and your buyers recognize your brand."
+          description="How ShiQueen and your buyers recognize your brand."
           action={
             <Button type="submit" form="supplier-profile-form" disabled={saving || uploadingLogo} className="gap-1.5">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
@@ -372,7 +372,7 @@ export default function SupplierProfilePage() {
                     value={form.contactName}
                     onChange={(e) => setForm((f) => ({ ...f, contactName: e.target.value }))}
                     className="h-11"
-                    placeholder="Who SheQueen should reach"
+                    placeholder="Who ShiQueen should reach"
                     required
                   />
                 </div>
@@ -386,7 +386,7 @@ export default function SupplierProfilePage() {
                     placeholder="Lead times, specialties, what you supply…"
                     className="w-full rounded-lg border border-input bg-transparent px-3 py-2.5 text-sm leading-relaxed outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                   />
-                  <FieldHint>Shared with SheQueen when reviewing your account and catalog.</FieldHint>
+                  <FieldHint>Shared with ShiQueen when reviewing your account and catalog.</FieldHint>
                 </div>
               </div>
             </PartnerCard>

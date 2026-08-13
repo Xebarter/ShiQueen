@@ -115,10 +115,10 @@ export function SendPaymentLinkCard({
     if (!shareUrl) return;
 
     const result = await shareOrCopy({
-      title: `Pay for my SheQueen order (${formatUGX(total)})`,
+      title: `Pay for my ShiQueen order (${formatUGX(total)})`,
       text:
         message.trim() ||
-        'Could you pay for my SheQueen order? Delivery details are already included.',
+        'Could you pay for my ShiQueen order? Delivery details are already included.',
       url: shareUrl,
     });
 

@@ -9,7 +9,7 @@ import { MarketingAdsProvider } from '@/lib/marketing-ads-context'
 import { WholesaleProvider } from '@/lib/wholesale-context'
 import { ServicesProvider } from '@/lib/services-context'
 import { SuppliersProvider } from '@/lib/suppliers-context'
-import { BRAND_ASSETS, BRAND_NAME, BRAND_TAGLINE, BRAND_THEME } from '@/lib/brand'
+import { BRAND_ASSETS, BRAND_NAME, BRAND_PURPOSE, BRAND_TAGLINE, BRAND_THEME } from '@/lib/brand'
 import { figtree, playfair, workSans } from '@/lib/fonts'
 import { getDefaultOgImageUrl } from '@/lib/metadata/resolve-og-image'
 import { getSiteUrl } from '@/lib/site-url'
@@ -23,8 +23,7 @@ export const metadata: Metadata = {
     default: `${BRAND_NAME} - ${BRAND_TAGLINE}`,
     template: `%s | ${BRAND_NAME}`,
   },
-  description:
-    'Shop premium products, packages, and book trusted beauty, wellness, and lifestyle services.',
+  description: BRAND_PURPOSE,
   applicationName: BRAND_NAME,
   manifest: BRAND_ASSETS.manifest,
   icons: {
@@ -48,16 +47,14 @@ export const metadata: Metadata = {
   openGraph: {
     title: `${BRAND_NAME} - ${BRAND_TAGLINE}`,
     siteName: BRAND_NAME,
-    description:
-      'Shop premium products, packages, and book trusted beauty, wellness, and lifestyle services.',
+    description: BRAND_PURPOSE,
     type: 'website',
     images: [{ url: defaultOgImage, alt: BRAND_NAME }],
   },
   twitter: {
     card: 'summary_large_image',
     title: `${BRAND_NAME} - ${BRAND_TAGLINE}`,
-    description:
-      'Shop premium products, packages, and book trusted beauty, wellness, and lifestyle services.',
+    description: BRAND_PURPOSE,
     images: [defaultOgImage],
   },
 }

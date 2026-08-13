@@ -344,10 +344,10 @@ export function ServiceBookingSheet({
   const handleShareGiftLink = async () => {
     if (!shareUrl) return;
     const result = await shareOrCopy({
-      title: `Pay for my SheQueen booking (${formatUGX(total)})`,
+      title: `Pay for my ShiQueen booking (${formatUGX(total)})`,
       text:
         giftMessage.trim() ||
-        `Could you pay for my ${listing.name} booking on SheQueen?`,
+        `Could you pay for my ${listing.name} booking on ShiQueen?`,
       url: shareUrl,
     });
     if (result === 'copied') toast.success('Payment link copied to clipboard');

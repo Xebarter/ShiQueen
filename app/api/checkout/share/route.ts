@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
       expiresAt: expiresAt.toISOString(),
     });
   } catch (error) {
-    console.error('[SheQueen] checkout share create:', error);
+    console.error('[ShiQueen] checkout share create:', error);
     const message =
       error instanceof Error ? error.message : 'Failed to create payment link.';
     return NextResponse.json({ error: message }, { status: 500 });

@@ -24,7 +24,7 @@ const BENEFITS = [
   {
     icon: ShieldCheck,
     title: 'Curated marketplace',
-    description: 'SheQueen reviews every supplier before products go live.',
+    description: 'ShiQueen reviews every supplier before products go live.',
   },
 ];
 
@@ -50,7 +50,7 @@ export default function SupplierLandingPage() {
               Supplier portal
             </p>
             <h1 className="max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl">
-              Sell with SheQueen
+              Sell with ShiQueen
             </h1>
             <p className="mt-4 max-w-xl text-base text-muted-foreground sm:text-lg">
               Create a supplier account, wait for admin approval, then list products and packages

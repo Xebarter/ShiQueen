@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const slots = await getBookedSlotsForProviderDateServer(providerId, date);
     return NextResponse.json({ slots });
   } catch (error) {
-    console.error('[SheQueen] booking availability:', error);
+    console.error('[ShiQueen] booking availability:', error);
     return NextResponse.json({ error: 'Failed to load availability.' }, { status: 500 });
   }
 }

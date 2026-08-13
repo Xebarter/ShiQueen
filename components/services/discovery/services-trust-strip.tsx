@@ -32,7 +32,7 @@ export function ServicesTrustStrip() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-8 max-w-lg">
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
-            Why book on SheQueen
+            Why book on ShiQueen
           </p>
           <h2 className="mt-2 font-[family-name:var(--font-brand)] text-2xl font-medium tracking-tight sm:text-3xl">
             A smooth, professional reservation

@@ -7,8 +7,8 @@ type PageProps = {
 export async function generateMetadata({ params }: PageProps) {
   const { token } = await params;
   return {
-    title: 'Pay for a SheQueen booking',
-    description: `Secure gift payment link for a SheQueen service booking.`,
+    title: 'Pay for a ShiQueen booking',
+    description: `Secure gift payment link for a ShiQueen service booking.`,
     robots: token ? undefined : { index: false },
   };
 }

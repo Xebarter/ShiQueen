@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   return {
     title: `${title} | Services`,
-    description: `Book ${title} with trusted SheQueen service providers.`,
+    description: `Book ${title} with trusted ShiQueen service providers.`,
   };
 }
 

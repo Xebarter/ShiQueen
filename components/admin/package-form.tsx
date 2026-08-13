@@ -771,7 +771,7 @@ export function PackageForm({
                     className="mt-0.5 h-4 w-4 rounded border-border"
                   />
                   <div>
-                    <p className="text-sm font-medium">SheQueen Signature bundle</p>
+                    <p className="text-sm font-medium">ShiQueen Signature bundle</p>
                     <p className="text-xs text-muted-foreground">
                       Feature as a flagship bundle on the storefront
                     </p>

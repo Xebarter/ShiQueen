@@ -31,7 +31,7 @@ export function MarketingAdsProvider({ children }: { children: ReactNode }) {
       },
       (err) => {
         if (err.message.includes('permission') || err.message.includes('Permission')) {
-          console.warn('[SheQueen] Marketing ads unavailable — check Firestore settings/marketing access.');
+          console.warn('[ShiQueen] Marketing ads unavailable — check Firestore settings/marketing access.');
         } else {
           console.error('Marketing ads subscription error:', err);
         }

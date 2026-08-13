@@ -77,11 +77,11 @@ export async function ensureDatabaseSeeded(): Promise<void> {
     seedPromise = null;
 
     if (isFirestoreOfflineError(error)) {
-      console.warn('[SheQueen] Firestore offline — skipping database seed.');
+      console.warn('[ShiQueen] Firestore offline — skipping database seed.');
       return;
     }
 
-    console.error('[SheQueen] Database seed failed:', error);
+    console.error('[ShiQueen] Database seed failed:', error);
   });
 
   return seedPromise;

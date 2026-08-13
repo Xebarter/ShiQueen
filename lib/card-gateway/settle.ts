@@ -86,7 +86,7 @@ export async function settleCardPayment(params: {
     order = await getOrderServer(companyRef);
   }
   if (!order) {
-    console.warn('[SheQueen] card payment: order not found', { transToken, companyRef });
+    console.warn('[ShiQueen] card payment: order not found', { transToken, companyRef });
     return { outcome: 'pending', orderId: companyRef || undefined };
   }
 
@@ -98,7 +98,7 @@ export async function settleCardPayment(params: {
   const { verified, mapped } = await verifyWithRetries(token, params.retries ?? 0);
 
   if (mapped.paymentStatus === 'paid' && !amountsMatch(order.total, verified.transactionAmount)) {
-    console.warn('[SheQueen] card payment: amount mismatch', {
+    console.warn('[ShiQueen] card payment: amount mismatch', {
       orderId: order.id,
       expected: order.total,
       charged: verified.transactionAmount,

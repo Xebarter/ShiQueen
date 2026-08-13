@@ -132,7 +132,7 @@ export default function ProviderSignUpPage() {
   return (
     <AuthShell
       heading="Provider sign up"
-      subheading="Apply to list beauty and wellness services on SheQueen"
+      subheading="Apply to list beauty and wellness services on ShiQueen"
     >
       <div className="space-y-5">
         {!user && (

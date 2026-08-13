@@ -10,7 +10,7 @@ async function handleCallback(request: NextRequest) {
     await settleCardPayment({ ...fields, retries: 1 });
     return new NextResponse('OK', { status: 200 });
   } catch (error) {
-    console.error('[SheQueen] card callback:', error);
+    console.error('[ShiQueen] card callback:', error);
     return new NextResponse('OK', { status: 200 });
   }
 }

@@ -378,7 +378,7 @@ export function getPackageSocialBadge(
   } = {}
 ): PackageSocialBadgeInfo | null {
   if (pkg.isSignature) {
-    return { badge: 'signature', label: 'SheQueen Signature' };
+    return { badge: 'signature', label: 'ShiQueen Signature' };
   }
   if (pkg.tier && PREMIUM_TIERS.includes(pkg.tier)) {
     return { badge: 'premium', label: 'Premium pick' };

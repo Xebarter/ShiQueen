@@ -39,7 +39,7 @@ export function PrivacyPolicyPage() {
       title="Privacy Policy"
       summary={
         <p>
-          SheQueen (“we,” “us,” “our,” or “the Company”) operates the website and online store
+          ShiQueen (“we,” “us,” “our,” or “the Company”) operates the website and online store
           at{' '}
           <a
             href={LEGAL_SITE_URL}
@@ -75,9 +75,11 @@ export function PrivacyPolicyPage() {
 
       <LegalSection id="who-we-are" title="1. Who We Are">
         <p>
-          SheQueen is an online ecommerce store specializing in ladies’ fashion, apparel,
-          accessories, beauty products, and related lifestyle items. We are committed to
-          empowering women through quality products and a trusted shopping experience.
+          ShiQueen is an online shopping and booking app specializing in ladies’ fashion, apparel,
+          accessories, beauty products, wellness items, curated packages, and lifestyle service
+          bookings. We are committed to empowering women through quality products and a trusted
+          shopping experience. Customers may sign in with Google to create an account, save
+          favorites, place orders, and manage bookings.
         </p>
         <p>For privacy-related inquiries, you may contact us at:</p>
         <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-4 sm:px-5">
@@ -429,7 +431,7 @@ export function PrivacyPolicyPage() {
           .
         </p>
         <LegalCallout tone="primary">
-          Thank you for trusting SheQueen. We are committed to protecting your privacy while
+          Thank you for trusting ShiQueen. We are committed to protecting your privacy while
           helping you feel confident and empowered in every purchase.
         </LegalCallout>
       </LegalSection>

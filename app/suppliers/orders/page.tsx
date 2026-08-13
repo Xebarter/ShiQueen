@@ -38,10 +38,10 @@ export default function SupplierOrdersPage() {
       <PartnerPage>
         <PartnerPageHeader
           title="Orders"
-          description="Orders that include your products or packages. Fulfillment is managed by SheQueen."
+          description="Orders that include your products or packages. Fulfillment is managed by ShiQueen."
         />
         <Suspense fallback={null}>
-          <InstallWelcomeCard appName="SheQueen Supplier" />
+          <InstallWelcomeCard appName="ShiQueen Supplier" />
         </Suspense>
 
         {orders.length === 0 ? (

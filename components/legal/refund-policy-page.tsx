@@ -40,7 +40,7 @@ export function RefundPolicyPage() {
       summary={
         <>
           <p>
-            At SheQueen, we want you to feel confident and happy with every purchase. This
+            At ShiQueen, we want you to feel confident and happy with every purchase. This
             Refund Policy explains when and how you can request a refund, return, or exchange
             for products purchased from our online store.
           </p>
@@ -321,7 +321,7 @@ export function RefundPolicyPage() {
         </div>
         <p>Our team is available to assist you and will respond as quickly as possible.</p>
         <LegalCallout tone="primary">
-          Thank you for shopping with SheQueen. We are committed to making your experience
+          Thank you for shopping with ShiQueen. We are committed to making your experience
           positive, empowering, and fair. If something is not right with your order, please
           reach out — we’re here to help.
         </LegalCallout>

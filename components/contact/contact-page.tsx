@@ -27,7 +27,7 @@ import {
 import { cn } from '@/lib/utils';
 
 const WHATSAPP_HREF = contactWhatsAppHref(
-  "Hi SheQueen, I'd like to get in touch."
+  "Hi ShiQueen, I'd like to get in touch."
 );
 const EMAIL = 'hello@shequeen.com';
 
@@ -74,7 +74,7 @@ const FAQS = [
   },
   {
     q: 'Do you offer wholesale or bulk packages?',
-    a: 'SheQueen offers curated packages and wholesale pricing. Mention wholesale in your message or explore the Packages and Wholesale sections.',
+    a: 'ShiQueen offers curated packages and wholesale pricing. Mention wholesale in your message or explore the Packages and Wholesale sections.',
   },
   {
     q: 'What is your return policy?',

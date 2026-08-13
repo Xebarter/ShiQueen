@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: downloadUrl });
   } catch (error) {
-    console.error('[SheQueen] upload-provider-image:', error);
+    console.error('[ShiQueen] upload-provider-image:', error);
     const message = error instanceof Error ? error.message : 'Upload failed.';
     const status =
       message.includes('sign-in') ||

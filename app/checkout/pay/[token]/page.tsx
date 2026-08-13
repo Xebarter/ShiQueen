@@ -16,13 +16,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!checkout || resolveSharedCheckoutStatus(checkout) === 'expired') {
     return {
       title: 'Payment link unavailable',
-      description: `This SheQueen payment link is no longer available.`,
+      description: `This ShiQueen payment link is no longer available.`,
     };
   }
 
   const firstName = getRecipientFirstName(checkout.recipientName);
   const title = `Pay for ${firstName}'s order`;
-  const description = `Help ${firstName} complete their ${formatUGX(checkout.total)} SheQueen order.`;
+  const description = `Help ${firstName} complete their ${formatUGX(checkout.total)} ShiQueen order.`;
 
   return {
     title,

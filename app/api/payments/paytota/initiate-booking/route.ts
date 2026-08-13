@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
         stkResult = await executePaytotaStkPush(purchase.id);
       } catch (stkError) {
         console.warn(
-          '[SheQueen] booking STK push failed, falling back to checkout URL:',
+          '[ShiQueen] booking STK push failed, falling back to checkout URL:',
           stkError
         );
       }
@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
       booking: requiresClientBooking ? bookingPayload : undefined,
     });
   } catch (error) {
-    console.error('[SheQueen] paytota initiate-booking:', error);
+    console.error('[ShiQueen] paytota initiate-booking:', error);
     const message = error instanceof Error ? error.message : 'Failed to initiate booking payment.';
     return NextResponse.json({ error: message }, { status: 500 });
   }

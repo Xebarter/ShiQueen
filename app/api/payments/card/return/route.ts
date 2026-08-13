@@ -24,7 +24,7 @@ async function handleReturn(request: NextRequest) {
     const settled = await settleCardPayment({ ...fields, retries: 4 });
     return redirectForOutcome(settled.outcome, settled.orderId ?? fields.companyRef);
   } catch (error) {
-    console.error('[SheQueen] card return:', error);
+    console.error('[ShiQueen] card return:', error);
     const orderId =
       request.nextUrl.searchParams.get('orderId') ??
       request.nextUrl.searchParams.get('CompanyRef') ??

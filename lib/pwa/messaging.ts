@@ -62,7 +62,7 @@ export async function registerPartnerPushToken(uid: string): Promise<string | nu
     }
     return token || null;
   } catch (error) {
-    console.warn('[SheQueen] FCM token registration failed:', error);
+    console.warn('[ShiQueen] FCM token registration failed:', error);
     return null;
   }
 }

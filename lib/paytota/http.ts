@@ -134,7 +134,7 @@ export async function paytotaHttpFetch(
       });
     } catch (error) {
       lastError = error;
-      console.warn(`[SheQueen] Paytota request attempt ${attempt}/${MAX_RETRIES} failed:`, error);
+      console.warn(`[ShiQueen] Paytota request attempt ${attempt}/${MAX_RETRIES} failed:`, error);
 
       if (!isRetryableNetworkError(error) || attempt === MAX_RETRIES) {
         break;
