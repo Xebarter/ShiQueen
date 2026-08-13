@@ -11,7 +11,6 @@ import { Product } from '@/lib/types/database';
 import { formatUGX } from '@/lib/wholesale-data';
 import { getPackageCoverImages, resolvePackageSavings } from '@/lib/package-utils';
 import { getPackageCategoryDiscoveryLabel } from '@/lib/package-catalog';
-import { SharePackageButton } from '@/components/shared/share-button';
 import { cn } from '@/lib/utils';
 import { useServices } from '@/lib/services-context';
 
@@ -48,20 +47,23 @@ export function PackageHeroCarousel({
 
   useEffect(() => {
     if (paused || packages.length <= 1) return;
-    const timer = setInterval(next, 6000);
+    const timer = setInterval(next, 7000);
     return () => clearInterval(timer);
   }, [paused, packages.length, next]);
 
   if (!slide) {
     return (
-      <section className="relative overflow-hidden border-b border-border/50 bg-gradient-to-br from-primary/10 via-background to-accent/5">
-        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
-          <h1 className="text-4xl font-light tracking-tight sm:text-5xl">
-            Curated bundles for <span className="font-semibold text-primary">every moment</span>
+      <section className="relative overflow-hidden border-b border-border/50">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.12] via-background to-accent/10" />
+        <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary">
+            The Atelier
+          </p>
+          <h1 className="mt-3 max-w-2xl font-[family-name:var(--font-brand)] text-4xl font-medium tracking-tight sm:text-5xl">
+            Complete collections, composed for her
           </h1>
-          <p className="mt-4 max-w-xl text-muted-foreground">
-            Complete solutions — not individual products. Discover packages crafted for your
-            lifestyle.
+          <p className="mt-4 max-w-lg text-muted-foreground">
+            Expertly assembled bundles — beauty, gifts, and rituals in one considered edit.
           </p>
         </div>
       </section>
@@ -73,103 +75,103 @@ export function PackageHeroCarousel({
 
   return (
     <section
-      className="relative overflow-hidden border-b border-border/50"
+      className="relative overflow-hidden border-b border-border/40"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-[#5B2850]/20 via-background to-[#FAF5F4]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_oklch(0.74_0.12_62_/_0.18),_transparent_55%),radial-gradient(ellipse_at_bottom_left,_oklch(0.40_0.13_340_/_0.12),_transparent_50%)]" />
+      <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/80 to-background" />
 
-      <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-        <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-12">
+      <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
+        <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
           <div className="relative order-2 lg:order-1">
             <AnimatePresence mode="wait">
               <motion.div
                 key={slide.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.45 }}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
               >
-                <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-primary">
+                <p className="mb-4 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-primary">
                   <Sparkles className="h-3.5 w-3.5" />
                   {getPackageCategoryDiscoveryLabel(slide.category)}
-                </span>
-                <h1 className="text-3xl font-light leading-tight tracking-tight sm:text-4xl lg:text-5xl">
-                  {slide.tagline || slide.name}
+                </p>
+                <h1 className="font-[family-name:var(--font-brand)] text-[2.15rem] font-medium leading-[1.12] tracking-tight sm:text-5xl lg:text-[3.35rem]">
+                  Complete collections,
+                  <span className="block text-primary">composed for her</span>
                 </h1>
-                <p className="mt-4 max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
-                  {slide.description}
+                <p className="mt-5 max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
+                  {slide.tagline || slide.description}
                 </p>
 
-                <div className="mt-6 inline-flex flex-col gap-1 rounded-2xl border border-border/60 bg-card/80 p-4 shadow-sm backdrop-blur-sm">
-                  {savings.savingsAmount > 0 && (
-                    <p className="text-sm text-muted-foreground line-through">
-                      Value {formatUGX(savings.retailTotal)}
+                <div className="mt-7 flex flex-wrap items-end gap-6">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Featured · {slide.name}
                     </p>
-                  )}
-                  <p className="text-2xl font-bold tabular-nums text-primary">
-                    {formatUGX(savings.packagePrice)}
-                  </p>
-                  {savings.savingsAmount > 0 && (
-                    <p className="text-sm font-semibold text-accent">
-                      You save {formatUGX(savings.savingsAmount)} (
-                      {savings.savingsPercentage.toFixed(0)}%)
+                    <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-primary">
+                      {formatUGX(savings.packagePrice)}
                     </p>
-                  )}
+                    {savings.savingsAmount > 0 && (
+                      <p className="mt-0.5 text-sm text-accent">
+                        Save {formatUGX(savings.savingsAmount)} · {savings.savingsPercentage.toFixed(0)}% vs buying separately
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="mt-8 flex flex-wrap gap-3">
-                  <Button size="lg" className="h-12 rounded-xl px-6" onClick={onShopPackages}>
-                    Shop packages
+                  <Button size="lg" className="h-12 rounded-full px-7 shadow-lg shadow-primary/20" onClick={onShopPackages}>
+                    Explore collections
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                   <Button
                     size="lg"
                     variant="outline"
-                    className="h-12 rounded-xl px-6"
+                    className="h-12 rounded-full px-7"
                     onClick={onFindPerfect}
                   >
-                    Find your perfect package
+                    Find my bundle
                   </Button>
-                  <Link href={`/packages/${slide.id}`}>
-                    <Button variant="ghost" className="h-12 rounded-xl">
-                      View this bundle
+                  <Link href={`/packages/${slide.id}`} className="inline-flex">
+                    <Button variant="ghost" className="h-12 rounded-full px-4 text-muted-foreground">
+                      View featured
                     </Button>
                   </Link>
-                  <SharePackageButton pkg={slide} variant="button" size="lg" className="h-12 rounded-xl" />
                 </div>
               </motion.div>
             </AnimatePresence>
 
             {packages.length > 1 && (
-              <div className="mt-8 flex items-center gap-3">
+              <div className="mt-10 flex items-center gap-3">
                 <button
                   type="button"
                   onClick={prev}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background shadow-sm"
-                  aria-label="Previous slide"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-border/80 bg-background/80 shadow-sm backdrop-blur-sm transition hover:border-primary/40"
+                  aria-label="Previous featured collection"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
                 <div className="flex gap-2">
-                  {packages.map((_, i) => (
+                  {packages.map((pkg, i) => (
                     <button
-                      key={i}
+                      key={pkg.id}
                       type="button"
                       onClick={() => setIndex(i)}
                       className={cn(
-                        'h-2 rounded-full transition-all',
-                        i === index ? 'w-6 bg-primary' : 'w-2 bg-border'
+                        'h-1.5 rounded-full transition-all',
+                        i === index ? 'w-8 bg-primary' : 'w-2 bg-border hover:bg-primary/40'
                       )}
-                      aria-label={`Go to slide ${i + 1}`}
+                      aria-label={`Show ${pkg.name}`}
                     />
                   ))}
                 </div>
                 <button
                   type="button"
                   onClick={next}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background shadow-sm"
-                  aria-label="Next slide"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-border/80 bg-background/80 shadow-sm backdrop-blur-sm transition hover:border-primary/40"
+                  aria-label="Next featured collection"
                 >
                   <ChevronRight className="h-5 w-5" />
                 </button>
@@ -178,23 +180,29 @@ export function PackageHeroCarousel({
           </div>
 
           <div className="relative order-1 lg:order-2">
+            <div className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-primary/15 via-accent/10 to-transparent blur-2xl" />
             <AnimatePresence mode="wait">
               <motion.div
                 key={slide.id}
-                initial={{ opacity: 0, scale: 0.96 }}
+                initial={{ opacity: 0, scale: 0.97 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 1.02 }}
-                transition={{ duration: 0.5 }}
-                className="relative aspect-[4/5] overflow-hidden rounded-3xl border border-border/50 shadow-2xl"
+                transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                className="relative aspect-[4/5] overflow-hidden rounded-[1.75rem] border border-white/40 shadow-[0_30px_80px_-28px_rgba(80,20,50,0.45)] ring-1 ring-black/5 sm:aspect-[5/6]"
               >
                 <PackageCoverDisplay
                   images={coverImages}
                   alt={slide.name}
-                  sizes="(max-width:1024px) 100vw, 50vw"
+                  sizes="(max-width:1024px) 100vw, 46vw"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4">
-                  <p className="text-lg font-semibold text-white drop-shadow-md">{slide.name}</p>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70">
+                    Featured collection
+                  </p>
+                  <p className="mt-1 font-[family-name:var(--font-brand)] text-2xl font-medium text-white">
+                    {slide.name}
+                  </p>
                 </div>
               </motion.div>
             </AnimatePresence>

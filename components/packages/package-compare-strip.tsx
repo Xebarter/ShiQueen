@@ -49,11 +49,11 @@ export function PackageCompareStrip({
           viewport={{ once: true }}
           className="mb-8 text-center"
         >
-          <h2 className="text-2xl font-light tracking-tight sm:text-3xl">
-            Compare & upgrade
+          <h2 className="font-[family-name:var(--font-brand)] text-3xl font-medium tracking-tight">
+            Compare the tiers
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            See the value difference — higher tiers include more for less per piece
+          <p className="mt-2 text-sm text-muted-foreground">
+            Higher edits include more — with a stronger saving per piece
           </p>
         </motion.div>
 

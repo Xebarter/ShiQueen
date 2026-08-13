@@ -17,14 +17,22 @@ import { PackageCategoryIcon } from '@/components/packages/package-category-icon
 import { cn } from '@/lib/utils';
 import { SlidersHorizontal } from 'lucide-react';
 
-type SortOption = 'name' | 'price-low' | 'price-high' | 'savings';
+type SortOption = 'relevance' | 'name' | 'price-low' | 'price-high' | 'savings';
 type CategoryFilter = 'all' | PackageCategoryId;
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: 'relevance', label: 'Best match' },
   { value: 'savings', label: 'Best savings' },
   { value: 'price-low', label: 'Price: Low to high' },
   { value: 'price-high', label: 'Price: High to low' },
   { value: 'name', label: 'Name A–Z' },
+];
+
+const PRICE_FILTERS: { label: string; value?: number }[] = [
+  { label: 'Any price' },
+  { label: 'Under 200K', value: 200_000 },
+  { label: 'Under 500K', value: 500_000 },
+  { label: 'Under 1M', value: 1_000_000 },
 ];
 
 interface PackageBrowseSectionProps {
@@ -36,10 +44,11 @@ interface PackageBrowseSectionProps {
   sort: SortOption;
   categoryFilter: CategoryFilter;
   collectionTitle?: string;
+  maxPriceFilter?: number;
   filtersExpanded: boolean;
-  onSearchChange: (v: string) => void;
   onSortChange: (v: SortOption) => void;
   onCategoryChange: (v: CategoryFilter) => void;
+  onMaxPriceChange: (v: number | undefined) => void;
   onFiltersExpandedChange: (v: boolean) => void;
   onClearFilters: () => void;
   onQuickView: (pkg: PackageType) => void;
@@ -55,10 +64,11 @@ export function PackageBrowseSection({
   sort,
   categoryFilter,
   collectionTitle,
+  maxPriceFilter,
   filtersExpanded,
-  onSearchChange,
   onSortChange,
   onCategoryChange,
+  onMaxPriceChange,
   onFiltersExpandedChange,
   onClearFilters,
   onQuickView,
@@ -66,54 +76,48 @@ export function PackageBrowseSection({
 }: PackageBrowseSectionProps) {
   const selectedCategory =
     categoryFilter !== 'all' ? getPackageCategory(categoryFilter) : undefined;
+  const isSearch = search.trim().length > 0;
   const hasActiveFilters =
-    search.trim().length > 0 || categoryFilter !== 'all' || Boolean(collectionTitle);
+    isSearch || categoryFilter !== 'all' || Boolean(collectionTitle) || Boolean(maxPriceFilter);
+
+  const heading = isSearch
+    ? `Results for “${search.trim()}”`
+    : collectionTitle || (selectedCategory ? selectedCategory.discoveryLabel : 'The full atelier');
 
   return (
-    <section id="browse" className="scroll-mt-24 py-8 sm:py-12">
+    <section id="browse" className="scroll-mt-28 py-10 sm:scroll-mt-32 sm:py-14">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <h2 className="text-2xl font-light tracking-tight sm:text-3xl">
-            {collectionTitle || 'All curated bundles'}
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {packages.length} complete solution{packages.length === 1 ? '' : 's'} ready to shop
-          </p>
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+              {isSearch ? 'Live results' : 'Catalog'}
+            </p>
+            <h2 className="mt-1 font-[family-name:var(--font-brand)] text-3xl font-medium tracking-tight">
+              {heading}
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {loading
+                ? 'Gathering collections…'
+                : `${packages.length} complete collection${packages.length === 1 ? '' : 's'}`}
+            </p>
+          </div>
+          {hasActiveFilters && (
+            <Button variant="outline" size="sm" onClick={onClearFilters} className="rounded-full">
+              Reset filters
+            </Button>
+          )}
         </div>
 
-        {(selectedCategory || collectionTitle) && selectedCategory && (
-          <div className="mb-6 rounded-2xl border border-border/70 bg-muted/20 p-5">
-            <div className="flex items-start gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <PackageCategoryIcon categoryId={selectedCategory.id} />
-              </span>
-              <div>
-                <h3 className="text-lg font-semibold">{selectedCategory.discoveryLabel}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {selectedCategory.shortDescription}
-                </p>
-              </div>
-            </div>
+        {selectedCategory && (
+          <div className="mb-6 flex items-start gap-3 rounded-2xl border border-border/60 bg-muted/20 p-4">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <PackageCategoryIcon categoryId={selectedCategory.id} />
+            </span>
+            <p className="text-sm text-muted-foreground">{selectedCategory.shortDescription}</p>
           </div>
         )}
 
-        {search.trim() && (
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
-            <p className="text-sm">
-              Showing results for{' '}
-              <span className="font-semibold text-primary">&ldquo;{search.trim()}&rdquo;</span>
-            </p>
-            <button
-              type="button"
-              onClick={() => onSearchChange('')}
-              className="text-xs font-medium text-primary hover:underline"
-            >
-              Clear search
-            </button>
-          </div>
-        )}
-
-        <div className="mb-6">
+        <div className="mb-6 space-y-3">
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
             <button
               type="button"
@@ -144,14 +148,28 @@ export function PackageBrowseSection({
             ))}
           </div>
 
-          <div className="mt-3 flex items-center justify-between gap-2">
-            <p className="text-xs text-muted-foreground">
-              {loading ? 'Loading…' : (
-                <>
-                  <span className="font-medium text-foreground">{packages.length}</span> matched
-                </>
-              )}
-            </p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              {PRICE_FILTERS.map((filter) => {
+                const selected = maxPriceFilter === filter.value;
+                return (
+                  <button
+                    key={filter.label}
+                    type="button"
+                    onClick={() => onMaxPriceChange(filter.value)}
+                    className={cn(
+                      'shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition',
+                      selected
+                        ? 'border-accent bg-accent/15 text-accent-foreground'
+                        : 'border-border/70 text-muted-foreground hover:border-primary/30 hover:text-foreground'
+                    )}
+                  >
+                    {filter.label}
+                  </button>
+                );
+              })}
+            </div>
+
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -169,22 +187,12 @@ export function PackageBrowseSection({
                   filtersExpanded ? 'block w-full sm:w-auto' : 'hidden sm:block'
                 )}
               >
-                {SORT_OPTIONS.map((opt) => (
+                {SORT_OPTIONS.filter((opt) => isSearch || opt.value !== 'relevance').map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
                   </option>
                 ))}
               </select>
-              {hasActiveFilters && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onClearFilters}
-                  className="hidden h-9 text-xs sm:inline-flex"
-                >
-                  Clear
-                </Button>
-              )}
             </div>
           </div>
         </div>
@@ -196,10 +204,13 @@ export function PackageBrowseSection({
             ))}
           </div>
         ) : packages.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-card px-6 py-14 text-center">
-            <p className="text-muted-foreground">No bundles match your filters.</p>
-            <Button variant="outline" className="mt-4 rounded-xl" onClick={onClearFilters}>
-              Clear filters
+          <div className="rounded-3xl border border-dashed border-border bg-card/60 px-6 py-16 text-center">
+            <p className="font-[family-name:var(--font-brand)] text-2xl">Nothing in this edit yet</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Clear filters or try a broader search — collections update as you type.
+            </p>
+            <Button variant="outline" className="mt-5 rounded-full" onClick={onClearFilters}>
+              Show all collections
             </Button>
           </div>
         ) : (

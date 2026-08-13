@@ -1,12 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { PackageHeroCarousel } from '@/components/packages/discovery/package-hero-carousel';
-import { PackageSearchBar } from '@/components/packages/discovery/package-search-bar';
+import {
+  PackageSearchBar,
+  type PackageSearchSuggestion,
+} from '@/components/packages/discovery/package-search-bar';
 import { PackageDiscoveryCategories } from '@/components/packages/discovery/package-discovery-categories';
 import { PackageFomoSections } from '@/components/packages/discovery/package-fomo-sections';
 import { PackageCuratedCollections } from '@/components/packages/discovery/package-curated-collections';
@@ -27,15 +30,15 @@ import { usePublicProducts, usePublicPackages } from '@/lib/hooks/use-public-cat
 import { useServices } from '@/lib/services-context';
 import {
   buildPackageCatalogMaps,
+  getPackageCoverImages,
   getPackageImage,
-  getPackageItemName,
   resolvePackageSavings,
 } from '@/lib/package-utils';
+import { createPackageSearchIndex } from '@/lib/package-search';
 import {
   getFeaturedHeroPackages,
   getTrendingPackages,
   getBestDealsToday,
-  getMostLovedPackages,
   getSignaturePackages,
   getNewArrivals,
   getLuxuryTierLadder,
@@ -52,6 +55,7 @@ import { PACKAGE_CATEGORIES, type PackageCategoryId } from '@/lib/package-catalo
 import type { Package } from '@/lib/types/wholesale';
 
 export function PackagesPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { setSelectedPackage } = useWholesale();
   const { packages, loading } = usePublicPackages();
@@ -65,6 +69,11 @@ export function PackagesPage() {
     [activePackages, products, activeListings]
   );
 
+  const packageIndex = useMemo(
+    () => createPackageSearchIndex(activePackages, productNames),
+    [activePackages, productNames]
+  );
+
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<SortOption>('savings');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
@@ -75,6 +84,7 @@ export function PackagesPage() {
   const [quickViewPkg, setQuickViewPkg] = useState<Package | null>(null);
   const [viewedIds, setViewedIds] = useState<string[]>([]);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const hydratedQuery = useRef(false);
 
   useEffect(() => {
     setViewedIds(getStoredViewedPackageIds());
@@ -89,7 +99,29 @@ export function PackagesPage() {
     if (collection) {
       setCollectionId(collection);
     }
+    if (!hydratedQuery.current) {
+      hydratedQuery.current = true;
+      const q = searchParams.get('q');
+      if (q) setSearch(q);
+    }
   }, [searchParams]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      const next = search.trim();
+      if (next) params.set('q', next);
+      else params.delete('q');
+      const qs = params.toString();
+      const href = qs ? `/packages?${qs}` : '/packages';
+      if (`${window.location.pathname}${window.location.search}` !== href) {
+        router.replace(href, { scroll: false });
+      }
+    }, 280);
+    return () => window.clearTimeout(timer);
+  }, [search, router, searchParams]);
+
+  const isSearchMode = search.trim().length > 0;
 
   const heroPackages = useMemo(
     () => getFeaturedHeroPackages(activePackages, retailPrices, 5),
@@ -103,11 +135,6 @@ export function PackagesPage() {
 
   const bestDeals = useMemo(
     () => getBestDealsToday(activePackages, retailPrices, 8),
-    [activePackages, retailPrices]
-  );
-
-  const mostLoved = useMemo(
-    () => getMostLovedPackages(activePackages, retailPrices, 8),
     [activePackages, retailPrices]
   );
 
@@ -128,15 +155,20 @@ export function PackagesPage() {
   const upgradeFrom = heroPackages[0] ?? null;
   const upgrades = useMemo(
     () =>
-      upgradeFrom
-        ? getUpgradePackages(upgradeFrom, activePackages, retailPrices, 6)
-        : [],
+      upgradeFrom ? getUpgradePackages(upgradeFrom, activePackages, retailPrices, 6) : [],
     [upgradeFrom, activePackages, retailPrices]
   );
 
+  const rankedHits = useMemo(() => {
+    const term = search.trim();
+    if (!term) return null;
+    return packageIndex.search(term, 80);
+  }, [packageIndex, search]);
+
   const filteredPackages = useMemo(() => {
-    const term = search.toLowerCase().trim();
-    let result = activePackages;
+    let result = rankedHits
+      ? rankedHits.map((hit) => hit.pkg)
+      : activePackages.filter((pkg) => pkg.isActive);
 
     if (collectionId) {
       result = filterPackagesByCollection(result, collectionId, retailPrices);
@@ -152,18 +184,8 @@ export function PackagesPage() {
       );
     }
 
-    if (term) {
-      result = result.filter(
-        (p) =>
-          p.name.toLowerCase().includes(term) ||
-          p.description.toLowerCase().includes(term) ||
-          (p.tagline ?? '').toLowerCase().includes(term) ||
-          (p.highlights ?? []).some((h) => h.toLowerCase().includes(term)) ||
-          p.items.some((item) =>
-            getPackageItemName(item, productNames).toLowerCase().includes(term)
-          )
-      );
-    }
+    const preserveRelevance = Boolean(rankedHits) && sort === 'relevance';
+    if (preserveRelevance) return result;
 
     return [...result].sort((a, b) => {
       const savingsA = resolvePackageSavings(a, retailPrices);
@@ -176,20 +198,31 @@ export function PackagesPage() {
         case 'price-high':
           return savingsB.packagePrice - savingsA.packagePrice;
         case 'savings':
-        default:
           return savingsB.savingsPercentage - savingsA.savingsPercentage;
+        default:
+          return 0;
       }
     });
   }, [
     activePackages,
+    rankedHits,
     collectionId,
     categoryFilter,
     maxPriceFilter,
-    search,
     sort,
     retailPrices,
-    productNames,
   ]);
+
+  const suggestions: PackageSearchSuggestion[] = useMemo(() => {
+    if (!rankedHits) return [];
+    return rankedHits.slice(0, 6).map((hit) => ({
+      id: hit.pkg.id,
+      name: hit.pkg.name,
+      tagline: hit.pkg.tagline,
+      price: resolvePackageSavings(hit.pkg, retailPrices).packagePrice,
+      image: getPackageCoverImages(hit.pkg, products, activeListings)[0],
+    }));
+  }, [rankedHits, retailPrices, products, activeListings]);
 
   const collectionTitle = collectionId
     ? getPackageCollection(collectionId)?.title
@@ -210,7 +243,7 @@ export function PackagesPage() {
       });
       trackPackageView(pkg.id);
       setViewedIds(getStoredViewedPackageIds());
-      toast.success('Bundle added to cart!');
+      toast.success('Collection added to cart');
     },
     [addItem, activeListings, products, retailPrices, setSelectedPackage]
   );
@@ -222,7 +255,7 @@ export function PackagesPage() {
   }, []);
 
   const scrollToBrowse = useCallback(() => {
-    document.getElementById('browse')?.scrollIntoView({ behavior: 'smooth' });
+    document.getElementById('browse')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
   const focusPackageSearch = useCallback(() => {
@@ -231,37 +264,49 @@ export function PackagesPage() {
     window.setTimeout(() => searchInputRef.current?.focus(), 350);
   }, []);
 
-  const handlePackageSearchSubmit = useCallback(() => {
-    scrollToBrowse();
-  }, [scrollToBrowse]);
-
   const scrollToDeals = useCallback(() => {
     document.getElementById('deals-section')?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
-  const handleCategorySelect = useCallback((id: PackageCategoryId) => {
-    setCategoryFilter(id);
-    setCollectionId(null);
-    setTimeout(scrollToBrowse, 100);
-  }, [scrollToBrowse]);
+  const handleCategorySelect = useCallback(
+    (id: PackageCategoryId) => {
+      setCategoryFilter(id);
+      setCollectionId(null);
+      setTimeout(scrollToBrowse, 80);
+    },
+    [scrollToBrowse]
+  );
 
-  const handleCollectionSelect = useCallback((id: string) => {
-    setCollectionId(id);
-    setCategoryFilter('all');
-    setTimeout(scrollToBrowse, 100);
-  }, [scrollToBrowse]);
+  const handleCollectionSelect = useCallback(
+    (id: string) => {
+      setCollectionId(id);
+      setCategoryFilter('all');
+      setTimeout(scrollToBrowse, 80);
+    },
+    [scrollToBrowse]
+  );
 
   const handleQuizComplete = useCallback(
     (result: PackageQuizResult) => {
       if (result.category) setCategoryFilter(result.category);
       setCollectionId(null);
       setMaxPriceFilter(result.maxPrice);
-      setSort(result.sort);
-      toast.success('Here are bundles picked for you');
+      setSort(result.sort === 'savings' ? 'savings' : result.sort);
+      toast.success('Here is an edit composed for you');
       setTimeout(scrollToBrowse, 200);
     },
     [scrollToBrowse]
   );
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+    if (value.trim() && sort !== 'relevance') {
+      setSort('relevance');
+    }
+    if (!value.trim() && sort === 'relevance') {
+      setSort('savings');
+    }
+  }, [sort]);
 
   const clearFilters = useCallback(() => {
     setSearch('');
@@ -273,114 +318,119 @@ export function PackagesPage() {
 
   const fomoRows = [
     {
-      title: 'Trending right now',
-      subtitle: 'What queens are discovering this week',
-      urgency: 'Popular picks',
+      title: 'Signature collections',
+      subtitle: 'The house edit — composed, complete, and exclusive',
+      urgency: 'Atelier',
+      packages: signatures.length > 0 ? signatures : newArrivals,
+    },
+    {
+      title: 'Most sought this week',
+      subtitle: 'What queens are choosing right now',
+      urgency: 'In demand',
       packages: trending,
       trending: true,
     },
     {
-      title: "Today's best deals",
-      subtitle: 'Maximum savings on complete bundles',
-      urgency: 'Best value',
+      title: 'Best value',
+      subtitle: 'The strongest savings against buying separately',
       packages: bestDeals,
     },
-    {
-      title: 'Most loved packages',
-      subtitle: 'Customer favorites worth every shilling',
-      packages: mostLoved,
-    },
-    {
-      title: 'SheQueen exclusives',
-      subtitle: 'Our signature curated collections',
-      packages: signatures,
-    },
-    {
-      title: 'New arrivals',
-      subtitle: 'Fresh bundles just added',
-      urgency: 'Just in',
-      packages: newArrivals,
-    },
   ];
+
+  const browseSection = (
+    <PackageBrowseSection
+      loading={loading}
+      packages={filteredPackages}
+      products={products}
+      retailPrices={retailPrices}
+      search={search}
+      sort={sort}
+      categoryFilter={categoryFilter}
+      collectionTitle={collectionTitle}
+      maxPriceFilter={maxPriceFilter}
+      filtersExpanded={filtersExpanded}
+      onSortChange={setSort}
+      onCategoryChange={(v) => {
+        setCategoryFilter(v);
+        setCollectionId(null);
+      }}
+      onMaxPriceChange={setMaxPriceFilter}
+      onFiltersExpandedChange={setFiltersExpanded}
+      onClearFilters={clearFilters}
+      onQuickView={handleQuickView}
+      onAddToCart={handleAddToCart}
+    />
+  );
 
   return (
     <>
       <Header />
       <main className="overflow-x-clip mobile-scroll-optimize bg-background pb-20 sm:pb-0">
-        <PackageHeroCarousel
-          packages={heroPackages}
-          products={products}
-          retailPrices={retailPrices}
-          onShopPackages={scrollToBrowse}
-          onFindPerfect={() => setQuizOpen(true)}
-        />
+        {!isSearchMode && (
+          <PackageHeroCarousel
+            packages={heroPackages}
+            products={products}
+            retailPrices={retailPrices}
+            onShopPackages={scrollToBrowse}
+            onFindPerfect={() => setQuizOpen(true)}
+          />
+        )}
 
         <PackageSearchBar
           ref={searchInputRef}
           search={search}
           totalPackages={activePackages.length}
           resultCount={filteredPackages.length}
-          onSearchChange={setSearch}
-          onClear={() => setSearch('')}
-          onSubmit={handlePackageSearchSubmit}
+          suggestions={suggestions}
+          onSearchChange={handleSearchChange}
+          onClear={() => handleSearchChange('')}
+          onViewAllResults={scrollToBrowse}
+          onSelectSuggestion={(id) => router.push(`/packages/${id}`)}
         />
 
-        <PackageDiscoveryCategories
-          packages={activePackages}
-          products={products}
-          onSelectCategory={handleCategorySelect}
-        />
+        {isSearchMode ? (
+          browseSection
+        ) : (
+          <>
+            <PackageDiscoveryCategories
+              packages={activePackages}
+              products={products}
+              selectedCategory={categoryFilter}
+              onSelectCategory={handleCategorySelect}
+            />
 
-        <div id="deals-section">
-          <PackageFomoSections
-            rows={fomoRows}
-            products={products}
-            retailPrices={retailPrices}
-            onQuickView={handleQuickView}
-            onAddToCart={handleAddToCart}
-          />
-        </div>
+            <div id="deals-section">
+              <PackageFomoSections
+                rows={fomoRows}
+                products={products}
+                retailPrices={retailPrices}
+                onQuickView={handleQuickView}
+                onAddToCart={handleAddToCart}
+              />
+            </div>
 
-        <PackageCuratedCollections onSelectCollection={handleCollectionSelect} />
+            <PackageCuratedCollections onSelectCollection={handleCollectionSelect} />
 
-        <PackageCompareStrip
-          packages={luxuryLadder}
-          products={products}
-          retailPrices={retailPrices}
-          onAddToCart={handleAddToCart}
-        />
+            <PackageCompareStrip
+              packages={luxuryLadder}
+              products={products}
+              retailPrices={retailPrices}
+              onAddToCart={handleAddToCart}
+            />
 
-        <PackageRecommendationSections
-          recommended={recommended}
-          upgradeFrom={upgradeFrom}
-          upgrades={upgrades}
-          products={products}
-          retailPrices={retailPrices}
-          onQuickView={handleQuickView}
-          onAddToCart={handleAddToCart}
-        />
+            <PackageRecommendationSections
+              recommended={recommended}
+              upgradeFrom={upgradeFrom}
+              upgrades={upgrades}
+              products={products}
+              retailPrices={retailPrices}
+              onQuickView={handleQuickView}
+              onAddToCart={handleAddToCart}
+            />
 
-        <PackageBrowseSection
-          loading={loading}
-          packages={filteredPackages}
-          products={products}
-          retailPrices={retailPrices}
-          search={search}
-          sort={sort}
-          categoryFilter={categoryFilter}
-          collectionTitle={collectionTitle}
-          filtersExpanded={filtersExpanded}
-          onSearchChange={setSearch}
-          onSortChange={setSort}
-          onCategoryChange={(v) => {
-            setCategoryFilter(v);
-            setCollectionId(null);
-          }}
-          onFiltersExpandedChange={setFiltersExpanded}
-          onClearFilters={clearFilters}
-          onQuickView={handleQuickView}
-          onAddToCart={handleAddToCart}
-        />
+            {browseSection}
+          </>
+        )}
 
         <PackageTrustStrip />
       </main>
@@ -404,7 +454,7 @@ export function PackagesPage() {
       <PackageMobileActionBar
         cartCount={itemCount}
         onSearch={focusPackageSearch}
-        onDeals={scrollToDeals}
+        onDeals={isSearchMode ? scrollToBrowse : scrollToDeals}
         onBrowse={scrollToBrowse}
       />
     </>
