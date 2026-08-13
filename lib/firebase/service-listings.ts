@@ -95,6 +95,12 @@ export async function getServiceListingBySlug(slug: string): Promise<ServiceList
   return mapListing(docSnap.id, docSnap.data());
 }
 
+export function generateServiceListingId(): string {
+  const db = getFirebaseDb();
+  if (!db) throw new Error('Firebase not initialized');
+  return doc(collection(db, COLLECTIONS.services)).id;
+}
+
 export async function createServiceListing(
   listing: Omit<ServiceListing, 'createdAt' | 'updatedAt'>
 ): Promise<void> {

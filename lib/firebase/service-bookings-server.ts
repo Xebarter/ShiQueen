@@ -93,6 +93,10 @@ export async function createServiceBookingServer(
     updatedAt: FieldValue.serverTimestamp(),
   });
 
+  void import('@/lib/firebase/partner-alerts-server').then(({ notifyPartnerBooking }) =>
+    notifyPartnerBooking(id)
+  );
+
   return id;
 }
 

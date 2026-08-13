@@ -36,7 +36,7 @@ export const ACCOUNT_SECTIONS: {
   {
     id: 'settings',
     label: 'Settings',
-    description: 'Profile and security',
+    description: 'Profile, address & security',
     icon: Settings,
   },
 ];

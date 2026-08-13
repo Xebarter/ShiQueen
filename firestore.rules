@@ -23,7 +23,19 @@ service cloud.firestore {
     function isSupplierUser() {
       return isSignedIn()
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        && userDoc().data.role == 'supplier';
+        && (
+          userDoc().data.role == 'supplier'
+          || userDoc().data.supplierId is string
+        );
+    }
+
+    function isServiceProviderUser() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && (
+          userDoc().data.role == 'service_provider'
+          || userDoc().data.providerId is string
+        );
     }
 
     function supplierDoc(supplierId) {
@@ -40,12 +52,49 @@ service cloud.firestore {
       return userDoc().data.supplierId;
     }
 
+    function supplierIsApproved(supplierId) {
+      return exists(/databases/$(database)/documents/suppliers/$(supplierId))
+        && supplierDoc(supplierId).data.approvalStatus == 'approved'
+        && supplierDoc(supplierId).data.isActive == true;
+    }
+
     function canWriteCatalogFor(supplierId) {
       return isAdmin()
         || (
           isSupplierUser()
           && linkedSupplierId() == supplierId
           && ownsSupplier(supplierId)
+          && supplierIsApproved(supplierId)
+        );
+    }
+
+    function providerDoc(providerId) {
+      return get(/databases/$(database)/documents/serviceProviders/$(providerId));
+    }
+
+    function ownsProvider(providerId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/serviceProviders/$(providerId))
+        && providerDoc(providerId).data.ownerUid == request.auth.uid;
+    }
+
+    function linkedProviderId() {
+      return userDoc().data.providerId;
+    }
+
+    function providerIsApproved(providerId) {
+      return exists(/databases/$(database)/documents/serviceProviders/$(providerId))
+        && providerDoc(providerId).data.approvalStatus == 'approved'
+        && providerDoc(providerId).data.isActive == true;
+    }
+
+    function canWriteProviderCatalog(providerId) {
+      return isAdmin()
+        || (
+          isServiceProviderUser()
+          && linkedProviderId() == providerId
+          && ownsProvider(providerId)
+          && providerIsApproved(providerId)
         );
     }
 
@@ -55,8 +104,14 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId)
+        && request.resource.data.role != 'admin';
+      allow update: if isAdmin()
+        || (
+          isOwner(userId)
+          && request.resource.data.role != 'admin'
+          && resource.data.role != 'admin'
+        );
     }
 
     match /products/{productId} {
@@ -71,7 +126,12 @@ service cloud.firestore {
 
     match /orders/{orderId} {
       allow read: if isAdmin()
-        || (isSignedIn() && resource.data.userId == request.auth.uid);
+        || (isSignedIn() && resource.data.userId == request.auth.uid)
+        || (
+          isSupplierUser()
+          && resource.data.supplierIds is list
+          && linkedSupplierId() in resource.data.supplierIds
+        );
       allow create: if request.resource.data.userId == null
         || (isSignedIn() && request.resource.data.userId == request.auth.uid);
       allow update: if isAdmin();
@@ -139,7 +199,6 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Token in the URL is the secret; rules limit what clients can change.
     match /serviceCategories/{categoryId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
@@ -147,27 +206,57 @@ service cloud.firestore {
 
     match /serviceProviders/{providerId} {
       allow read: if true;
-      allow create, update, delete: if isAdmin();
+
+      allow create: if isAdmin()
+        || (
+          isSignedIn()
+          && request.resource.data.ownerUid == request.auth.uid
+          && request.resource.data.approvalStatus == 'pending'
+          && request.resource.data.isActive == false
+        );
+
+      allow update: if isAdmin()
+        || (
+          ownsProvider(providerId)
+          && request.resource.data.ownerUid == resource.data.ownerUid
+          && request.resource.data.approvalStatus == resource.data.approvalStatus
+          && request.resource.data.isVerified == resource.data.isVerified
+        );
+
+      allow delete: if isAdmin();
     }
 
     match /services/{serviceId} {
       allow read: if true;
-      allow create, delete: if isAdmin();
-      allow update: if isAdmin()
+      allow create: if canWriteProviderCatalog(request.resource.data.providerId);
+      allow delete: if canWriteProviderCatalog(resource.data.providerId);
+      allow update: if canWriteProviderCatalog(resource.data.providerId)
+        && (
+          isAdmin()
+          || request.resource.data.providerId == resource.data.providerId
+        )
         || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount', 'updatedAt'])
         || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bookingCount', 'updatedAt']);
     }
 
     match /providerAvailability/{availabilityId} {
       allow read: if true;
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isAdmin()
+        || (
+          isServiceProviderUser()
+          && linkedProviderId() == availabilityId
+          && ownsProvider(availabilityId)
+        );
     }
 
     match /serviceBookings/{bookingId} {
-      // Confirmation pages load by opaque booking id; list stays restricted.
       allow get: if true;
       allow list: if isAdmin()
-        || (isSignedIn() && resource.data.userId == request.auth.uid);
+        || (isSignedIn() && resource.data.userId == request.auth.uid)
+        || (
+          isServiceProviderUser()
+          && resource.data.providerId == linkedProviderId()
+        );
       allow create: if request.resource.data.customerName is string
         && request.resource.data.customerPhone is string
         && request.resource.data.status == 'pending';
@@ -176,6 +265,14 @@ service cloud.firestore {
           resource.data.status == 'pending'
           && request.resource.data.diff(resource.data).affectedKeys()
             .hasOnly(['paymentStatus', 'paytotaPurchaseId', 'paytotaReference', 'status', 'updatedAt'])
+        )
+        || (
+          isServiceProviderUser()
+          && resource.data.providerId == linkedProviderId()
+          && ownsProvider(resource.data.providerId)
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'updatedAt'])
+          && request.resource.data.status in ['pending', 'confirmed', 'in_progress', 'completed', 'cancelled']
         );
     }
 

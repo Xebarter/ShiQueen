@@ -18,6 +18,7 @@ export type CreateServerOrderInput = {
   paymentStatus: Order['paymentStatus'];
   paytotaPurchaseId?: string;
   paytotaReference?: string;
+  supplierIds?: string[];
 };
 
 export type PaymentUpdateInput = {
@@ -47,6 +48,9 @@ function mapOrderDoc(id: string, data: FirebaseFirestore.DocumentData): Order {
     paymentStatus: data.paymentStatus as Order['paymentStatus'],
     paytotaPurchaseId: data.paytotaPurchaseId ? String(data.paytotaPurchaseId) : undefined,
     paytotaReference: data.paytotaReference ? String(data.paytotaReference) : undefined,
+    supplierIds: Array.isArray(data.supplierIds)
+      ? (data.supplierIds as unknown[]).map(String)
+      : undefined,
     createdAt,
     updatedAt,
   };
@@ -70,6 +74,10 @@ export async function createOrderServer(order: CreateServerOrderInput): Promise<
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   });
+
+  void import('@/lib/firebase/partner-alerts-server').then(({ notifyPartnerOrder }) =>
+    notifyPartnerOrder(id)
+  );
 
   return id;
 }

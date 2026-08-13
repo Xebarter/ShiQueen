@@ -30,7 +30,7 @@ export function isFirebaseConfigured(): boolean {
   );
 }
 
-function getFirebaseApp(): FirebaseApp | null {
+export function getFirebaseApp(): FirebaseApp | null {
   if (typeof window === 'undefined' || !isFirebaseConfigured()) {
     return null;
   }

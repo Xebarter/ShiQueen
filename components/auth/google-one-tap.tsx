@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/lib/auth-context';
+import { getPostAuthPath } from '@/lib/auth-redirect';
 import { getAuthErrorMessage } from '@/lib/auth-errors';
 import { isFirebaseConfigured } from '@/lib/firebase';
 import {
@@ -13,14 +14,14 @@ import {
   type GoogleCredentialResponse,
 } from '@/lib/google-identity';
 
-const EXCLUDED_PREFIXES = ['/admin'];
+const EXCLUDED_PREFIXES = ['/admin', '/suppliers/orders', '/suppliers/products', '/suppliers/packages', '/suppliers/inventory', '/suppliers/profile', '/suppliers/settings', '/suppliers/insights', '/services/dashboard'];
 
 function isExcludedPath(pathname: string): boolean {
   return EXCLUDED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
 export function GoogleOneTap() {
-  const { user, loading, signInWithGoogleCredential } = useAuth();
+  const { user, profile, loading, signInWithGoogleCredential } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const initializedRef = useRef(false);
@@ -40,7 +41,7 @@ export function GoogleOneTap() {
         toast.success('Signed in with Google');
 
         if (pathname === '/sign-in' || pathname === '/sign-up') {
-          router.push('/account');
+          router.push(getPostAuthPath(profile));
         }
       } catch (error) {
         toast.error(getAuthErrorMessage(error));
@@ -49,7 +50,7 @@ export function GoogleOneTap() {
         signingInRef.current = false;
       }
     },
-    [pathname, router]
+    [pathname, router, profile]
   );
 
   useEffect(() => {

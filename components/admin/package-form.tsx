@@ -156,7 +156,7 @@ export function PackageForm({
     if (!isSupplierPortal || !forcedSupplierId) return active;
     return active.filter((s) => s.supplierId === forcedSupplierId);
   }, [activeListings, forcedSupplierId, isSupplierPortal]);
-  const listHref = backHref ?? (isSupplierPortal ? '/supplier/packages' : '/admin/packages');
+  const listHref = backHref ?? (isSupplierPortal ? '/suppliers/packages' : '/admin/packages');
   const catalog = productsToCatalog(products);
   const retailPrices = getRetailPricesMap(catalog);
   const coverFileRef = useRef<HTMLInputElement>(null);

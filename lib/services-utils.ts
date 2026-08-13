@@ -269,6 +269,10 @@ export function getDefaultWeeklySlots(): ProviderAvailability['weeklySlots'] {
 
 export { WEEKDAYS };
 
+export function weekdayLabel(day: Weekday): string {
+  return day.charAt(0).toUpperCase() + day.slice(1);
+}
+
 export type ServicePricePreset = import('@/lib/types/services').ServicePricePreset;
 
 export const SERVICE_PRICE_PRESETS: {

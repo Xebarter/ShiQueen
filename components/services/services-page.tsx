@@ -258,17 +258,22 @@ export function ServicesPage() {
             Are you a service provider?
           </h2>
           <p className="mt-3 text-sm opacity-90 sm:text-base">
-            List on SheQueen and reach customers ready to book and pay.
+            Create a provider account, get approved, and list services customers can book and pay for.
           </p>
-          <Link href="/contact" className="mt-8 inline-block">
-            <Button
-              variant="secondary"
-              size="lg"
-              className="h-12 rounded-xl px-8 font-semibold shadow-lg"
-            >
-              Get listed
-            </Button>
-          </Link>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Link href="/services/sign-up">
+              <Button
+                variant="secondary"
+                size="lg"
+                className="h-12 rounded-xl px-8 font-semibold shadow-lg"
+              >
+                List your services
+              </Button>
+            </Link>
+            <Link href="/services/sign-in" className="text-sm font-medium underline-offset-4 hover:underline">
+              Already a provider? Sign in
+            </Link>
+          </div>
         </div>
       </section>
 

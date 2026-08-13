@@ -460,9 +460,13 @@ export async function linkSupplierRegistration(
   );
 
   const existing = await getUserProfile(uid);
+  const nextRole =
+    existing?.role === 'admin' || existing?.role === 'service_provider'
+      ? existing.role
+      : 'supplier';
   if (existing) {
     await updateUserProfile(uid, {
-      role: 'supplier',
+      role: nextRole,
       supplierId,
       displayName: contactName,
     });

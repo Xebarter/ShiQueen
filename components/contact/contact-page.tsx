@@ -70,7 +70,7 @@ const FAQS = [
   },
   {
     q: 'Can I list my beauty or wellness service?',
-    a: 'Yes — choose “List my services” above or visit our Services page and tap Get listed. Our team will follow up within 2 business days.',
+    a: 'Yes — visit the Services page and tap List your services, or go to /services/sign-up. After admin approval you can list bookable services.',
   },
   {
     q: 'Do you offer wholesale or bulk packages?',

@@ -53,6 +53,22 @@ export async function uploadPackageImage(packageId: string, file: File): Promise
   return uploadProductImage(`package-${packageId}`, file);
 }
 
+export async function uploadProviderImage(providerId: string, file: File): Promise<string> {
+  return uploadProductImage(`provider-${providerId}`, file);
+}
+
+export async function uploadProviderImages(
+  providerId: string,
+  files: File[]
+): Promise<string[]> {
+  if (files.length === 0) return [];
+  const urls: string[] = [];
+  for (const file of files) {
+    urls.push(await uploadProviderImage(providerId, file));
+  }
+  return urls;
+}
+
 export async function uploadPackageItemImage(
   packageId: string,
   itemId: string,

@@ -35,6 +35,9 @@ function mapOrder(id: string, data: Record<string, unknown>): Order {
     paymentStatus: data.paymentStatus as Order['paymentStatus'],
     paytotaPurchaseId: data.paytotaPurchaseId ? String(data.paytotaPurchaseId) : undefined,
     paytotaReference: data.paytotaReference ? String(data.paytotaReference) : undefined,
+    supplierIds: Array.isArray(data.supplierIds)
+      ? (data.supplierIds as unknown[]).map(String)
+      : undefined,
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
   };
@@ -47,12 +50,43 @@ export async function createOrder(
   if (!db) throw new Error('Firebase not initialized');
 
   const { id, ...data } = order;
+  const supplierIds =
+    data.supplierIds && data.supplierIds.length > 0
+      ? data.supplierIds
+      : await collectSupplierIds(data.items);
+
   await setDoc(doc(db, COLLECTIONS.orders, id), {
-    ...stripUndefined(data),
+    ...stripUndefined({ ...data, supplierIds }),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
+
+  void import('@/lib/pwa/notify-client').then(({ notifyPartnerClients }) =>
+    notifyPartnerClients('order', id)
+  );
+
   return id;
+}
+
+async function collectSupplierIds(items: OrderItem[]): Promise<string[]> {
+  const db = getFirebaseDb();
+  if (!db) return [];
+  const ids = new Set<string>();
+  await Promise.all(
+    items.map(async (item) => {
+      if (item.productId) {
+        const snap = await getDoc(doc(db, COLLECTIONS.products, item.productId));
+        const sid = snap.data()?.supplierId;
+        if (sid) ids.add(String(sid));
+      }
+      if (item.packageId) {
+        const snap = await getDoc(doc(db, COLLECTIONS.packages, item.packageId));
+        const sid = snap.data()?.supplierId;
+        if (sid) ids.add(String(sid));
+      }
+    })
+  );
+  return [...ids];
 }
 
 export async function getOrder(id: string): Promise<Order | null> {
@@ -118,6 +152,32 @@ export function subscribeUserOrders(
 
   return onSnapshot(
     query(collection(db, COLLECTIONS.orders), where('userId', '==', userId)),
+    (snapshot) => {
+      const orders = snapshot.docs
+        .map((docSnap) => mapOrder(docSnap.id, docSnap.data()))
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      onData(orders);
+    },
+    (error) => onError?.(error)
+  );
+}
+
+export function subscribeOrdersForSupplier(
+  supplierId: string,
+  onData: (orders: Order[]) => void,
+  onError?: (error: Error) => void
+): Unsubscribe {
+  const db = getFirebaseDb();
+  if (!db || !supplierId) {
+    onData([]);
+    return () => {};
+  }
+
+  return onSnapshot(
+    query(
+      collection(db, COLLECTIONS.orders),
+      where('supplierIds', 'array-contains', supplierId)
+    ),
     (snapshot) => {
       const orders = snapshot.docs
         .map((docSnap) => mapOrder(docSnap.id, docSnap.data()))

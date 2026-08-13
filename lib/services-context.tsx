@@ -9,6 +9,7 @@ import { subscribeServiceBookings } from '@/lib/firebase/service-bookings';
 import { subscribeServiceReviews } from '@/lib/firebase/service-reviews';
 import { subscribeProviderAvailability } from '@/lib/firebase/provider-availability';
 import { SERVICE_CATALOG } from '@/lib/service-catalog';
+import { isProviderPubliclyVisible } from '@/lib/provider-visibility';
 import type {
   ProviderAvailability,
   ServiceBooking,
@@ -93,8 +94,11 @@ export function ServicesProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<ServicesContextValue>(() => {
     const activeCategories = categories.filter((c) => c.isActive);
-    const activeListings = listings.filter((l) => l.isActive && !l.isArchived);
-    const activeProviders = providers.filter((p) => p.isActive);
+    const activeProviders = providers.filter((p) => isProviderPubliclyVisible(p));
+    const visibleProviderIds = new Set(activeProviders.map((p) => p.id));
+    const activeListings = listings.filter(
+      (l) => l.isActive && !l.isArchived && visibleProviderIds.has(l.providerId)
+    );
     return {
       categories,
       providers,

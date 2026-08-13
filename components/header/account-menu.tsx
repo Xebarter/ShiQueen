@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronRight, LogOut, User } from 'lucide-react';
+import { ChevronRight, LogOut, Scissors, Truck, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AccountAvatar } from '@/components/account/account-avatar';
 import { useAuth } from '@/lib/auth-context';
@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { useHistoryOverlay } from '@/lib/hooks/use-history-overlay';
 
 export function HeaderAccountMenu() {
-  const { user, profile, logout } = useAuth();
+  const { user, profile, logout, isSupplier, isServiceProvider } = useAuth();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -154,6 +154,36 @@ export function HeaderAccountMenu() {
                   My Account
                   <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground/45 transition-colors group-hover:text-primary/70" />
                 </Link>
+
+                {isSupplier && (
+                  <Link
+                    href="/suppliers/orders"
+                    role="menuitem"
+                    onClick={() => setOpen(false)}
+                    className="group flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium tracking-wide text-foreground/90 transition-colors hover:bg-secondary hover:text-primary"
+                  >
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
+                      <Truck className="h-4 w-4" />
+                    </span>
+                    Supplier dashboard
+                    <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground/45 transition-colors group-hover:text-primary/70" />
+                  </Link>
+                )}
+
+                {isServiceProvider && (
+                  <Link
+                    href="/services/dashboard/bookings"
+                    role="menuitem"
+                    onClick={() => setOpen(false)}
+                    className="group flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium tracking-wide text-foreground/90 transition-colors hover:bg-secondary hover:text-primary"
+                  >
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
+                      <Scissors className="h-4 w-4" />
+                    </span>
+                    Services dashboard
+                    <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground/45 transition-colors group-hover:text-primary/70" />
+                  </Link>
+                )}
 
                 <div className="my-1 h-px bg-border/60" />
 

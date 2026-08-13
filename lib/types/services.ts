@@ -1,4 +1,7 @@
 import type { PaymentMethod, PaymentStatus } from '@/lib/types/database';
+import type { SupplierApprovalStatus } from '@/lib/types/suppliers';
+
+export type ProviderApprovalStatus = SupplierApprovalStatus;
 
 export type ServiceBookingStatus =
   | 'pending'
@@ -50,6 +53,11 @@ export interface ServiceProvider {
   portfolioImages: string[];
   isVerified: boolean;
   isActive: boolean;
+  ownerUid: string | null;
+  approvalStatus: ProviderApprovalStatus;
+  approvedAt?: Date;
+  rejectedAt?: Date;
+  rejectionReason?: string;
   mobileServiceEnabled: boolean;
   serviceRadiusKm: number;
   serviceAreas: string[];
@@ -145,6 +153,16 @@ export interface ServiceReview {
 export type ServiceSortMode = 'popular' | 'trending' | 'newest' | 'rating' | 'price_asc' | 'price_desc';
 
 export type ServicePricePreset = 'all' | 'under-100k' | '100k-300k' | '300k-plus';
+
+export const PROVIDER_APPROVAL_OPTIONS: {
+  id: ProviderApprovalStatus;
+  label: string;
+}[] = [
+  { id: 'pending', label: 'Pending approval' },
+  { id: 'approved', label: 'Approved' },
+  { id: 'rejected', label: 'Rejected' },
+  { id: 'suspended', label: 'Suspended' },
+];
 
 export interface ServiceSearchFilters {
   query?: string;

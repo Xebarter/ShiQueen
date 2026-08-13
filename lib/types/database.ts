@@ -1,13 +1,36 @@
 import { Package, BulkOrder, WholesaleAccount } from '@/lib/types/wholesale';
 
-export type UserRole = 'customer' | 'admin' | 'supplier';
+export type UserRole = 'customer' | 'admin' | 'supplier' | 'service_provider';
+
+export interface UserNotificationPreferences {
+  orderUpdates: boolean;
+  promotions: boolean;
+  serviceReminders: boolean;
+  smsAlerts: boolean;
+  pushAlerts: boolean;
+}
+
+export interface UserSavedAddress {
+  fullName: string;
+  phone: string;
+  address: string;
+  city: string;
+  district?: string;
+  notes?: string;
+}
 
 export interface UserProfile {
   uid: string;
   email: string;
   displayName?: string;
+  phone?: string;
+  photoURL?: string;
   role: UserRole;
   supplierId?: string;
+  providerId?: string;
+  preferences?: UserNotificationPreferences;
+  defaultAddress?: UserSavedAddress;
+  fcmTokens?: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -88,6 +111,7 @@ export interface Order {
   paymentStatus?: PaymentStatus;
   paytotaPurchaseId?: string;
   paytotaReference?: string;
+  supplierIds?: string[];
   createdAt: Date;
   updatedAt: Date;
 }

@@ -7,10 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth-context';
+import { getPostAuthPath } from '@/lib/auth-redirect';
 import { getAuthErrorMessage } from '@/lib/auth-errors';
 import { AuthShell } from '@/components/auth/auth-shell';
 import { AuthGuestOnly } from '@/components/auth/auth-guest-only';
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
+import { PasswordField } from '@/components/auth/password-field';
 import toast from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
 
@@ -22,17 +24,26 @@ export default function SignIn() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signInOrCreate, signInWithGoogle, refreshProfile } = useAuth();
   const router = useRouter();
 
   const isBusy = loading || googleLoading;
   const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
+  const goAfterAuth = async () => {
+    await refreshProfile();
+    const { getUserProfile } = await import('@/lib/firebase/users');
+    const { getFirebaseAuth } = await import('@/lib/firebase');
+    const uid = getFirebaseAuth()?.currentUser?.uid;
+    const profile = uid ? await getUserProfile(uid) : null;
+    router.push(getPostAuthPath(profile));
+  };
+
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
       await signInWithGoogle();
-      router.push('/account');
+      await goAfterAuth();
     } catch (error) {
       toast.error(getAuthErrorMessage(error));
       console.error(error);
@@ -52,11 +63,16 @@ export default function SignIn() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
     setLoading(true);
 
     try {
-      await signIn(email.trim(), password);
-      router.push('/account');
+      const { created } = await signInOrCreate(email.trim(), password);
+      toast.success(created ? 'Account created' : 'Welcome back');
+      await goAfterAuth();
     } catch (error) {
       toast.error(getAuthErrorMessage(error));
       console.error(error);
@@ -73,6 +89,7 @@ export default function SignIn() {
           loading={googleLoading}
           disabled={isBusy}
           onClick={handleGoogleSignIn}
+          label="Continue with Google"
         />
 
         <div className="relative py-1">
@@ -142,19 +159,19 @@ export default function SignIn() {
                   Enter your password
                 </Label>
               </div>
-              <Input
+              <PasswordField
                 id="password"
-                type="password"
-                autoComplete="current-password"
-                placeholder="Password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-11 rounded-md text-base md:text-sm"
-                required
+                onChange={setPassword}
                 disabled={isBusy}
                 autoFocus
               />
-              <p className="text-xs text-muted-foreground">Forgot password? Contact support.</p>
+              <p className="text-xs text-muted-foreground">
+                New here? We’ll create an account with this email and password.{' '}
+                <Link href="/forgot-password" className="font-medium text-primary hover:underline">
+                  Forgot password?
+                </Link>
+              </p>
             </div>
 
             <div className="flex flex-col-reverse items-stretch justify-between gap-3 pt-2 sm:flex-row sm:items-center">
@@ -168,10 +185,10 @@ export default function SignIn() {
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Signing in
+                    Continue
                   </>
                 ) : (
-                  'Sign in'
+                  'Continue'
                 )}
               </Button>
             </div>

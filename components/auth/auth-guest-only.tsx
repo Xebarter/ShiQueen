@@ -4,21 +4,23 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
+import { getPostAuthPath } from '@/lib/auth-redirect';
 
 type AuthGuestOnlyProps = {
   children: React.ReactNode;
   redirectTo?: string;
 };
 
-export function AuthGuestOnly({ children, redirectTo = '/account' }: AuthGuestOnlyProps) {
-  const { user, loading } = useAuth();
+export function AuthGuestOnly({ children, redirectTo }: AuthGuestOnlyProps) {
+  const { user, profile, loading } = useAuth();
   const router = useRouter();
+  const dest = redirectTo ?? getPostAuthPath(profile);
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace(redirectTo);
+      router.replace(dest);
     }
-  }, [user, loading, router, redirectTo]);
+  }, [user, loading, router, dest]);
 
   if (loading || user) {
     return (

@@ -1,9 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AdminPage, AdminPageHeader } from '@/components/admin/admin-page';
+import { AdminServiceProvidersDirectory } from '@/components/admin/admin-service-providers-page';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SupplierSelect } from '@/components/admin/supplier-select';
@@ -14,11 +17,6 @@ import {
   deleteServiceCategory,
 } from '@/lib/firebase/service-categories';
 import {
-  createServiceProvider,
-  updateServiceProvider,
-  deleteServiceProvider,
-} from '@/lib/firebase/service-providers';
-import {
   createServiceListing,
   updateServiceListing,
   deleteServiceListing,
@@ -28,8 +26,7 @@ import {
   updateServiceReviewVisibility,
   deleteServiceReview,
 } from '@/lib/firebase/service-reviews';
-import { upsertProviderAvailability } from '@/lib/firebase/provider-availability';
-import { slugifyServiceName, getDefaultWeeklySlots } from '@/lib/services-utils';
+import { slugifyServiceName } from '@/lib/services-utils';
 import { formatUGX } from '@/lib/wholesale-data';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -63,6 +60,10 @@ const BOOKING_STATUSES: ServiceBookingStatus[] = [
   'pending', 'confirmed', 'in_progress', 'completed', 'cancelled',
 ];
 
+function isTabId(value: string | null): value is TabId {
+  return TABS.some((tab) => tab.id === value);
+}
+
 export function AdminServicesPage() {
   const {
     categories,
@@ -74,7 +75,12 @@ export function AdminServicesPage() {
     loading,
   } = useServices();
   const { defaultSupplierId, getSupplierById } = useSuppliers();
-  const [tab, setTab] = useState<TabId>('overview');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [tab, setTab] = useState<TabId>(() => {
+    const fromQuery = searchParams.get('tab');
+    return isTabId(fromQuery) ? fromQuery : 'overview';
+  });
   const [busy, setBusy] = useState(false);
   const [showServiceForm, setShowServiceForm] = useState(false);
   const [serviceForm, setServiceForm] = useState({
@@ -113,6 +119,20 @@ export function AdminServicesPage() {
     };
   }, [bookings, listings, providers]);
 
+  useEffect(() => {
+    const fromQuery = searchParams.get('tab');
+    if (isTabId(fromQuery) && fromQuery !== tab) setTab(fromQuery);
+  }, [searchParams, tab]);
+
+  const selectTab = (id: TabId) => {
+    setTab(id);
+    const params = new URLSearchParams(searchParams.toString());
+    if (id === 'overview') params.delete('tab');
+    else params.set('tab', id);
+    const qs = params.toString();
+    router.replace(qs ? `/admin/services?${qs}` : '/admin/services', { scroll: false });
+  };
+
   const seedCategoriesFromCatalog = async () => {
     setBusy(true);
     try {
@@ -135,53 +155,6 @@ export function AdminServicesPage() {
     if (!confirm(`Delete category "${name}"?`)) return;
     await deleteServiceCategory(id);
     toast.success('Category deleted');
-  };
-
-  const handleCreateProvider = async () => {
-    const name = prompt('Provider full name?');
-    if (!name?.trim()) return;
-    const business = prompt('Business name?') ?? name;
-    const phone = prompt('Phone (07XXXXXXXX)?') ?? '';
-    const id = slugifyServiceName(business) || `provider-${Date.now()}`;
-    setBusy(true);
-    try {
-      await createServiceProvider({
-        id,
-        name: name.trim(),
-        businessName: business.trim(),
-        phone,
-        whatsapp: phone,
-        email: '',
-        address: '',
-        city: 'Kampala',
-        profileImage: '',
-        bio: '',
-        experienceYears: 1,
-        categoryIds: [],
-        portfolioImages: [],
-        isVerified: false,
-        isActive: true,
-        mobileServiceEnabled: false,
-        serviceRadiusKm: 0,
-        serviceAreas: ['Kampala'],
-        travelFee: 0,
-        rating: 0,
-        reviewCount: 0,
-        completedJobs: 0,
-      });
-      await upsertProviderAvailability({
-        id,
-        providerId: id,
-        weeklySlots: getDefaultWeeklySlots(),
-        blackoutDates: [],
-        slotDurationMinutes: 60,
-      });
-      toast.success('Provider created');
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Failed');
-    } finally {
-      setBusy(false);
-    }
   };
 
   const openServiceForm = () => {
@@ -264,7 +237,18 @@ export function AdminServicesPage() {
     <AdminPage>
       <AdminPageHeader
         title="Services"
-        description="Manage categories, providers, listings, bookings, and reviews."
+        description="Manage categories, service providers, listings, bookings, and reviews."
+        action={
+          tab === 'providers' ? (
+            <Link
+              href="/admin/services/providers/new"
+              className={cn(buttonVariants({ size: 'lg' }), 'gap-2 md:hidden')}
+            >
+              <Plus className="h-4 w-4" />
+              Add provider
+            </Link>
+          ) : undefined
+        }
       />
 
       <div className="mb-6 flex flex-wrap gap-2 border-b border-border pb-4">
@@ -272,7 +256,7 @@ export function AdminServicesPage() {
           <button
             key={id}
             type="button"
-            onClick={() => setTab(id)}
+            onClick={() => selectTab(id)}
             className={cn(
               'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition',
               tab === id
@@ -333,10 +317,14 @@ export function AdminServicesPage() {
               <CardHeader><CardTitle>Top providers</CardTitle></CardHeader>
               <CardContent className="space-y-2 text-sm">
                 {stats.topProviders.map((p) => (
-                  <div key={p.id} className="flex justify-between">
+                  <Link
+                    key={p.id}
+                    href={`/admin/services/providers/${p.id}`}
+                    className="flex justify-between hover:text-primary"
+                  >
                     <span>{p.businessName}</span>
                     <span className="text-muted-foreground">{p.completedJobs} jobs</span>
-                  </div>
+                  </Link>
                 ))}
               </CardContent>
             </Card>
@@ -519,6 +507,7 @@ export function AdminServicesPage() {
               <thead className="bg-muted/50">
                 <tr>
                   <th className="px-4 py-3 text-left">Name</th>
+                  <th className="px-4 py-3 text-left">Provider</th>
                   <th className="px-4 py-3 text-left">Supplier</th>
                   <th className="px-4 py-3 text-left">Price</th>
                   <th className="px-4 py-3 text-left">Status</th>
@@ -526,9 +515,23 @@ export function AdminServicesPage() {
                 </tr>
               </thead>
               <tbody>
-                {listings.map((s) => (
+                {listings.map((s) => {
+                  const provider = providers.find((p) => p.id === s.providerId);
+                  return (
                   <tr key={s.id} className="border-t">
                     <td className="px-4 py-3">{s.name}</td>
+                    <td className="px-4 py-3">
+                      {provider ? (
+                        <Link
+                          href={`/admin/services/providers/${provider.id}`}
+                          className="text-primary hover:underline"
+                        >
+                          {provider.businessName || provider.name}
+                        </Link>
+                      ) : (
+                        <span className="text-muted-foreground">Unassigned</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-muted-foreground">
                       {getSupplierById(s.supplierId)?.name ?? 'SheQueen'}
                     </td>
@@ -554,72 +557,52 @@ export function AdminServicesPage() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
       )}
 
-      {tab === 'providers' && (
-        <div className="space-y-4">
-          <Button onClick={handleCreateProvider} disabled={busy}>Add provider</Button>
-          {providers.map((p) => (
-            <Card key={p.id}>
-              <CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
-                <div>
-                  <p className="font-medium">{p.businessName}</p>
-                  <p className="text-sm text-muted-foreground">{p.name} · {p.phone}</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => updateServiceProvider(p.id, { isVerified: !p.isVerified }).then(() => toast.success('Updated'))}>
-                    {p.isVerified ? 'Unverify' : 'Verify'}
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => updateServiceProvider(p.id, { isActive: !p.isActive }).then(() => toast.success('Updated'))}>
-                    {p.isActive ? 'Deactivate' : 'Activate'}
-                  </Button>
-                  <Button size="sm" variant="destructive" onClick={() => { if (confirm('Delete provider?')) deleteServiceProvider(p.id).then(() => toast.success('Deleted')); }}>
-                    Delete
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+      {tab === 'providers' && <AdminServiceProvidersDirectory />}
 
       {tab === 'availability' && (
         <div className="space-y-4">
-          {providers.map((p) => {
-            const avail = availability.find((a) => a.providerId === p.id);
-            return (
-              <Card key={p.id}>
-                <CardHeader>
-                  <CardTitle className="text-base">{p.businessName}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Slot duration: {avail?.slotDurationMinutes ?? 60} min
-                  </p>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      upsertProviderAvailability({
-                        id: p.id,
-                        providerId: p.id,
-                        weeklySlots: getDefaultWeeklySlots(),
-                        blackoutDates: avail?.blackoutDates ?? [],
-                        slotDurationMinutes: 60,
-                      }).then(() => toast.success('Default availability saved'))
-                    }
-                  >
-                    Reset to default hours (Mon–Sat)
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {providers.length === 0 ? (
+            <p className="py-8 text-center text-muted-foreground">
+              Add a provider to manage weekly hours.
+            </p>
+          ) : (
+            providers.map((p) => {
+              const avail = availability.find((a) => a.providerId === p.id);
+              const openDays = Object.entries(avail?.weeklySlots ?? {}).filter(
+                ([, ranges]) => (ranges?.length ?? 0) > 0
+              ).length;
+              return (
+                <Card key={p.id}>
+                  <CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
+                    <div>
+                      <p className="font-medium">{p.businessName}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {openDays} open day{openDays === 1 ? '' : 's'} ·{' '}
+                        {avail?.slotDurationMinutes ?? 60} min slots
+                        {(avail?.blackoutDates.length ?? 0) > 0
+                          ? ` · ${avail?.blackoutDates.length} blackout`
+                          : ''}
+                      </p>
+                    </div>
+                    <Link
+                      href={`/admin/services/providers/${p.id}`}
+                      className={cn(buttonVariants({ size: 'sm', variant: 'outline' }))}
+                    >
+                      Manage hours
+                    </Link>
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
         </div>
       )}
 

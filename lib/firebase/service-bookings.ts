@@ -73,6 +73,30 @@ export function subscribeServiceBookings(
   );
 }
 
+export function subscribeServiceBookingsForProvider(
+  providerId: string,
+  onData: (bookings: ServiceBooking[]) => void,
+  onError?: (error: Error) => void
+): Unsubscribe {
+  const db = getFirebaseDb();
+  if (!db || !providerId) {
+    onData([]);
+    return () => {};
+  }
+
+  return onSnapshot(
+    query(
+      collection(db, COLLECTIONS.serviceBookings),
+      where('providerId', '==', providerId),
+      orderBy('createdAt', 'desc')
+    ),
+    (snap) => {
+      onData(snap.docs.map((d) => mapBooking(d.id, d.data())));
+    },
+    (err) => onError?.(err)
+  );
+}
+
 /** Public slot conflict query — only returns time slots, not customer PII. */
 export async function getBookedTimeSlotsForProviderDate(
   providerId: string,
@@ -117,6 +141,10 @@ export async function createServiceBooking(
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
+
+  void import('@/lib/pwa/notify-client').then(({ notifyPartnerClients }) =>
+    notifyPartnerClients('booking', id)
+  );
 }
 
 export async function updateServiceBookingStatus(

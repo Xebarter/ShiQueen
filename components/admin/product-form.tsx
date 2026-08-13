@@ -104,7 +104,7 @@ export function ProductForm({
   const { defaultSupplierId } = useSuppliers();
   const resolvedSupplierId = forcedSupplierId || defaultSupplierId;
   const isSupplierPortal = portal === 'supplier';
-  const listHref = backHref ?? (isSupplierPortal ? '/supplier/products' : '/admin/products');
+  const listHref = backHref ?? (isSupplierPortal ? '/suppliers/products' : '/admin/products');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState(() =>

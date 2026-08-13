@@ -7,10 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth-context';
+import { getPostAuthPath } from '@/lib/auth-redirect';
 import { getAuthErrorMessage } from '@/lib/auth-errors';
 import { AuthShell } from '@/components/auth/auth-shell';
 import { AuthGuestOnly } from '@/components/auth/auth-guest-only';
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
+import { PasswordField } from '@/components/auth/password-field';
 import toast from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
 
@@ -20,8 +22,17 @@ export default function SignUp() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const { signUp, signInWithGoogle } = useAuth();
+  const { signUp, signInWithGoogle, refreshProfile } = useAuth();
   const router = useRouter();
+
+  const goAfterAuth = async () => {
+    await refreshProfile();
+    const { getUserProfile } = await import('@/lib/firebase/users');
+    const { getFirebaseAuth } = await import('@/lib/firebase');
+    const uid = getFirebaseAuth()?.currentUser?.uid;
+    const profile = uid ? await getUserProfile(uid) : null;
+    router.push(getPostAuthPath(profile));
+  };
 
   const isBusy = loading || googleLoading;
 
@@ -42,7 +53,8 @@ export default function SignUp() {
 
     try {
       await signUp(email.trim(), password);
-      router.push('/account');
+      toast.success('Account created — check your email to verify');
+      await goAfterAuth();
     } catch (error) {
       toast.error(getAuthErrorMessage(error));
       console.error(error);
@@ -55,7 +67,7 @@ export default function SignUp() {
     setGoogleLoading(true);
     try {
       await signInWithGoogle();
-      router.push('/account');
+      await goAfterAuth();
     } catch (error) {
       toast.error(getAuthErrorMessage(error));
       console.error(error);
@@ -106,15 +118,11 @@ export default function SignUp() {
             <Label htmlFor="password" className="text-sm font-normal text-foreground">
               Password
             </Label>
-            <Input
+            <PasswordField
               id="password"
-              type="password"
-              autoComplete="new-password"
-              placeholder="Password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="h-11 rounded-md text-base md:text-sm"
-              required
+              onChange={setPassword}
+              autoComplete="new-password"
               disabled={isBusy}
             />
           </div>
@@ -123,15 +131,12 @@ export default function SignUp() {
             <Label htmlFor="confirmPassword" className="text-sm font-normal text-foreground">
               Confirm password
             </Label>
-            <Input
+            <PasswordField
               id="confirmPassword"
-              type="password"
-              autoComplete="new-password"
-              placeholder="Confirm password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="h-11 rounded-md text-base md:text-sm"
-              required
+              onChange={setConfirmPassword}
+              placeholder="Confirm password"
+              autoComplete="new-password"
               disabled={isBusy}
             />
           </div>

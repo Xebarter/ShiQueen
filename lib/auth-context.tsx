@@ -5,6 +5,10 @@ import { getFirebaseAuth, isFirebaseConfigured } from './firebase';
 import { ensureUserProfile, resolveUserRole } from './firebase/users';
 import { UserProfile } from './types/database';
 import {
+  isServiceProviderProfile,
+  isSupplierProfile,
+} from './auth-redirect';
+import {
   User,
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -15,21 +19,35 @@ import {
   getRedirectResult,
   GoogleAuthProvider,
   signOut,
+  sendPasswordResetEmail,
+  sendEmailVerification,
   browserPopupRedirectResolver,
 } from 'firebase/auth';
 import { disableGoogleOneTapAutoSelect } from '@/lib/google-identity';
+
+function getAuthCode(error: unknown): string {
+  if (typeof error === 'object' && error !== null && 'code' in error) {
+    return String((error as { code: string }).code);
+  }
+  return '';
+}
 
 interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   isAdmin: boolean;
   isSupplier: boolean;
+  isServiceProvider: boolean;
   supplierId: string | null;
+  providerId: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  signInOrCreate: (email: string, password: string) => Promise<{ created: boolean }>;
   signUp: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithGoogleCredential: (idToken: string) => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
+  resendVerificationEmail: () => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -75,15 +93,32 @@ function getGoogleProvider(): GoogleAuthProvider {
 }
 
 function isPopupFlowError(error: unknown): boolean {
-  if (typeof error !== 'object' || error === null || !('code' in error)) {
-    return false;
-  }
-
-  const code = String((error as { code: string }).code);
+  const code = getAuthCode(error);
   return (
     code === 'auth/popup-blocked' ||
     code === 'auth/operation-not-supported-in-this-environment'
   );
+}
+
+function isMissingAccountError(error: unknown): boolean {
+  const code = getAuthCode(error);
+  return (
+    code === 'auth/user-not-found' ||
+    code === 'auth/invalid-credential' ||
+    code === 'auth/invalid-login-credentials' ||
+    code === 'auth/wrong-password'
+  );
+}
+
+async function maybeSendVerification(user: User) {
+  if (user.emailVerified) return;
+  const isPassword = user.providerData.some((p) => p.providerId === 'password');
+  if (!isPassword) return;
+  try {
+    await sendEmailVerification(user);
+  } catch (error) {
+    console.warn('Could not send verification email', error);
+  }
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -158,11 +193,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await signInWithEmailAndPassword(auth, email, password);
   };
 
+  const signInOrCreate = async (
+    email: string,
+    password: string
+  ): Promise<{ created: boolean }> => {
+    const auth = getFirebaseAuth();
+    if (!auth) throw new Error('Firebase Auth not initialized');
+    if (password.length < 6) {
+      throw Object.assign(new Error('Password must be at least 6 characters.'), {
+        code: 'auth/weak-password',
+      });
+    }
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      return { created: false };
+    } catch (error) {
+      if (!isMissingAccountError(error)) throw error;
+
+      try {
+        const credential = await createUserWithEmailAndPassword(auth, email, password);
+        await ensureUserProfile(credential.user.uid, email, credential.user.displayName ?? undefined);
+        await maybeSendVerification(credential.user);
+        return { created: true };
+      } catch (createError) {
+        if (getAuthCode(createError) === 'auth/email-already-in-use') {
+          throw error;
+        }
+        throw createError;
+      }
+    }
+  };
+
   const signUp = async (email: string, password: string) => {
     const auth = getFirebaseAuth();
     if (!auth) throw new Error('Firebase Auth not initialized');
     const credential = await createUserWithEmailAndPassword(auth, email, password);
     await ensureUserProfile(credential.user.uid, email);
+    await maybeSendVerification(credential.user);
   };
 
   const signInWithGoogleCredential = async (idToken: string) => {
@@ -220,14 +288,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const sendPasswordReset = async (email: string) => {
+    const auth = getFirebaseAuth();
+    if (!auth) throw new Error('Firebase Auth not initialized');
+    await sendPasswordResetEmail(auth, email.trim());
+  };
+
+  const resendVerificationEmail = async () => {
+    const auth = getFirebaseAuth();
+    const current = auth?.currentUser;
+    if (!current) throw new Error('You need to be signed in.');
+    await sendEmailVerification(current);
+  };
+
   const refreshProfile = async () => {
     const auth = getFirebaseAuth();
     const currentUser = auth?.currentUser;
-    if (!currentUser?.email) {
+    if (!auth || !currentUser?.email) {
       setProfile(null);
       return;
     }
-    const userProfile = await loadUserProfile(currentUser);
+    try {
+      await currentUser.reload();
+    } catch {
+      // ignore reload failures
+    }
+    const reloaded = auth.currentUser ?? currentUser;
+    setUser(reloaded);
+    const userProfile = await loadUserProfile(reloaded);
     setProfile(userProfile);
   };
 
@@ -245,13 +333,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         profile,
         isAdmin: profile?.role === 'admin',
-        isSupplier: profile?.role === 'supplier',
+        isSupplier: isSupplierProfile(profile),
+        isServiceProvider: isServiceProviderProfile(profile),
         supplierId: profile?.supplierId ?? null,
+        providerId: profile?.providerId ?? null,
         loading,
         signIn,
+        signInOrCreate,
         signUp,
         signInWithGoogle,
         signInWithGoogleCredential,
+        sendPasswordReset,
+        resendVerificationEmail,
         logout,
         refreshProfile,
       }}

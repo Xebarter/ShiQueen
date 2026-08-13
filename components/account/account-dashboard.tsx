@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
@@ -11,6 +12,7 @@ import {
   Heart,
   Loader2,
   Package,
+  Scissors,
   Shield,
   ShoppingBag,
   ShoppingCart,
@@ -22,6 +24,7 @@ import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { AccountMobileNav } from '@/components/account/account-mobile-nav';
 import { AccountSidebar } from '@/components/account/account-sidebar';
+import { AccountSettings } from '@/components/account/account-settings';
 import {
   getAccountSectionMeta,
   parseAccountSectionHash,
@@ -32,12 +35,14 @@ import { AccountAvatar } from '@/components/account/account-avatar';
 import { isRemoteProductImage, ProductImage } from '@/components/product-image';
 import { useAuth } from '@/lib/auth-context';
 import { useCart } from '@/lib/cart-context';
+import { useServices } from '@/lib/services-context';
 import { subscribeUserOrders } from '@/lib/firebase/orders';
 import { getStoredWishlist, removeFromStoredWishlist, getDiscountPercent } from '@/lib/home-merchandising';
 import { useProducts } from '@/lib/products-context';
 import { Order, Product } from '@/lib/types/database';
 import { formatUGX } from '@/lib/wholesale-data';
 import { getDisplayName } from '@/lib/user-display';
+import { resolveListingImage } from '@/lib/services-utils';
 import { ShareProductButton } from '@/components/shared/share-button';
 import { cn } from '@/lib/utils';
 
@@ -145,7 +150,13 @@ function StatCard({
   );
 }
 
-function OrderCard({ order }: { order: Order }) {
+function OrderCard({
+  order,
+  resolveItemImage,
+}: {
+  order: Order;
+  resolveItemImage: (item: Order['items'][number]) => string | undefined;
+}) {
   const [expanded, setExpanded] = useState(false);
   const itemPreview = order.items.slice(0, 3);
   const remainingItems = order.items.length - itemPreview.length;
@@ -207,22 +218,46 @@ function OrderCard({ order }: { order: Order }) {
               <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
                 Items
               </p>
-              <ul className="mt-2 space-y-2">
-                {order.items.map((item, index) => (
-                  <li
-                    key={`${item.productId}-${index}`}
-                    className="flex items-center justify-between gap-3 text-sm"
-                  >
-                    <span className="line-clamp-1">
-                      {item.name}
-                      {item.size ? ` · ${item.size}` : ''}
-                      {item.color ? ` · ${item.color}` : ''}
-                    </span>
-                    <span className="shrink-0 tabular-nums text-muted-foreground">
-                      × {item.quantity}
-                    </span>
-                  </li>
-                ))}
+              <ul className="mt-3 space-y-2.5">
+                {order.items.map((item, index) => {
+                  const image = resolveItemImage(item);
+                  return (
+                    <li
+                      key={`${item.productId}-${index}`}
+                      className="flex items-center gap-3 rounded-xl border border-border/50 bg-background/70 p-2 pr-3"
+                    >
+                      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted ring-1 ring-border/60">
+                        {isRemoteProductImage(image) ? (
+                          <Image
+                            src={image!}
+                            alt={item.name}
+                            fill
+                            sizes="64px"
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                            <Package className="h-5 w-5" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-1 text-sm font-medium text-foreground">
+                          {item.name}
+                        </p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {[item.size, item.color].filter(Boolean).join(' · ') ||
+                            (item.itemType === 'service' ? 'Service' : 'Product')}
+                          {' · '}
+                          <span className="tabular-nums">× {item.quantity}</span>
+                        </p>
+                      </div>
+                      <p className="shrink-0 text-sm font-semibold tabular-nums">
+                        {formatUGX(item.price * item.quantity)}
+                      </p>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
 
@@ -394,8 +429,9 @@ function PanelCard({
 }
 
 export function AccountDashboard() {
-  const { user, profile, logout, loading, isAdmin } = useAuth();
+  const { user, profile, logout, loading, isAdmin, isSupplier, isServiceProvider, refreshProfile } = useAuth();
   const { products, getProductById, loading: productsLoading } = useProducts();
+  const { activeListings } = useServices();
   const { addItem } = useCart();
   const router = useRouter();
 
@@ -520,6 +556,10 @@ export function AccountDashboard() {
     { label: 'Packages', href: '/packages', icon: Crown },
     { label: 'Wholesale', href: '/wholesale', icon: Truck },
     ...(isAdmin ? [{ label: 'Admin dashboard', href: '/admin', icon: Shield }] : []),
+    ...(isSupplier ? [{ label: 'Supplier dashboard', href: '/suppliers/orders', icon: Truck }] : []),
+    ...(isServiceProvider
+      ? [{ label: 'Services dashboard', href: '/services/dashboard/bookings', icon: Scissors }]
+      : []),
   ];
 
   return (
@@ -677,7 +717,20 @@ export function AccountDashboard() {
                   ) : (
                     <div className="space-y-3">
                       {orders.map((order) => (
-                        <OrderCard key={order.id} order={order} />
+                        <OrderCard
+                          key={order.id}
+                          order={order}
+                          resolveItemImage={(item) => {
+                            if (isRemoteProductImage(item.image)) return item.image;
+                            if (item.itemType === 'service' || item.serviceId) {
+                              const listing = activeListings.find(
+                                (s) => s.id === (item.serviceId || item.productId)
+                              );
+                              return listing ? resolveListingImage(listing) ?? undefined : undefined;
+                            }
+                            return getProductById(item.productId)?.image;
+                          }}
+                        />
                       ))}
                     </div>
                   )}
@@ -754,75 +807,15 @@ export function AccountDashboard() {
                 </div>
               )}
 
-              {activeSection === 'settings' && (
-                <div className="space-y-6">
-                  <PanelCard title="Profile" description="Your personal account details.">
-                    <div className="mb-5 flex items-center gap-4 rounded-xl bg-gradient-to-br from-primary/[0.06] via-muted/30 to-transparent p-4 ring-1 ring-border/50">
-                      <AccountAvatar email={user.email} variant="email-letter" size="md" />
-                      <div className="min-w-0">
-                        <p className="truncate font-semibold tracking-tight">{displayName}</p>
-                        <p className="truncate text-sm text-muted-foreground">{user.email}</p>
-                      </div>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {[
-                        { label: 'Display name', value: displayName },
-                        { label: 'Email', value: user.email ?? '—' },
-                        { label: 'Sign-in method', value: signInMethod },
-                        {
-                          label: 'Member since',
-                          value: memberSince ? formatAccountDate(memberSince) : '—',
-                        },
-                      ].map(({ label, value }) => (
-                        <div
-                          key={label}
-                          className="rounded-xl border border-border/60 bg-muted/20 px-4 py-3"
-                        >
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                            {label}
-                          </p>
-                          <p className="mt-1 text-sm font-medium">{value}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </PanelCard>
-
-                  <PanelCard
-                    title="Security"
-                    description={
-                      signInMethod === 'Google'
-                        ? 'Your account is secured through Google sign-in.'
-                        : 'Password and email updates will be available in a future release.'
-                    }
-                  >
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex items-start gap-3">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
-                          <Shield className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <p className="font-medium">Account access</p>
-                          <p className="mt-0.5 text-sm text-muted-foreground">
-                            Sign out on this device when you are finished shopping.
-                          </p>
-                        </div>
-                      </div>
-                      <Button
-                        variant="outline"
-                        onClick={handleLogout}
-                        disabled={signingOut}
-                        className="gap-2 rounded-xl sm:shrink-0"
-                      >
-                        {signingOut ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <LogOut className="h-4 w-4" />
-                        )}
-                        Sign out
-                      </Button>
-                    </div>
-                  </PanelCard>
-                </div>
+              {activeSection === 'settings' && user && (
+                <AccountSettings
+                  user={user}
+                  profile={profile}
+                  isAdmin={isAdmin}
+                  onLogout={handleLogout}
+                  signingOut={signingOut}
+                  onProfileUpdated={refreshProfile}
+                />
               )}
             </div>
           </div>

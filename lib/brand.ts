@@ -9,6 +9,8 @@ export const BRAND_ASSETS = {
   icon192: '/web-app-manifest-192x192.png',
   icon512: '/web-app-manifest-512x512.png',
   manifest: '/site.webmanifest',
+  supplierManifest: '/suppliers.webmanifest',
+  providerManifest: '/services-dashboard.webmanifest',
 } as const;
 
 export const BRAND_THEME = {
