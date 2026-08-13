@@ -3,7 +3,6 @@ import type { Product } from '@/lib/types/database';
 import type { Package } from '@/lib/types/wholesale';
 import type { ServiceCategory, ServiceListing } from '@/lib/types/services';
 import { BRAND_NAME } from '@/lib/brand';
-import { OG_IMAGE_SIZE } from '@/lib/og/size';
 import { SEO_CITY, SEO_COUNTRY, pageMetadata } from '@/lib/seo/site';
 import { toAbsoluteUrl } from '@/lib/site-url';
 
@@ -15,11 +14,11 @@ function firstSentence(text: string, fallback: string): string {
 }
 
 export function productOgImagePath(productId: string): string {
-  return `/products/${productId}/opengraph-image`;
+  return `/api/og/product/${productId}`;
 }
 
 export function packageOgImagePath(packageId: string): string {
-  return `/packages/${packageId}/opengraph-image`;
+  return `/api/og/package/${packageId}`;
 }
 
 export function buildProductMetadata(product: Product): Metadata {
@@ -34,9 +33,9 @@ export function buildProductMetadata(product: Product): Metadata {
     title: product.name,
     description,
     path,
-    image: toAbsoluteUrl(productOgImagePath(product.id)),
-    imageWidth: OG_IMAGE_SIZE.width,
-    imageHeight: OG_IMAGE_SIZE.height,
+    image: toAbsoluteUrl(
+      `${productOgImagePath(product.id)}?v=${product.updatedAt?.getTime?.() || 0}`
+    ),
     keywords: [
       product.name,
       `${product.name} Uganda`,
@@ -58,9 +57,9 @@ export function buildPackageMetadata(pkg: Package): Metadata {
     title: `${pkg.name} Package`,
     description,
     path,
-    image: toAbsoluteUrl(packageOgImagePath(pkg.id)),
-    imageWidth: OG_IMAGE_SIZE.width,
-    imageHeight: OG_IMAGE_SIZE.height,
+    image: toAbsoluteUrl(
+      `${packageOgImagePath(pkg.id)}?v=${pkg.updatedAt?.getTime?.() || 0}`
+    ),
     keywords: [
       pkg.name,
       'beauty packages Uganda',

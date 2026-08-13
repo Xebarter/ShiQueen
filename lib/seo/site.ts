@@ -67,7 +67,6 @@ export function pageMetadata(options: {
       ? {
           width: options.imageWidth,
           height: options.imageHeight,
-          type: 'image/png' as const,
         }
       : {}),
   };

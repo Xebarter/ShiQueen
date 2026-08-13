@@ -10,7 +10,6 @@ import { resolvePackageOgImage } from '@/lib/metadata/resolve-package-og-image';
 import { getPackageForSeo } from '@/lib/seo/catalog-server';
 import { isFirebaseAdminConfigured } from '@/lib/firebase/admin-config';
 import { breadcrumbJsonLd, JsonLd, productJsonLd } from '@/lib/seo/json-ld';
-import { OG_IMAGE_SIZE } from '@/lib/og/size';
 import { pageMetadata } from '@/lib/seo/site';
 import { toAbsoluteUrl } from '@/lib/site-url';
 import { BRAND_NAME } from '@/lib/brand';
@@ -30,8 +29,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         description: `Shop this beauty package at ${BRAND_NAME} in Kampala, Uganda.`,
         path: `/packages/${id}`,
         image: toAbsoluteUrl(packageOgImagePath(id)),
-        imageWidth: OG_IMAGE_SIZE.width,
-        imageHeight: OG_IMAGE_SIZE.height,
       });
     }
     return buildFallbackMetadata('Bundle not found');
