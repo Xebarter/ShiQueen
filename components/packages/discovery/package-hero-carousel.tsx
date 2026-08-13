@@ -60,10 +60,10 @@ export function PackageHeroCarousel({
             The Atelier
           </p>
           <h1 className="mt-3 max-w-2xl font-[family-name:var(--font-brand)] text-4xl font-medium tracking-tight sm:text-5xl">
-            Complete collections, composed for her
+            Beauty packages &amp; women&apos;s bundles in Uganda
           </h1>
           <p className="mt-4 max-w-lg text-muted-foreground">
-            Expertly assembled bundles — beauty, gifts, and rituals in one considered edit.
+            Curated beauty packages, gifts, and product-plus-service collections — assembled so you save versus buying separately.
           </p>
         </div>
       </section>
@@ -98,8 +98,8 @@ export function PackageHeroCarousel({
                   {getPackageCategoryDiscoveryLabel(slide.category)}
                 </p>
                 <h1 className="font-[family-name:var(--font-brand)] text-[2.15rem] font-medium leading-[1.12] tracking-tight sm:text-5xl lg:text-[3.35rem]">
-                  Complete collections,
-                  <span className="block text-primary">composed for her</span>
+                  Beauty packages,
+                  <span className="block text-primary">curated for her</span>
                 </h1>
                 <p className="mt-5 max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
                   {slide.tagline || slide.description}

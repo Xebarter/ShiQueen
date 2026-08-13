@@ -36,7 +36,7 @@ function NavLink({
   const pathname = usePathname();
   const isActive =
     href === '/shop'
-      ? pathname === '/shop' || pathname.startsWith('/products/')
+      ? pathname === '/shop' || pathname.startsWith('/shop/') || pathname.startsWith('/products/')
       : pathname === href || pathname.startsWith(`${href}/`);
 
   return (

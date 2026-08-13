@@ -2,61 +2,99 @@ import Link from 'next/link';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
+import { PAGE_SEO } from '@/lib/seo/site';
+import { breadcrumbJsonLd, JsonLd } from '@/lib/seo/json-ld';
+
+export const metadata = PAGE_SEO.about;
 
 export default function About() {
   const values = [
     {
       title: 'Quality',
-      description: 'Every item is carefully selected to meet our high standards',
+      description: 'Every dress, beauty product, and package is selected to meet a high standard for women shopping in Uganda.',
     },
     {
       title: 'Authenticity',
-      description: 'We celebrate genuine, unique styles and perspectives',
+      description: 'We celebrate genuine style — from everyday ladies fashion to bridal makeup and salon bookings in Kampala.',
     },
     {
-      title: 'Sustainability',
-      description: 'We partner with ethical brands and support conscious choices',
+      title: 'Care',
+      description: 'Nationwide delivery, considered packages, and trusted beauty services so shopping feels simple and personal.',
     },
     {
       title: 'Community',
-      description: 'We build a supportive space for women to express themselves',
+      description: 'ShiQueen is a space for women to shop, book, and feel confident — whether you knew us as SheQueen or you are new here.',
+    },
+  ];
+
+  const offers = [
+    {
+      title: 'Fashion & beauty shop',
+      description: 'Women\'s clothes, dresses, makeup, skincare, handbags, and accessories — online from Kampala.',
+      href: '/shop',
+      label: 'Shop now',
+    },
+    {
+      title: 'Packages',
+      description: 'Curated beauty packages and product-plus-service bundles with real savings versus buying separately.',
+      href: '/packages',
+      label: 'View packages',
+    },
+    {
+      title: 'Beauty bookings',
+      description: 'Book makeup artists, hair salon, nails, bridal makeup, and styling across Kampala.',
+      href: '/services',
+      label: 'Book a service',
     },
   ];
 
   return (
     <main>
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: 'Home', path: '/' },
+          { name: 'About', path: '/about' },
+        ])}
+      />
       <Header />
 
       <section className="py-20 bg-gradient-to-br from-primary/5 to-accent/5">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+            Kampala · Uganda
+          </p>
           <h1 className="text-5xl font-light tracking-tight mb-6">About ShiQueen</h1>
           <p className="text-xl text-muted-foreground leading-relaxed">
-            ShiQueen is an online shopping and booking app for women. We help you shop fashion,
+            ShiQueen is a women&apos;s online shop and booking platform in Kampala. Shop fashion,
             beauty, and wellness products, buy curated packages, and book trusted lifestyle
-            services — so every woman can feel confident, beautiful, and empowered.
+            services — with delivery across Uganda.
           </p>
         </div>
       </section>
 
-      {/* Story */}
       <section className="py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-light mb-8">Our Story</h2>
+          <h2 className="text-4xl font-light mb-8">Formerly SheQueen</h2>
           <div className="space-y-6 text-muted-foreground leading-relaxed">
             <p>
-              ShiQueen was founded on a simple belief: that shopping for quality products should be an enjoyable and inspiring experience. In a world of endless options, we wanted to create a curated space where women could discover items that truly resonated with them.
+              If you knew us as SheQueen, you are in the right place. ShiQueen is the same
+              women&apos;s shop — fashion, cosmetics, packages, and beauty bookings — under our
+              current name. Searches for SheQueen, She Queen, and Shi Queen all lead here.
             </p>
             <p>
-              What started as a personal passion project has grown into a thriving community of women who share our values of quality, authenticity, and self-expression. Every collection we create is designed with intention and care, featuring both emerging designers and established brands.
+              We built ShiQueen so shopping for quality pieces in Uganda would feel curated,
+              not overwhelming. From ladies dresses and handbags to makeup, skincare, and
+              salon appointments, everything lives in one place.
             </p>
             <p>
-              Today, ShiQueen is more than just an e-commerce platform—it&apos;s a lifestyle destination for women seeking to elevate their everyday and create moments that matter.
+              Today ShiQueen is more than a boutique: it is a lifestyle destination for women
+              who want to shop online, save with packages, and book beauty services with
+              confidence.
             </p>
           </div>
         </div>
       </section>
 
-      {/* Values */}
       <section className="py-20 bg-secondary">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-4xl font-light mb-12">Our Values</h2>
@@ -71,30 +109,28 @@ export default function About() {
         </div>
       </section>
 
-      {/* Team */}
       <section className="py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-light mb-12">Meet the Team</h2>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-4xl font-light mb-12">What you can do here</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[1, 2, 3].map((member) => (
-              <div key={member} className="text-center">
-                <div className="w-32 h-32 mx-auto bg-secondary rounded-full flex items-center justify-center text-4xl mb-4">
-                  👩
-                </div>
-                <h3 className="text-lg font-semibold mb-1">Team Member {member}</h3>
-                <p className="text-muted-foreground text-sm">Role & Title</p>
+            {offers.map((offer) => (
+              <div key={offer.title} className="rounded-2xl border border-border/60 bg-card p-6">
+                <h3 className="text-lg font-semibold mb-2">{offer.title}</h3>
+                <p className="text-muted-foreground text-sm mb-5">{offer.description}</p>
+                <Link href={offer.href} className="text-sm font-medium text-primary hover:underline">
+                  {offer.label}
+                </Link>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA */}
       <section className="py-20 bg-primary text-primary-foreground">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-light mb-4">Join Our Community</h2>
+          <h2 className="text-4xl font-light mb-4">Shop ShiQueen</h2>
           <p className="text-lg mb-8 opacity-90">
-            Become part of something special. Discover, explore, and express yourself with ShiQueen.
+            Women&apos;s fashion, beauty, packages, and bookings — from Kampala to the rest of Uganda.
           </p>
           <Link href="/shop">
             <Button size="lg" variant="secondary">

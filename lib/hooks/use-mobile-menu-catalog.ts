@@ -48,11 +48,11 @@ function pickBestListing(
 
 const SHOP_CATEGORY_DEFS = [
   { id: 'all', label: 'All', href: '/shop' },
-  { id: 'clothing', label: 'Clothing', href: '/shop?category=clothing' },
-  { id: 'beauty', label: 'Beauty', href: '/shop?category=beauty' },
-  { id: 'wellness', label: 'Wellness', href: '/shop?category=wellness' },
-  { id: 'accessories', label: 'Accessories', href: '/shop?category=accessories' },
-  { id: 'home', label: 'Home', href: '/shop?category=home' },
+  { id: 'clothing', label: 'Clothing', href: '/shop/clothing' },
+  { id: 'beauty', label: 'Beauty', href: '/shop/beauty' },
+  { id: 'wellness', label: 'Wellness', href: '/shop/wellness' },
+  { id: 'accessories', label: 'Accessories', href: '/shop/accessories' },
+  { id: 'home', label: 'Home', href: '/shop/home' },
 ] as const;
 
 export function useMobileMenuCatalog() {

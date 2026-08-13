@@ -2,12 +2,9 @@ import type { Metadata } from 'next';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { RefundPolicyPage } from '@/components/legal/refund-policy-page';
+import { PAGE_SEO } from '@/lib/seo/site';
 
-export const metadata: Metadata = {
-  title: 'Refund Policy | ShiQueen',
-  description:
-    'Learn how ShiQueen handles returns, refunds, exchanges, and order cancellations for your purchases.',
-};
+export const metadata: Metadata = PAGE_SEO.refunds;
 
 export default function Refunds() {
   return (

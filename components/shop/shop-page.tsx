@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ArrowRight, Sparkles, X, Grid3X3, LayoutGrid } from 'lucide-react';
 import { Header } from '@/components/header';
@@ -32,6 +32,8 @@ import {
   type ShopViewMode,
 } from '@/lib/shop-filters-context';
 import { cn } from '@/lib/utils';
+import { shopCategorySeo } from '@/lib/seo/site';
+import { isShopSeoCategory, shopCategoryPath } from '@/lib/seo/shop-categories';
 
 const CATEGORIES = [
   { id: 'all', label: 'All Products', shortLabel: 'All' },
@@ -56,13 +58,23 @@ const PRICE_FILTERS = [
   { id: 'luxury', label: 'Luxury' },
 ] as const;
 
-export function ShopPage() {
+export function ShopPage({ initialCategory = 'all' }: { initialCategory?: string }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { products, loading } = usePublicProducts();
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get('q')?.trim() ?? '';
 
-  const [category, setCategory] = useState('all');
+  const categoryFromUrl = useMemo(() => {
+    const match = pathname.match(/^\/shop\/([^/]+)/);
+    const fromPath = match?.[1]?.toLowerCase();
+    if (fromPath && isShopSeoCategory(fromPath)) return fromPath;
+    const fromQuery = searchParams.get('category')?.toLowerCase();
+    if (fromQuery && (fromQuery === 'all' || isShopSeoCategory(fromQuery))) return fromQuery;
+    return initialCategory;
+  }, [pathname, searchParams, initialCategory]);
+
+  const [category, setCategoryState] = useState(categoryFromUrl);
   const [sortBy, setSortBy] = useState('newest');
   const [priceRange, setPriceRange] = useState<ShopPriceRange>('all');
   const [viewMode, setViewMode] = useState<ShopViewMode>('discover');
@@ -70,11 +82,18 @@ export function ShopPage() {
   const { search: searchCatalog } = useCatalogSearch();
 
   useEffect(() => {
-    const paramCategory = searchParams.get('category');
-    if (paramCategory) {
-      setCategory(paramCategory.toLowerCase());
-    }
-  }, [searchParams]);
+    setCategoryState(categoryFromUrl);
+  }, [categoryFromUrl]);
+
+  const setCategory = useCallback(
+    (next: string) => {
+      setCategoryState(next);
+      const query = searchQuery ? `?q=${encodeURIComponent(searchQuery)}` : '';
+      const path = shopCategoryPath(next);
+      router.push(`${path}${query}`, { scroll: false });
+    },
+    [router, searchQuery]
+  );
 
   useEffect(() => {
     if (searchQuery) {
@@ -122,15 +141,17 @@ export function ShopPage() {
   } = useProductMerchandising(displayProducts);
   const activeCategoryLabel =
     CATEGORIES.find((c) => c.id === category)?.label ?? 'All Products';
+  const categoryHeading =
+    category !== 'all' && isShopSeoCategory(category)
+      ? shopCategorySeo(category).title
+      : activeCategoryLabel;
 
   const clearFilters = useCallback(() => {
-    setCategory('all');
+    setCategoryState('all');
     setPriceRange('all');
     setSortBy('newest');
-    if (isSearchMode) {
-      router.push('/shop');
-    }
-  }, [isSearchMode, router]);
+    router.push('/shop');
+  }, [router]);
 
   const shopFiltersContext = useMemo(
     () => ({
@@ -194,7 +215,7 @@ export function ShopPage() {
                       {isSearchMode ? (
                         <span className="font-medium text-primary">&ldquo;{searchQuery}&rdquo;</span>
                       ) : (
-                        activeCategoryLabel
+                        categoryHeading
                       )}
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
@@ -221,11 +242,16 @@ export function ShopPage() {
                   </Button>
                 </div>
               ) : (
-                <HeroMarketingSlot
-                  placement="shop-hero"
-                  fallbackPlacements={['home-hero']}
-                  compact
-                />
+                <>
+                  <h1 className="mb-3 text-2xl font-light tracking-tight md:text-3xl">
+                    Shop women&apos;s fashion &amp; beauty in Uganda
+                  </h1>
+                  <HeroMarketingSlot
+                    placement="shop-hero"
+                    fallbackPlacements={['home-hero']}
+                    compact
+                  />
+                </>
               )}
             </motion.div>
           </div>

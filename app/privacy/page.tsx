@@ -2,12 +2,9 @@ import type { Metadata } from 'next';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { PrivacyPolicyPage } from '@/components/legal/privacy-policy-page';
+import { PAGE_SEO } from '@/lib/seo/site';
 
-export const metadata: Metadata = {
-  title: 'Privacy Policy | ShiQueen',
-  description:
-    'Learn how ShiQueen collects, uses, shares, and protects your personal information when you shop or use our services.',
-};
+export const metadata: Metadata = PAGE_SEO.privacy;
 
 export default function Privacy() {
   return (

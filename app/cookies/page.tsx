@@ -2,12 +2,9 @@ import type { Metadata } from 'next';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { CookiePolicyPage } from '@/components/legal/cookie-policy-page';
+import { PAGE_SEO } from '@/lib/seo/site';
 
-export const metadata: Metadata = {
-  title: 'Cookie Policy | ShiQueen',
-  description:
-    'Learn how ShiQueen uses cookies and similar technologies on our website, and how you can manage your preferences.',
-};
+export const metadata: Metadata = PAGE_SEO.cookies;
 
 export default function Cookies() {
   return (

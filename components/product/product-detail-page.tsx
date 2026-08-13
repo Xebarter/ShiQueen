@@ -25,9 +25,13 @@ import { useCart } from '@/lib/cart-context';
 import { usePublicProducts } from '@/lib/hooks/use-public-catalog';
 import { createDefaultPricingTiers, formatUGX } from '@/lib/wholesale-data';
 import { cn } from '@/lib/utils';
+import { shopCategoryPath } from '@/lib/seo/shop-categories';
 import { useSmartBack } from '@/lib/hooks/use-smart-back';
 
 function ProductBreadcrumb({ category, name }: { category: string; name: string }) {
+  const categoryLabel = category
+    ? category.charAt(0).toUpperCase() + category.slice(1).toLowerCase()
+    : '';
   return (
     <nav aria-label="Product" className="mb-4 flex flex-wrap items-center gap-1.5 text-sm sm:mb-6">
       <Link href="/" className="text-muted-foreground transition hover:text-foreground">
@@ -37,6 +41,17 @@ function ProductBreadcrumb({ category, name }: { category: string; name: string 
       <Link href="/shop" className="text-muted-foreground transition hover:text-foreground">
         Shop
       </Link>
+      {categoryLabel ? (
+        <>
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" aria-hidden />
+          <Link
+            href={shopCategoryPath(category)}
+            className="text-muted-foreground transition hover:text-foreground"
+          >
+            {categoryLabel}
+          </Link>
+        </>
+      ) : null}
       <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" aria-hidden />
       <span className="line-clamp-1 font-medium text-foreground">{name}</span>
       <span className="sr-only"> · {category}</span>

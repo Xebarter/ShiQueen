@@ -25,6 +25,7 @@ import {
   contactWhatsAppHref,
 } from '@/lib/contact-info';
 import { cn } from '@/lib/utils';
+import { CONTACT_FAQS } from '@/lib/seo/home-faqs';
 
 const WHATSAPP_HREF = contactWhatsAppHref(
   "Hi ShiQueen, I'd like to get in touch."
@@ -60,25 +61,6 @@ const CONTACT_CHANNELS = [
     value: 'Kampala, Uganda',
     href: undefined,
     hint: 'Nationwide delivery & services',
-  },
-];
-
-const FAQS = [
-  {
-    q: 'How do I track my order?',
-    a: 'Once your order ships, you’ll get an email with tracking details. You can also view order status in your account.',
-  },
-  {
-    q: 'Can I list my beauty or wellness service?',
-    a: 'Yes — visit the Services page and tap List your services, or go to /services/sign-up. After admin approval you can list bookable services.',
-  },
-  {
-    q: 'Do you offer wholesale or bulk packages?',
-    a: 'ShiQueen offers curated packages and wholesale pricing. Mention wholesale in your message or explore the Packages and Wholesale sections.',
-  },
-  {
-    q: 'What is your return policy?',
-    a: 'Unopened items in original condition can be returned within 30 days. Contact us with your order number to start a return.',
   },
 ];
 
@@ -375,7 +357,7 @@ export function ContactPage() {
           </div>
 
           <div className="grid gap-3 lg:grid-cols-2">
-            {FAQS.map((faq, i) => {
+            {CONTACT_FAQS.map((faq, i) => {
               const isOpen = openFaq === i;
               return (
                 <div

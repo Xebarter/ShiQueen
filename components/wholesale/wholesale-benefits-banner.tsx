@@ -20,7 +20,7 @@ export function WholesaleBenefitsBanner({ catalogSize, className }: WholesaleBen
       <div className="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-6">
         <div className="min-w-0">
           <h1 className="text-2xl font-light tracking-tight sm:text-3xl lg:text-4xl">
-            Wholesale <span className="font-semibold text-primary">bulk ordering</span>
+            Wholesale women&apos;s fashion &amp; beauty in Uganda
           </h1>
           <p className="mt-2 text-sm text-muted-foreground sm:text-base">
             {catalogSize} products · volume pricing · free shipping

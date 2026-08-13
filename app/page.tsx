@@ -1,32 +1,15 @@
 import type { Metadata } from 'next';
 import { HomePage } from '@/components/home/home-page';
-import { BRAND_NAME, BRAND_PURPOSE, BRAND_TAGLINE } from '@/lib/brand';
-import { getSiteUrl } from '@/lib/site-url';
+import { HOME_FAQS } from '@/lib/seo/home-faqs';
+import { faqJsonLd, JsonLd } from '@/lib/seo/json-ld';
+import { PAGE_SEO } from '@/lib/seo/site';
 
-export const metadata: Metadata = {
-  title: {
-    absolute: `${BRAND_NAME} - ${BRAND_TAGLINE}`,
-  },
-  description: BRAND_PURPOSE,
-};
+export const metadata: Metadata = PAGE_SEO.home;
 
 export default function Home() {
-  const structuredData = {
-    '@context': 'https://schema.org',
-    '@type': 'WebApplication',
-    name: BRAND_NAME,
-    url: getSiteUrl(),
-    description: BRAND_PURPOSE,
-    applicationCategory: 'ShoppingApplication',
-    operatingSystem: 'Web',
-  };
-
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
+      <JsonLd data={faqJsonLd([...HOME_FAQS])} />
       <HomePage />
     </>
   );

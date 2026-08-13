@@ -3,6 +3,7 @@ import { BRAND_ASSETS, BRAND_NAME, BRAND_THEME } from '@/lib/brand';
 
 export const metadata: Metadata = {
   applicationName: `${BRAND_NAME} Services`,
+  robots: { index: false, follow: false },
   manifest: BRAND_ASSETS.providerManifest,
   icons: {
     apple: BRAND_ASSETS.appleTouchIcon,

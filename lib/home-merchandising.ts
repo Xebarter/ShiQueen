@@ -14,21 +14,21 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
     title: 'Beauty',
     subtitle: '',
     categories: ['Beauty'],
-    href: '/shop?category=beauty',
+    href: '/shop/beauty',
   },
   {
     slug: 'fashion',
     title: 'Fashion',
     subtitle: '',
     categories: ['Clothing', 'Accessories'],
-    href: '/shop?category=clothing',
+    href: '/shop/clothing',
   },
   {
     slug: 'wellness',
     title: 'Wellness',
     subtitle: '',
     categories: ['Wellness', 'Home'],
-    href: '/shop?category=wellness',
+    href: '/shop/wellness',
   },
 ];
 

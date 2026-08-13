@@ -51,11 +51,11 @@ export function ServicesHero({ totalServices, totalProviders }: ServicesHeroProp
             ShiQueen
           </p>
           <h1 className="mt-3 font-[family-name:var(--font-brand)] text-3xl font-medium leading-[1.15] tracking-tight text-foreground sm:text-4xl lg:text-[2.75rem]">
-            Book beauty &amp; wellness with confidence
+            Book beauty, hair &amp; nail services in Kampala
           </h1>
           <p className="mt-4 max-w-md text-base leading-relaxed text-muted-foreground sm:text-lg">
-            Reserve trusted pros across Uganda — pay securely upfront, or send a link for someone
-            else to cover it.
+            Reserve trusted makeup artists, salons, and stylists across Uganda — pay securely
+            upfront, or send a link for someone else to cover it.
           </p>
           <div className="mt-8">
             <Button

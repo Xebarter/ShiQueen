@@ -79,7 +79,7 @@ function DestinationCard({
   const pathname = usePathname();
   const isActive =
     destination.href === '/shop'
-      ? pathname === '/shop' || pathname.startsWith('/products/')
+      ? pathname === '/shop' || pathname.startsWith('/shop/') || pathname.startsWith('/products/')
       : pathname === destination.href || pathname.startsWith(`${destination.href}/`);
 
   const icons: Record<string, typeof Store> = {
@@ -180,7 +180,8 @@ export function getMobileDrawerTransition(prefersReducedMotion: boolean) {
 export function MobileDrawer({ onClose, user, itemCount, wishlistCount }: MobileDrawerProps) {
   const pathname = usePathname();
   const shopFilters = useShopFilters();
-  const showShopMenuFilters = pathname === '/shop' && shopFilters !== null;
+  const showShopMenuFilters =
+    (pathname === '/shop' || pathname.startsWith('/shop/')) && shopFilters !== null;
   const { shopCategories, serviceCategories, destinations } = useMobileMenuCatalog();
 
   const [shopDestination, packagesDestination, servicesDestination, wholesaleDestination] =

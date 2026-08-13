@@ -9,9 +9,11 @@ import { MarketingAdsProvider } from '@/lib/marketing-ads-context'
 import { WholesaleProvider } from '@/lib/wholesale-context'
 import { ServicesProvider } from '@/lib/services-context'
 import { SuppliersProvider } from '@/lib/suppliers-context'
-import { BRAND_ASSETS, BRAND_NAME, BRAND_PURPOSE, BRAND_TAGLINE, BRAND_THEME } from '@/lib/brand'
+import { BRAND_ASSETS, BRAND_NAME, BRAND_THEME } from '@/lib/brand'
 import { figtree, playfair, workSans } from '@/lib/fonts'
 import { getDefaultOgImageUrl } from '@/lib/metadata/resolve-og-image'
+import { CORE_KEYWORDS, SEO_HOME_DESCRIPTION, SEO_HOME_TITLE, SEO_LOCALE } from '@/lib/seo/site'
+import { JsonLd, organizationJsonLd, websiteJsonLd } from '@/lib/seo/json-ld'
 import { getSiteUrl } from '@/lib/site-url'
 import { Toaster } from 'react-hot-toast'
 
@@ -20,11 +22,17 @@ const defaultOgImage = getDefaultOgImageUrl()
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: {
-    default: `${BRAND_NAME} - ${BRAND_TAGLINE}`,
+    default: SEO_HOME_TITLE,
     template: `%s | ${BRAND_NAME}`,
   },
-  description: BRAND_PURPOSE,
+  description: SEO_HOME_DESCRIPTION,
+  keywords: [...CORE_KEYWORDS],
   applicationName: BRAND_NAME,
+  authors: [{ name: BRAND_NAME, url: getSiteUrl() }],
+  creator: BRAND_NAME,
+  publisher: BRAND_NAME,
+  category: 'shopping',
+  referrer: 'origin-when-cross-origin',
   manifest: BRAND_ASSETS.manifest,
   icons: {
     icon: [
@@ -41,20 +49,22 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: `${BRAND_NAME} - ${BRAND_TAGLINE}`,
+    title: BRAND_NAME,
     statusBarStyle: 'default',
   },
   openGraph: {
-    title: `${BRAND_NAME} - ${BRAND_TAGLINE}`,
+    title: SEO_HOME_TITLE,
     siteName: BRAND_NAME,
-    description: BRAND_PURPOSE,
+    description: SEO_HOME_DESCRIPTION,
     type: 'website',
-    images: [{ url: defaultOgImage, alt: BRAND_NAME }],
+    locale: SEO_LOCALE,
+    url: getSiteUrl(),
+    images: [{ url: defaultOgImage, alt: `${BRAND_NAME} — women's online shop Uganda` }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${BRAND_NAME} - ${BRAND_TAGLINE}`,
-    description: BRAND_PURPOSE,
+    title: SEO_HOME_TITLE,
+    description: SEO_HOME_DESCRIPTION,
     images: [defaultOgImage],
   },
 }
@@ -70,8 +80,9 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${figtree.variable} ${playfair.variable} ${workSans.variable} bg-background`}>
+    <html lang="en-UG" className={`${figtree.variable} ${playfair.variable} ${workSans.variable} bg-background`}>
       <body className="font-sans antialiased">
+        <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
         <AuthProvider>
           <ProductsProvider>
             <MarketingAdsProvider>

@@ -33,6 +33,7 @@ import {
 } from '@/lib/home-merchandising';
 import { Product } from '@/lib/types/database';
 import { HeroMarketingSlot } from '@/components/home/hero-marketing-slot';
+import { SEO_HOME_TITLE } from '@/lib/seo/site';
 
 export function HomePage() {
   const { products, loading } = usePublicProducts();
@@ -144,6 +145,9 @@ export function HomePage() {
                 className="order-2 lg:order-1"
               >
                 <HeroMarketingSlot placement="home-hero" compact />
+                <h1 className="mt-4 font-[family-name:var(--font-brand)] text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
+                  {SEO_HOME_TITLE}
+                </h1>
                 <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
                   <Link href="/packages" className="font-medium text-primary hover:underline">
                     Bundles
