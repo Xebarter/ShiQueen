@@ -86,7 +86,7 @@ export interface ShippingAddress {
   country: string;
 }
 
-export type PaymentMethod = 'mobile_money' | 'cash_on_delivery';
+export type PaymentMethod = 'mobile_money' | 'card' | 'cash_on_delivery';
 
 export type PaymentStatus =
   | 'awaiting_payment'
@@ -111,6 +111,8 @@ export interface Order {
   paymentStatus?: PaymentStatus;
   paytotaPurchaseId?: string;
   paytotaReference?: string;
+  cardTransToken?: string;
+  cardTransRef?: string;
   supplierIds?: string[];
   createdAt: Date;
   updatedAt: Date;

@@ -18,13 +18,18 @@ export type CreateServerOrderInput = {
   paymentStatus: Order['paymentStatus'];
   paytotaPurchaseId?: string;
   paytotaReference?: string;
+  cardTransToken?: string;
+  cardTransRef?: string;
   supplierIds?: string[];
 };
 
 export type PaymentUpdateInput = {
   paymentStatus?: Order['paymentStatus'];
+  paymentMethod?: Order['paymentMethod'];
   paytotaPurchaseId?: string;
   paytotaReference?: string;
+  cardTransToken?: string;
+  cardTransRef?: string;
   status?: Order['status'];
 };
 
@@ -48,6 +53,8 @@ function mapOrderDoc(id: string, data: FirebaseFirestore.DocumentData): Order {
     paymentStatus: data.paymentStatus as Order['paymentStatus'],
     paytotaPurchaseId: data.paytotaPurchaseId ? String(data.paytotaPurchaseId) : undefined,
     paytotaReference: data.paytotaReference ? String(data.paytotaReference) : undefined,
+    cardTransToken: data.cardTransToken ? String(data.cardTransToken) : undefined,
+    cardTransRef: data.cardTransRef ? String(data.cardTransRef) : undefined,
     supplierIds: Array.isArray(data.supplierIds)
       ? (data.supplierIds as unknown[]).map(String)
       : undefined,
@@ -111,6 +118,46 @@ export async function getOrderByPaytotaReference(reference: string): Promise<Ord
   const byId = await db.collection(COLLECTIONS.orders).doc(reference).get();
   if (byId.exists) {
     return mapOrderDoc(byId.id, byId.data()!);
+  }
+
+  return null;
+}
+
+export async function getOrderByCardTransToken(transToken: string): Promise<Order | null> {
+  if (!isFirebaseAdminConfigured() || !transToken) return null;
+
+  const { getAdminDb } = await import('@/lib/firebase/admin');
+  const db = await getAdminDb();
+
+  const byToken = await db
+    .collection(COLLECTIONS.orders)
+    .where('cardTransToken', '==', transToken)
+    .limit(1)
+    .get();
+
+  if (!byToken.empty) {
+    const doc = byToken.docs[0]!;
+    return mapOrderDoc(doc.id, doc.data());
+  }
+
+  return null;
+}
+
+export async function getOrderByCardTransRef(transRef: string): Promise<Order | null> {
+  if (!isFirebaseAdminConfigured() || !transRef) return null;
+
+  const { getAdminDb } = await import('@/lib/firebase/admin');
+  const db = await getAdminDb();
+
+  const byRef = await db
+    .collection(COLLECTIONS.orders)
+    .where('cardTransRef', '==', transRef)
+    .limit(1)
+    .get();
+
+  if (!byRef.empty) {
+    const doc = byRef.docs[0]!;
+    return mapOrderDoc(doc.id, doc.data());
   }
 
   return null;

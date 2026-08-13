@@ -22,10 +22,10 @@ import { updateOrderStatus } from '@/lib/firebase/orders';
 import { useHistoryOverlay } from '@/lib/hooks/use-history-overlay';
 import {
   Order,
-  type PaymentMethod,
   type PaymentStatus,
 } from '@/lib/types/database';
 import { formatUGX } from '@/lib/wholesale-data';
+import { PAYMENT_METHOD_LABELS } from '@/lib/payments/labels';
 import { cn } from '@/lib/utils';
 
 const STATUS_OPTIONS: Order['status'][] = [
@@ -67,10 +67,7 @@ const PAYMENT_STATUS: Record<PaymentStatus, { label: string; className: string }
   },
 };
 
-const PAYMENT_METHOD: Record<PaymentMethod, string> = {
-  mobile_money: 'Mobile money',
-  cash_on_delivery: 'Cash on delivery',
-};
+const PAYMENT_METHOD = PAYMENT_METHOD_LABELS;
 
 const FULFILLMENT_STEPS: Order['status'][] = [
   'pending',

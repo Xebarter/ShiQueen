@@ -17,6 +17,7 @@ import {
   Sparkles,
   Truck,
   User,
+  Wallet,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Header } from '@/components/header';
@@ -36,10 +37,9 @@ import { SendPaymentLinkCard } from '@/components/checkout/send-payment-link-car
 import { GiftPayChoice, type GiftPayMode } from '@/components/payments/gift-pay-choice';
 import { getWholesaleSavings } from '@/lib/wholesale-cart';
 import { formatUGX } from '@/lib/wholesale-data';
-import type { ShippingAddress } from '@/lib/types/database';
+import type { PaymentMethod, ShippingAddress } from '@/lib/types/database';
+import { PAYMENT_METHOD_LABELS } from '@/lib/payments/labels';
 import { cn } from '@/lib/utils';
-
-type PaymentMethod = 'mobile_money' | 'cash_on_delivery';
 
 const PAYMENT_OPTIONS: {
   id: PaymentMethod;
@@ -49,15 +49,21 @@ const PAYMENT_OPTIONS: {
 }[] = [
   {
     id: 'mobile_money',
-    label: 'Mobile Money',
+    label: PAYMENT_METHOD_LABELS.mobile_money,
     hint: 'MTN or Airtel · STK push',
     icon: Smartphone,
   },
   {
-    id: 'cash_on_delivery',
-    label: 'Cash on delivery',
-    hint: 'Pay when your order arrives',
+    id: 'card',
+    label: PAYMENT_METHOD_LABELS.card,
+    hint: 'Visa, Mastercard · secure checkout',
     icon: CreditCard,
+  },
+  {
+    id: 'cash_on_delivery',
+    label: PAYMENT_METHOD_LABELS.cash_on_delivery,
+    hint: 'Pay when your order arrives',
+    icon: Wallet,
   },
 ];
 
@@ -334,9 +340,7 @@ function OrderSummaryPanel({
             <p className="text-xs opacity-75">
               {payMode === 'gift'
                 ? 'Someone else will pay'
-                : paymentMethod === 'mobile_money'
-                  ? 'Mobile money'
-                  : 'Cash on delivery'}
+                : PAYMENT_METHOD_LABELS[paymentMethod]}
             </p>
           </div>
           <p className="text-2xl font-bold tracking-tight tabular-nums">{formatUGX(orderTotal)}</p>
@@ -588,6 +592,78 @@ export function CheckoutPage() {
         throw new Error('No payment URL returned from Paytota');
       }
 
+      if (paymentMethod === 'card') {
+        let response: Response;
+        try {
+          response = await fetch('/api/payments/card/initiate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: user?.uid ?? null,
+              customerName,
+              email: form.email,
+              phone: form.phone,
+              items: orderItems,
+              subtotal: total,
+              tax: 0,
+              total: orderTotal,
+              shippingAddress,
+              orderType,
+            }),
+          });
+        } catch {
+          throw new Error(
+            'Could not reach the payment server. Make sure the dev server is running and try again.'
+          );
+        }
+
+        let data: {
+          error?: string;
+          checkoutUrl?: string;
+          orderId?: string;
+          transToken?: string;
+          transRef?: string;
+          requiresClientOrder?: boolean;
+        };
+
+        try {
+          data = await response.json();
+        } catch {
+          throw new Error('Payment server returned an invalid response. Please try again.');
+        }
+
+        if (!response.ok) {
+          throw new Error(data.error ?? 'Failed to start card payment');
+        }
+
+        if (data.requiresClientOrder && data.orderId) {
+          await createOrder({
+            id: data.orderId,
+            userId: user?.uid ?? null,
+            customerName,
+            email: form.email,
+            items: orderItems,
+            subtotal: total,
+            tax: 0,
+            total: orderTotal,
+            shippingAddress,
+            status: 'pending',
+            orderType,
+            paymentMethod: 'card',
+            paymentStatus: 'awaiting_payment',
+            cardTransToken: data.transToken,
+            cardTransRef: data.transRef,
+          });
+        }
+
+        if (data.checkoutUrl) {
+          window.location.href = data.checkoutUrl;
+          return;
+        }
+
+        throw new Error('No card checkout URL was returned. Please try again.');
+      }
+
       const orderId = generateOrderId();
       await createOrder({
         id: orderId,
@@ -620,10 +696,14 @@ export function CheckoutPage() {
 
   const submitLabel =
     loading
-      ? 'Processing…'
-      : paymentMethod === 'mobile_money'
-        ? `Pay ${formatUGX(orderTotal)}`
-        : `Place order · ${formatUGX(orderTotal)}`;
+      ? paymentMethod === 'card'
+        ? 'Opening secure checkout…'
+        : 'Processing…'
+      : paymentMethod === 'cash_on_delivery'
+        ? `Place order · ${formatUGX(orderTotal)}`
+        : paymentMethod === 'card'
+          ? `Pay ${formatUGX(orderTotal)} by card`
+          : `Pay ${formatUGX(orderTotal)}`;
 
   return (
     <main className="min-h-screen bg-background pb-32 md:pb-0">
@@ -760,7 +840,7 @@ export function CheckoutPage() {
                 step={2}
                 icon={Sparkles}
                 title="Who is paying?"
-                subtitle="Pay yourself with mobile money, or send a secure link so someone else can cover this order."
+                subtitle="Pay yourself, or send a secure link so someone else can cover this order."
               >
                 <GiftPayChoice mode={payMode} onChange={setPayMode} />
 
@@ -783,7 +863,7 @@ export function CheckoutPage() {
                     />
                   </div>
                 ) : (
-                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <div className="mt-5 grid gap-3 sm:grid-cols-3">
                     {PAYMENT_OPTIONS.map(({ id, label, hint, icon: Icon }) => {
                       const selected = paymentMethod === id;
                       return (
@@ -880,9 +960,7 @@ export function CheckoutPage() {
               {itemCount} {itemCount === 1 ? 'item' : 'items'} ·{' '}
               {payMode === 'gift'
                 ? 'Someone else pays'
-                : paymentMethod === 'mobile_money'
-                  ? 'Mobile money'
-                  : 'Cash on delivery'}
+                : PAYMENT_METHOD_LABELS[paymentMethod]}
             </p>
             <p className="text-xl font-bold tracking-tight text-primary tabular-nums">
               {formatUGX(orderTotal)}

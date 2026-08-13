@@ -21,6 +21,14 @@ service firebase.storage {
         && firestore.get(/databases/(default)/documents/serviceProviders/$(providerId)).data.ownerUid == request.auth.uid;
     }
 
+    function isSupplierOwner(supplierId) {
+      return request.auth != null
+        && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.supplierId == supplierId
+        && firestore.exists(/databases/(default)/documents/suppliers/$(supplierId))
+        && firestore.get(/databases/(default)/documents/suppliers/$(supplierId)).data.ownerUid == request.auth.uid;
+    }
+
     // Product photos + marketing banners (admin/products, admin/ads)
     match /products/{productId}/{fileName} {
       // Anyone can view product images on the storefront
@@ -36,6 +44,14 @@ service firebase.storage {
     match /providers/{providerId}/{fileName} {
       allow read: if true;
       allow write: if (isAdmin() || isProviderOwner(providerId))
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Supplier logos
+    match /suppliers/{supplierId}/{fileName} {
+      allow read: if true;
+      allow write: if (isAdmin() || isSupplierOwner(supplierId))
         && request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
     }

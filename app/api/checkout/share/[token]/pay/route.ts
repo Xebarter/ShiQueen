@@ -8,6 +8,8 @@ import {
   normalizeUgandaPhone,
 } from '@/lib/paytota/client';
 import { getPaytotaConfig, getAppBaseUrl } from '@/lib/paytota/config';
+import { cardCheckoutRedirectUrl, isCardGatewayConfigured } from '@/lib/card-gateway/config';
+import { createCardPaymentToken } from '@/lib/card-gateway/client';
 import {
   getSharedCheckoutById,
   markSharedCheckoutPaid,
@@ -39,6 +41,7 @@ type PayBody = {
   email: string;
   phone: string;
   orderId?: string;
+  paymentMethod?: 'mobile_money' | 'card';
   clientCheckout?: ClientCheckoutSnapshot;
 };
 
@@ -192,6 +195,80 @@ export async function POST(request: NextRequest, context: RouteContext) {
         orderType: stored.orderType,
         senderUserId: stored.senderUserId ?? null,
       };
+    }
+
+    const wantsCard = body.paymentMethod === 'card';
+
+    if (wantsCard) {
+      if (!isCardGatewayConfigured()) {
+        return NextResponse.json(
+          {
+            error:
+              'Card payments are not available right now. Please pay with mobile money.',
+          },
+          { status: 503 }
+        );
+      }
+
+      const created = await createCardPaymentToken({
+        amount: checkout.total,
+        companyRef: orderId,
+        description: `SheQueen gift · ${checkout.recipientName}`.slice(0, 120),
+        customerName: body.fullName,
+        customerEmail: body.email,
+        customerPhone: body.phone,
+        customerCity: checkout.shippingAddress.city,
+        customerAddress: checkout.shippingAddress.address,
+      });
+      const checkoutUrl = cardCheckoutRedirectUrl(created.transToken);
+
+      if (!requiresClientOrder) {
+        await createOrderServer({
+          id: orderId,
+          userId: checkout.senderUserId ?? null,
+          customerName: checkout.recipientName,
+          email: checkout.shippingAddress.email,
+          items: checkout.orderItems,
+          subtotal: checkout.subtotal,
+          tax: 0,
+          total: checkout.total,
+          shippingAddress: checkout.shippingAddress,
+          orderType: checkout.orderType,
+          paymentMethod: 'card',
+          paymentStatus: 'awaiting_payment',
+          cardTransToken: created.transToken,
+          cardTransRef: created.transRef,
+        });
+      }
+
+      return NextResponse.json({
+        orderId,
+        checkoutUrl,
+        transToken: created.transToken,
+        transRef: created.transRef,
+        requiresClientOrder,
+        requiresClientCheckoutUpdate: requiresClientOrder,
+        markSharedCheckoutPaid: false,
+        order: requiresClientOrder
+          ? {
+              id: orderId,
+              userId: checkout.senderUserId ?? null,
+              customerName: checkout.recipientName,
+              email: checkout.shippingAddress.email,
+              items: checkout.orderItems,
+              subtotal: checkout.subtotal,
+              tax: 0,
+              total: checkout.total,
+              shippingAddress: checkout.shippingAddress,
+              status: 'pending' as const,
+              orderType: checkout.orderType,
+              paymentMethod: 'card' as const,
+              paymentStatus: 'awaiting_payment' as const,
+              cardTransToken: created.transToken,
+              cardTransRef: created.transRef,
+            }
+          : undefined,
+      });
     }
 
     let paymentResult: Awaited<ReturnType<typeof initiateGiftPayment>>;

@@ -18,6 +18,7 @@ import { AdminPage, AdminPageHeader } from '@/components/admin/admin-page';
 import { AdminOrderDialog } from '@/components/admin/admin-order-dialog';
 import { subscribeOrders, updateOrderStatus } from '@/lib/firebase/orders';
 import { Order, type PaymentMethod, type PaymentStatus } from '@/lib/types/database';
+import { PAYMENT_METHOD_LABELS } from '@/lib/payments/labels';
 import { formatUGX } from '@/lib/wholesale-data';
 import { cn } from '@/lib/utils';
 
@@ -78,10 +79,7 @@ const PAYMENT_STATUS: Record<PaymentStatus, { label: string; className: string }
   },
 };
 
-const PAYMENT_METHOD: Record<PaymentMethod, string> = {
-  mobile_money: 'Mobile money',
-  cash_on_delivery: 'Cash on delivery',
-};
+const PAYMENT_METHOD = PAYMENT_METHOD_LABELS;
 
 function formatOrderReference(orderId: string): string {
   if (orderId.length <= 12) return orderId.toUpperCase();

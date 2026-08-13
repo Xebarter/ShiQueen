@@ -98,6 +98,47 @@ export async function uploadProviderLogo(providerId: string, file: File): Promis
   return payload.url;
 }
 
+export async function uploadSupplierLogo(supplierId: string, file: File): Promise<string> {
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    throw new Error('Please upload a JPEG, PNG, WebP, or GIF image.');
+  }
+
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error('Each image must be 5MB or smaller.');
+  }
+
+  const auth = getFirebaseAuth();
+  const user = auth?.currentUser;
+  if (!user) {
+    throw new Error('You must be signed in to upload a logo.');
+  }
+
+  const idToken = await user.getIdToken(true);
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('supplierId', supplierId);
+
+  const response = await fetch('/api/partner/upload-supplier-image', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+    },
+    body: formData,
+  });
+
+  const payload = (await response.json()) as { url?: string; error?: string };
+
+  if (!response.ok) {
+    throw new Error(payload.error ?? 'Failed to upload logo.');
+  }
+
+  if (!payload.url) {
+    throw new Error('Upload succeeded but no image URL was returned.');
+  }
+
+  return payload.url;
+}
+
 export async function uploadProviderImages(
   providerId: string,
   files: File[]

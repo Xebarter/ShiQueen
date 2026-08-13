@@ -35,6 +35,8 @@ function mapOrder(id: string, data: Record<string, unknown>): Order {
     paymentStatus: data.paymentStatus as Order['paymentStatus'],
     paytotaPurchaseId: data.paytotaPurchaseId ? String(data.paytotaPurchaseId) : undefined,
     paytotaReference: data.paytotaReference ? String(data.paytotaReference) : undefined,
+    cardTransToken: data.cardTransToken ? String(data.cardTransToken) : undefined,
+    cardTransRef: data.cardTransRef ? String(data.cardTransRef) : undefined,
     supplierIds: Array.isArray(data.supplierIds)
       ? (data.supplierIds as unknown[]).map(String)
       : undefined,

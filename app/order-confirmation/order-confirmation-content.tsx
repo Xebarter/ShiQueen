@@ -55,7 +55,9 @@ export default function OrderConfirmationContent() {
               {paymentOffline
                 ? 'Paytota was unavailable, but your order is saved. Our team will contact you to complete mobile money payment.'
                 : paymentPending || order?.paymentStatus === 'awaiting_payment'
-                  ? 'Approve the Paytota prompt on your phone to complete payment.'
+                  ? order?.paymentMethod === 'card'
+                    ? 'We’re confirming your card payment. Your order will update automatically once it succeeds.'
+                    : 'Approve the Paytota prompt on your phone to complete payment.'
                   : 'Your order has been successfully placed'}
             </p>
           </div>
@@ -73,6 +75,16 @@ export default function OrderConfirmationContent() {
                 {order.paymentMethod === 'mobile_money' && (
                   <p className="text-xs text-muted-foreground mt-1 capitalize">
                     Payment: {order.paymentStatus?.replace('_', ' ') ?? 'processing'}
+                  </p>
+                )}
+                {order.paymentMethod === 'card' && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Payment:{' '}
+                    {order.paymentStatus === 'paid'
+                      ? 'Card paid'
+                      : order.paymentStatus === 'awaiting_payment'
+                        ? 'Card checkout in progress'
+                        : (order.paymentStatus ?? 'processing').replace('_', ' ')}
                   </p>
                 )}
               </>

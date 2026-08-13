@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
   ArrowLeft,
+  CreditCard,
   Gift,
   Loader2,
   ShoppingBag,
@@ -38,6 +39,7 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
   const [checkoutData, setCheckoutData] = useState<SharedCheckout | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({ fullName: '', email: '', phone: '' });
+  const [payMethod, setPayMethod] = useState<'mobile_money' | 'card'>('mobile_money');
 
   const loadCheckout = useCallback(async () => {
     setLoading(true);
@@ -135,6 +137,7 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
         body: JSON.stringify({
           ...form,
           orderId,
+          paymentMethod: payMethod,
           clientCheckout,
         }),
       });
@@ -291,7 +294,7 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
                   </h1>
                   <p className="mt-2 text-sm text-muted-foreground">
                     Items deliver to {checkout.recipientFirstName} in {checkout.deliveryCity}. Enter
-                    your mobile money details below to complete payment.
+                    your payment details below to complete checkout.
                   </p>
                 </div>
               </div>
@@ -356,12 +359,50 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
                   <div>
                     <h2 className="text-lg font-medium tracking-tight">Your payment details</h2>
                     <p className="text-sm text-muted-foreground">
-                      Mobile money only — used to process your payment.
+                      Choose how you want to pay, then enter your details.
                     </p>
                   </div>
                 </div>
               </div>
               <div className="space-y-4 p-6">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {(
+                    [
+                      {
+                        id: 'mobile_money' as const,
+                        label: 'Mobile money',
+                        hint: 'MTN or Airtel',
+                        icon: Smartphone,
+                      },
+                      {
+                        id: 'card' as const,
+                        label: 'Card',
+                        hint: 'Visa or Mastercard',
+                        icon: CreditCard,
+                      },
+                    ] as const
+                  ).map((option) => {
+                    const selected = payMethod === option.id;
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setPayMethod(option.id)}
+                        className={
+                          selected
+                            ? 'flex items-start gap-3 rounded-2xl border-2 border-primary bg-primary/[0.06] p-4 text-left'
+                            : 'flex items-start gap-3 rounded-2xl border-2 border-border/70 bg-background p-4 text-left hover:border-primary/35'
+                        }
+                      >
+                        <option.icon className="mt-0.5 h-5 w-5 text-primary" />
+                        <span>
+                          <span className="block text-sm font-semibold">{option.label}</span>
+                          <span className="text-xs text-muted-foreground">{option.hint}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="fullName">Full name</Label>
                   <Input

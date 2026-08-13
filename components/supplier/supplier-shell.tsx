@@ -135,6 +135,7 @@ export function SupplierShell({ children, publicPage = false }: SupplierShellPro
       marketplaceLabel="Storefront"
       businessName={supplier?.companyName || supplier?.name || 'Supplier portal'}
       email={profile?.email}
+      avatarUrl={supplier?.logo}
       statusLabel={statusMeta.label}
       statusClassName={statusMeta.className}
       statusBanner={

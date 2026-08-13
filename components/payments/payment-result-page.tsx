@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useCart } from '@/lib/cart-context';
 import { cn } from '@/lib/utils';
 
-type PaymentResultVariant = 'success' | 'failure' | 'cancel';
+type PaymentResultVariant = 'success' | 'failure' | 'cancel' | 'pending';
 
 const VARIANT_CONFIG: Record<
   PaymentResultVariant,
@@ -30,6 +30,16 @@ const VARIANT_CONFIG: Record<
       'Thank you! Your payment was received and your service booking is being confirmed.',
     icon: CheckCircle,
     iconClass: 'bg-emerald-500/10 text-emerald-600',
+    clearCart: true,
+  },
+  pending: {
+    title: 'Confirming your payment',
+    orderDescription:
+      'We’re confirming your card payment. This can take a moment — your order will update automatically once it goes through.',
+    bookingDescription:
+      'We’re confirming your card payment. This can take a moment — your booking will update automatically once it goes through.',
+    icon: Loader2,
+    iconClass: 'bg-primary/10 text-primary',
     clearCart: true,
   },
   failure: {
@@ -76,7 +86,7 @@ export function PaymentResultPage({ variant }: { variant: PaymentResultVariant }
               config.iconClass
             )}
           >
-            <Icon className="h-8 w-8" />
+            <Icon className={cn('h-8 w-8', variant === 'pending' && 'animate-spin')} />
           </div>
 
           <h1 className="text-3xl font-light tracking-tight">{config.title}</h1>
@@ -91,7 +101,7 @@ export function PaymentResultPage({ variant }: { variant: PaymentResultVariant }
               {variant === 'success' && (
                 <p className="mt-3 text-xs text-muted-foreground">
                   If confirmation takes a moment, your booking will update automatically once
-                  Paytota notifies us.
+                  payment is confirmed.
                 </p>
               )}
             </div>
@@ -101,8 +111,8 @@ export function PaymentResultPage({ variant }: { variant: PaymentResultVariant }
               <p className="mt-1 font-mono text-lg font-semibold text-primary">{orderId}</p>
               {variant === 'success' && (
                 <p className="mt-3 text-xs text-muted-foreground">
-                  If confirmation takes a moment, your order will update automatically once Paytota
-                  notifies us.
+                  If confirmation takes a moment, your order will update automatically once
+                  payment is confirmed.
                 </p>
               )}
             </div>
@@ -119,12 +129,12 @@ export function PaymentResultPage({ variant }: { variant: PaymentResultVariant }
                 <Button size="lg">View booking</Button>
               </Link>
             )}
-            {orderId && variant === 'success' && !bookingId && (
+            {orderId && (variant === 'success' || variant === 'pending') && !bookingId && (
               <Link href={`/order-confirmation?orderId=${encodeURIComponent(orderId)}`}>
-                <Button size="lg">View order</Button>
+                <Button size="lg">{variant === 'pending' ? 'View order status' : 'View order'}</Button>
               </Link>
             )}
-            {variant !== 'success' && (
+            {variant !== 'success' && variant !== 'pending' && (
               <Link href={isBooking ? '/services' : '/checkout'}>
                 <Button size="lg">Try again</Button>
               </Link>

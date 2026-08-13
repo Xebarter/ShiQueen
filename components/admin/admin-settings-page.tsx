@@ -81,6 +81,12 @@ const PAYMENT_METHODS = [
   },
   {
     id: 2,
+    name: 'Card',
+    status: 'Connected' as const,
+    supportedCurrencies: 'UGX · Visa & Mastercard',
+  },
+  {
+    id: 3,
     name: 'Cash on Delivery',
     status: 'Connected' as const,
     supportedCurrencies: 'Kampala deliveries',

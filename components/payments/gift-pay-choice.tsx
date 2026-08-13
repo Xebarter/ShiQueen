@@ -20,7 +20,7 @@ export function GiftPayChoice({
   onChange,
   selfLabel = "I'll pay",
   giftLabel = 'Someone else will pay',
-  selfDescription = 'Pay now with mobile money on your phone',
+  selfDescription = 'Pay now with mobile money or card',
   giftDescription = 'Send a secure link so a friend or family member can pay',
   className,
 }: GiftPayChoiceProps) {

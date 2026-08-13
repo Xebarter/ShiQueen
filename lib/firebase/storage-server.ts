@@ -327,3 +327,82 @@ export async function uploadProviderLogoServer(
   const objectPath = `providers/${trimmedId}/${Date.now()}-${sanitizeFileName(fileName)}`;
   return uploadImageToStorage(idToken, objectPath, contentType, fileBuffer, 'Provider logo');
 }
+
+async function canUploadSupplierLogo(
+  idToken: string,
+  uid: string,
+  email: string,
+  supplierId: string
+): Promise<boolean> {
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  if (!projectId) {
+    throw new Error('Firebase project ID is not configured.');
+  }
+
+  try {
+    await verifyAdmin(idToken, uid, email);
+    return true;
+  } catch {
+    // Fall through to supplier ownership check.
+  }
+
+  const headers = { Authorization: `Bearer ${idToken}` };
+
+  const [userResponse, supplierResponse] = await Promise.all([
+    fetch(
+      `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users/${uid}`,
+      { headers }
+    ),
+    fetch(
+      `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/suppliers/${supplierId}`,
+      { headers }
+    ),
+  ]);
+
+  if (!userResponse.ok || !supplierResponse.ok) return false;
+
+  const user = (await userResponse.json()) as {
+    fields?: {
+      supplierId?: { stringValue?: string };
+      role?: { stringValue?: string };
+    };
+  };
+  const supplier = (await supplierResponse.json()) as {
+    fields?: { ownerUid?: { stringValue?: string } };
+  };
+
+  const linkedSupplierId = user.fields?.supplierId?.stringValue;
+  const ownerUid = supplier.fields?.ownerUid?.stringValue;
+
+  return linkedSupplierId === supplierId && ownerUid === uid;
+}
+
+export async function uploadSupplierLogoServer(
+  idToken: string,
+  supplierId: string,
+  fileName: string,
+  contentType: string,
+  fileBuffer: Buffer
+): Promise<string> {
+  if (!ALLOWED_TYPES.includes(contentType)) {
+    throw new Error('Please upload a JPEG, PNG, WebP, or GIF image.');
+  }
+
+  if (fileBuffer.byteLength > MAX_FILE_SIZE) {
+    throw new Error('Each image must be 5MB or smaller.');
+  }
+
+  const trimmedId = supplierId.trim();
+  if (!trimmedId) {
+    throw new Error('Supplier ID is required.');
+  }
+
+  const { uid, email } = await verifyFirebaseToken(idToken);
+  const allowed = await canUploadSupplierLogo(idToken, uid, email, trimmedId);
+  if (!allowed) {
+    throw new Error('You can only upload a logo for your own supplier account.');
+  }
+
+  const objectPath = `suppliers/${trimmedId}/${Date.now()}-${sanitizeFileName(fileName)}`;
+  return uploadImageToStorage(idToken, objectPath, contentType, fileBuffer, 'Supplier logo');
+}

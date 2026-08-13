@@ -7,7 +7,10 @@ const nextConfig = {
     unoptimized: true,
   },
   async rewrites() {
-    return [{ source: '/sw.js', destination: '/api/pwa/sw' }];
+    return [
+      { source: '/sw.js', destination: '/api/pwa/sw' },
+      { source: '/api/dpo/callback', destination: '/api/payments/card/callback' },
+    ];
   },
   async redirects() {
     return [
