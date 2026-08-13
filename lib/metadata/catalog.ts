@@ -3,6 +3,7 @@ import type { Product } from '@/lib/types/database';
 import type { Package } from '@/lib/types/wholesale';
 import type { ServiceCategory, ServiceListing } from '@/lib/types/services';
 import { BRAND_NAME } from '@/lib/brand';
+import { resolveProductOgImage } from '@/lib/metadata/resolve-og-image';
 import { SEO_CITY, SEO_COUNTRY, pageMetadata } from '@/lib/seo/site';
 import { toAbsoluteUrl } from '@/lib/site-url';
 
@@ -29,13 +30,18 @@ export function buildProductMetadata(product: Product): Metadata {
     `Buy ${product.name} online in ${SEO_CITY}, ${SEO_COUNTRY}. Shop ${categoryLabel.toLowerCase()} at ${BRAND_NAME}, formerly SheQueen.`
   );
 
+  const productImage = resolveProductOgImage(product);
+  const cacheBust = product.updatedAt?.getTime?.() || 0;
+
   return pageMetadata({
     title: product.name,
     description,
     path,
-    image: toAbsoluteUrl(
-      `${productOgImagePath(product.id)}?v=${product.updatedAt?.getTime?.() || 0}`
-    ),
+    image:
+      productImage ??
+      toAbsoluteUrl(`${productOgImagePath(product.id)}?v=${cacheBust}`),
+    imageWidth: 1200,
+    imageHeight: 1200,
     keywords: [
       product.name,
       `${product.name} Uganda`,

@@ -62,6 +62,7 @@ export function pageMetadata(options: {
       : `${options.title} | ${BRAND_NAME}`;
   const ogImage = {
     url: image,
+    secureUrl: image.startsWith('https://') ? image : undefined,
     alt: ogTitle,
     ...(options.imageWidth && options.imageHeight
       ? {

@@ -15,6 +15,8 @@ import { shopCategoryPath } from '@/lib/seo/shop-categories';
 import { toAbsoluteUrl } from '@/lib/site-url';
 import { BRAND_NAME } from '@/lib/brand';
 
+export const dynamic = 'force-dynamic';
+
 type PageProps = {
   params: Promise<{ id: string }>;
 };

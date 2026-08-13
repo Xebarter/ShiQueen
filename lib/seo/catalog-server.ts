@@ -1,5 +1,6 @@
 import { COLLECTIONS } from '@/lib/firebase/collections';
 import { isFirebaseAdminConfigured } from '@/lib/firebase/admin-config';
+import { getPublicFirestoreDocument } from '@/lib/firebase/public-document';
 import { isValidPackageCategory } from '@/lib/package-catalog';
 import type { Product } from '@/lib/types/database';
 import type { Package } from '@/lib/types/wholesale';
@@ -114,18 +115,26 @@ async function getDb() {
 
 export async function getProductForSeo(id: string): Promise<Product | null> {
   const db = await getDb();
-  if (!db) return null;
-  const snap = await db.collection(COLLECTIONS.products).doc(id).get();
-  if (!snap.exists) return null;
-  return mapProduct(snap.id, snap.data()!);
+  if (db) {
+    const snap = await db.collection(COLLECTIONS.products).doc(id).get();
+    if (snap.exists) return mapProduct(snap.id, snap.data()!);
+  }
+
+  const publicDoc = await getPublicFirestoreDocument(COLLECTIONS.products, id);
+  if (!publicDoc) return null;
+  return mapProduct(id, publicDoc);
 }
 
 export async function getPackageForSeo(id: string): Promise<Package | null> {
   const db = await getDb();
-  if (!db) return null;
-  const snap = await db.collection(COLLECTIONS.packages).doc(id).get();
-  if (!snap.exists) return null;
-  return mapPackage(snap.id, snap.data()!);
+  if (db) {
+    const snap = await db.collection(COLLECTIONS.packages).doc(id).get();
+    if (snap.exists) return mapPackage(snap.id, snap.data()!);
+  }
+
+  const publicDoc = await getPublicFirestoreDocument(COLLECTIONS.packages, id);
+  if (!publicDoc) return null;
+  return mapPackage(id, publicDoc);
 }
 
 export async function getServiceListingBySlugForSeo(slug: string): Promise<ServiceListing | null> {

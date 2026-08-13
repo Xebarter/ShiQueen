@@ -3,8 +3,14 @@ import { isRemoteProductImage } from '@/components/product-image';
 import { toAbsoluteUrl } from '@/lib/site-url';
 
 export function toOgImageUrl(src?: string): string | undefined {
-  if (!isRemoteProductImage(src)) return undefined;
-  return src;
+  if (!src) return undefined;
+  const trimmed = src.trim();
+  if (!trimmed) return undefined;
+  if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) return trimmed;
+  if (trimmed.startsWith('//')) return `https:${trimmed}`;
+  if (trimmed.startsWith('/')) return toAbsoluteUrl(trimmed);
+  if (isRemoteProductImage(trimmed)) return trimmed;
+  return undefined;
 }
 
 export function resolveProductOgImage(product: Product): string | undefined {
