@@ -4,6 +4,9 @@ import { BRAND_ASSETS, BRAND_NAME, BRAND_THEME } from '@/lib/brand';
 export const metadata: Metadata = {
   applicationName: `${BRAND_NAME} Services`,
   manifest: BRAND_ASSETS.providerManifest,
+  icons: {
+    apple: BRAND_ASSETS.appleTouchIcon,
+  },
   appleWebApp: {
     capable: true,
     title: `${BRAND_NAME} Services`,

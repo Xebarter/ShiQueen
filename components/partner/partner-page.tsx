@@ -11,7 +11,7 @@ export function PartnerPage({
   className?: string;
 }) {
   return (
-    <div className={cn('relative mx-auto w-full max-w-6xl px-4 py-6 pb-28 sm:px-6 sm:py-8 md:p-10 md:pb-10', className)}>
+    <div className={cn('px-4 py-4 pb-28 sm:px-6 sm:py-6 md:p-8 md:pb-8', className)}>
       {children}
     </div>
   );
@@ -29,24 +29,20 @@ export function PartnerPageHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="mb-8 flex flex-col gap-5 md:mb-10 md:flex-row md:items-end md:justify-between">
+    <div className="mb-6 flex flex-col gap-4 md:mb-8 md:flex-row md:items-center md:justify-between">
       <div className="min-w-0">
         {eyebrow && (
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/70">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
             {eyebrow}
           </p>
         )}
-        <h1 className="font-brand text-[1.85rem] font-medium leading-tight tracking-tight text-[var(--partner-ink)] sm:text-4xl">
-          {title}
-        </h1>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
         {description && (
-          <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-[15px]">
-            {description}
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground sm:text-base">{description}</p>
         )}
       </div>
       {action && (
-        <div className="flex shrink-0 flex-wrap gap-2 md:ml-6 [&_a]:inline-flex [&_a]:h-10 [&_a]:items-center [&_a]:rounded-full [&_a]:px-4 [&_button]:inline-flex [&_button]:h-10 [&_button]:rounded-full">
+        <div className="flex shrink-0 flex-wrap justify-end gap-2 md:ml-6 [&_a]:inline-flex [&_a]:items-center [&_a]:justify-center [&_button]:inline-flex">
           {action}
         </div>
       )}
@@ -62,7 +58,12 @@ export function PartnerCard({
   className?: string;
 }) {
   return (
-    <div className={cn('partner-surface overflow-hidden rounded-[1.4rem]', className)}>
+    <div
+      className={cn(
+        'overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm shadow-primary/5',
+        className
+      )}
+    >
       {children}
     </div>
   );
@@ -78,7 +79,7 @@ export function PartnerFormCard({
   return (
     <div
       className={cn(
-        'partner-surface max-w-xl space-y-5 rounded-[1.4rem] p-5 sm:p-6',
+        'max-w-xl space-y-5 rounded-xl border border-border/70 bg-card p-5 shadow-sm sm:p-6',
         className
       )}
     >
@@ -97,57 +98,43 @@ export function PartnerEmptyState({
   description: string;
 }) {
   return (
-    <div className="partner-surface rounded-[1.4rem] px-6 py-16 text-center">
-      <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#F8E8EE] text-primary">
+    <div className="rounded-xl border border-dashed border-border/80 bg-card px-6 py-14 text-center">
+      <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
         <Icon className="h-6 w-6" />
       </span>
-      <h2 className="font-brand text-2xl font-medium tracking-tight">{title}</h2>
-      <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-        {description}
-      </p>
+      <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+      <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">{description}</p>
     </div>
   );
 }
-
-const STAT_TONES = {
-  rose: 'bg-[#F8E8EE] text-[#8A3D5A]',
-  gold: 'bg-[#F4EBD4] text-[#8A6A2A]',
-  sage: 'bg-[#E6F0EA] text-[#3D6A52]',
-  plum: 'bg-[#EDE6F2] text-[#5C4A72]',
-} as const;
 
 export function PartnerStatCard({
   label,
   value,
   href,
   icon: Icon,
-  tone = 'rose',
 }: {
   label: string;
   value: string | number;
   href: string;
   icon: LucideIcon;
-  tone?: keyof typeof STAT_TONES;
+  tone?: string;
 }) {
   return (
     <Link
       href={href}
-      className="partner-surface group rounded-[1.4rem] p-5 transition duration-200 hover:-translate-y-0.5 hover:border-primary/20"
+      className="group rounded-xl border border-border/70 bg-card p-4 shadow-sm shadow-primary/5 transition hover:border-primary/25"
     >
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-            {label}
-          </p>
-          <p className="mt-2 font-brand text-3xl font-medium tabular-nums tracking-tight">
-            {value}
-          </p>
+        <div className="min-w-0">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+          <p className="mt-1 truncate text-2xl font-bold tabular-nums">{value}</p>
         </div>
-        <span className={cn('rounded-2xl p-2.5', STAT_TONES[tone])}>
+        <span className="shrink-0 rounded-lg bg-muted p-2 text-primary">
           <Icon className="h-4 w-4" />
         </span>
       </div>
-      <p className="mt-5 inline-flex items-center gap-1 text-sm font-medium text-primary">
+      <p className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-primary">
         View
         <ArrowUpRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
       </p>
@@ -165,15 +152,15 @@ export function PartnerStatusPill({
   return (
     <span
       className={cn(
-        'inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]',
-        tone === 'pending' && 'bg-[#F8EBD8] text-[#8A5A1E]',
-        tone === 'confirmed' && 'bg-[#E7F0F7] text-[#3D5A73]',
-        tone === 'progress' && 'bg-[#EFE8F6] text-[#5C4A72]',
-        tone === 'completed' && 'bg-[#E5F2EA] text-[#2F5A40]',
-        tone === 'cancelled' && 'bg-[#F6E4E6] text-[#7A3B42]',
-        tone === 'active' && 'bg-[#E5F2EA] text-[#2F5A40]',
-        tone === 'hidden' && 'bg-[#F1ECE8] text-[#6B5E56]',
-        tone === 'neutral' && 'bg-[#F4EEEA] text-[#6B5E56]'
+        'inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ring-inset',
+        tone === 'pending' && 'bg-amber-500/10 text-amber-700 ring-amber-500/20',
+        tone === 'confirmed' && 'bg-sky-500/10 text-sky-700 ring-sky-500/20',
+        tone === 'progress' && 'bg-violet-500/10 text-violet-700 ring-violet-500/20',
+        tone === 'completed' && 'bg-emerald-500/10 text-emerald-700 ring-emerald-500/20',
+        tone === 'cancelled' && 'bg-red-500/10 text-red-700 ring-red-500/20',
+        tone === 'active' && 'bg-emerald-500/10 text-emerald-700 ring-emerald-500/20',
+        tone === 'hidden' && 'bg-slate-500/10 text-slate-700 ring-slate-500/20',
+        tone === 'neutral' && 'bg-muted text-muted-foreground ring-border'
       )}
     >
       {children}
@@ -183,7 +170,7 @@ export function PartnerStatusPill({
 
 export function PartnerSectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+    <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
       {children}
     </h2>
   );

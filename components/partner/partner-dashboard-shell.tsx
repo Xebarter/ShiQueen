@@ -6,9 +6,11 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { ExternalLink, LogOut, Menu, X, type LucideIcon } from 'lucide-react';
 import { BrandLogo } from '@/components/brand-logo';
@@ -22,9 +24,12 @@ import {
   type PartnerPageTitle,
   type PartnerTabItem,
 } from '@/components/partner/partner-nav';
-import { getEmailInitial } from '@/lib/user-display';
+import { isRemoteProductImage } from '@/components/product-image';
+import { getAvatarColorsForLetter, getEmailInitial } from '@/lib/user-display';
 import { figtree } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
+import { readPartnerTabSlideIn, usePartnerTabSwipe } from '@/components/partner/partner-tab-swipe';
+import { InstallAppButton } from '@/components/pwa/install-app-button';
 
 type PartnerShellContextValue = {
   navOpen: boolean;
@@ -92,6 +97,7 @@ export type PartnerDashboardChromeProps = {
   marketplaceLabel: string;
   businessName: string;
   email?: string | null;
+  avatarUrl?: string | null;
   statusLabel: string;
   statusClassName: string;
   statusBanner?: string | null;
@@ -133,15 +139,15 @@ function NavLinks({
   const groups = groupNav(nav);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {groups.map((group) => (
         <div key={group.label || group.items[0]?.href}>
           {group.label ? (
-            <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/80">
+            <p className="mb-1.5 px-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
               {group.label}
             </p>
           ) : null}
-          <div className="space-y-0.5">
+          <div className="space-y-1">
             {group.items.map((item) => {
               const Icon = item.icon;
               const active = isPartnerNavActive(pathname, item.href, homeHref);
@@ -151,13 +157,13 @@ function NavLinks({
                   href={item.href}
                   onClick={onNavigate}
                   className={cn(
-                    'flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition',
+                    'flex min-h-11 items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition',
                     active
-                      ? 'bg-primary/[0.09] text-primary shadow-[inset_0_0_0_1px_oklch(0.40_0.13_340_/_0.1)]'
-                      : 'text-foreground/70 hover:bg-white/70 hover:text-foreground'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground hover:bg-secondary'
                   )}
                 >
-                  <Icon className={cn('h-4 w-4 shrink-0', active ? 'text-primary' : 'opacity-70')} />
+                  <Icon className="h-5 w-5 shrink-0" />
                   <span>{item.label}</span>
                 </Link>
               );
@@ -172,30 +178,40 @@ function NavLinks({
 function IdentityBlock({
   businessName,
   email,
+  avatarUrl,
   statusLabel,
   statusClassName,
   portalLabel,
 }: Pick<
   PartnerDashboardChromeProps,
-  'businessName' | 'email' | 'statusLabel' | 'statusClassName' | 'portalLabel'
+  'businessName' | 'email' | 'avatarUrl' | 'statusLabel' | 'statusClassName' | 'portalLabel'
 >) {
   const initial =
     businessName.trim().charAt(0).toUpperCase() ||
     (email ? getEmailInitial(email) : portalLabel.charAt(0));
+  const avatarColors = getAvatarColorsForLetter(initial);
+  const showLogo = isRemoteProductImage(avatarUrl);
 
   return (
-    <div className="px-4 py-5">
-      <div className="flex items-start gap-3">
+    <div className="border-b border-border px-4 py-4">
+      <div className="flex items-center gap-3">
         <span
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#E8C9D2] to-[#D4B48A] font-brand text-lg text-white shadow-sm"
+          className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-semibold"
+          style={
+            showLogo
+              ? undefined
+              : { backgroundColor: avatarColors.background, color: avatarColors.foreground }
+          }
           aria-hidden
         >
-          {initial}
+          {showLogo ? (
+            <Image src={avatarUrl!} alt="" fill className="object-cover" sizes="36px" />
+          ) : (
+            initial
+          )}
         </span>
-        <div className="min-w-0 pt-0.5">
-          <p className="truncate font-brand text-[15px] font-medium leading-tight tracking-tight">
-            {businessName}
-          </p>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold leading-tight">{businessName}</p>
           {email && (
             <p className="mt-0.5 truncate text-[11px] text-muted-foreground" title={email}>
               {email}
@@ -206,13 +222,13 @@ function IdentityBlock({
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <span
           className={cn(
-            'inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ring-1 ring-inset',
+            'inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 ring-inset',
             statusClassName
           )}
         >
           {statusLabel}
         </span>
-        <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
           {portalLabel}
         </span>
       </div>
@@ -226,6 +242,7 @@ function PartnerSidebar(props: PartnerDashboardChromeProps) {
     homeHref,
     marketplaceHref,
     marketplaceLabel,
+    email,
     nav,
     onLogout,
   } = props;
@@ -233,26 +250,32 @@ function PartnerSidebar(props: PartnerDashboardChromeProps) {
   const [loggingOut, setLoggingOut] = useState(false);
 
   return (
-    <aside className="hidden w-[17rem] shrink-0 flex-col overflow-hidden border-r border-[var(--partner-line)] bg-[var(--partner-sidebar)] md:flex">
-      <div className="border-b border-[var(--partner-line)] px-5 py-5">
-        <BrandLogo variant="icon" href={homeHref} />
+    <aside className="hidden w-64 shrink-0 flex-col overflow-hidden border-r border-border bg-card md:flex">
+      <div className="border-b border-border p-6">
+        <BrandLogo variant="admin" href={homeHref} />
       </div>
       <IdentityBlock {...props} />
 
-      <nav className="flex flex-1 flex-col overflow-y-auto px-2.5 pb-3" aria-label={`${portalLabel} navigation`}>
+      <nav className="flex flex-1 flex-col overflow-y-auto p-4" aria-label={`${portalLabel} navigation`}>
         <NavLinks nav={nav} homeHref={homeHref} pathname={pathname} />
 
-        <div className="mt-auto space-y-1.5 border-t border-[var(--partner-line)] pt-3">
+        <div className="mt-auto space-y-3 border-t border-border pt-4">
+          {email && (
+            <p className="truncate px-4 text-xs text-muted-foreground" title={email}>
+              {email}
+            </p>
+          )}
+          <InstallAppButton variant="sidebar" />
           <Link
             href={marketplaceHref}
-            className="flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium text-foreground/70 transition hover:bg-white/70 hover:text-foreground"
+            className="flex min-h-11 items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-foreground transition hover:bg-secondary"
           >
-            <ExternalLink className="h-4 w-4 shrink-0 opacity-70" />
+            <ExternalLink className="h-5 w-5 shrink-0" />
             {marketplaceLabel}
           </Link>
           <Button
-            variant="ghost"
-            className="min-h-10 w-full justify-start rounded-xl px-3 text-[13px] text-[#9A4A52] hover:bg-[#F6E4E6] hover:text-[#7A3B42]"
+            variant="outline"
+            className="min-h-11 w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/20"
             disabled={loggingOut}
             onClick={async () => {
               setLoggingOut(true);
@@ -264,7 +287,7 @@ function PartnerSidebar(props: PartnerDashboardChromeProps) {
             }}
           >
             <LogOut className="mr-2 h-4 w-4" />
-            {loggingOut ? 'Signing out…' : 'Sign out'}
+            {loggingOut ? 'Signing out…' : 'Logout'}
           </Button>
         </div>
       </nav>
@@ -275,11 +298,11 @@ function PartnerSidebar(props: PartnerDashboardChromeProps) {
 function PartnerMobileHeader({
   portalLabel,
   pageTitles,
-  statusLabel,
-  statusClassName,
+  marketplaceHref,
+  marketplaceLabel,
 }: Pick<
   PartnerDashboardChromeProps,
-  'portalLabel' | 'pageTitles' | 'statusLabel' | 'statusClassName'
+  'portalLabel' | 'pageTitles' | 'marketplaceHref' | 'marketplaceLabel'
 >) {
   const { navOpen, toggleNav, setNavOpen } = usePartnerShell();
   const pathname = usePathname();
@@ -288,8 +311,8 @@ function PartnerMobileHeader({
   return (
     <header
       className={cn(
-        'sticky top-0 z-[60] flex h-16 shrink-0 items-center gap-3 border-b border-[var(--partner-line)]',
-        'bg-[var(--partner-sidebar)]/90 px-4 backdrop-blur-xl md:hidden'
+        'sticky top-0 z-[60] flex h-16 shrink-0 items-center gap-3 border-b border-border',
+        'bg-card/95 px-4 shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-card/90 md:hidden'
       )}
       onClick={() => {
         if (navOpen) setNavOpen(false);
@@ -305,30 +328,29 @@ function PartnerMobileHeader({
         aria-controls="partner-mobile-nav"
         aria-label={navOpen ? 'Close navigation menu' : 'Open navigation menu'}
         className={cn(
-          'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition',
+          'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition',
           navOpen
-            ? 'border-primary/20 bg-primary text-primary-foreground shadow-sm'
-            : 'border-[var(--partner-line)] bg-white/80 hover:bg-white'
+            ? 'border-primary/30 bg-primary text-primary-foreground shadow-sm'
+            : 'border-border bg-background hover:bg-secondary'
         )}
       >
         {navOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
 
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-primary/70">
-          {portalLabel}
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+          SheQueen {portalLabel}
         </p>
-        <p className="truncate font-brand text-lg font-medium leading-tight tracking-tight">{title}</p>
+        <p className="truncate text-base font-semibold leading-tight tracking-tight">{title}</p>
       </div>
 
-      <span
-        className={cn(
-          'hidden truncate rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ring-1 ring-inset sm:inline-flex',
-          statusClassName
-        )}
+      <Link
+        href={marketplaceHref}
+        onClick={(e) => e.stopPropagation()}
+        className="shrink-0 rounded-xl border border-border bg-background px-3 py-2 text-xs font-semibold text-primary transition hover:bg-primary/5"
       >
-        {statusLabel}
-      </span>
+        {marketplaceLabel === 'Storefront' ? 'Store' : marketplaceLabel}
+      </Link>
     </header>
   );
 }
@@ -354,7 +376,7 @@ function PartnerMobileDrawer(props: PartnerDashboardChromeProps) {
         <button
           type="button"
           aria-label="Close navigation menu"
-          className="fixed inset-0 z-[45] cursor-default bg-[#3A2430]/40 backdrop-blur-[2px] md:hidden"
+          className="fixed inset-0 z-[45] cursor-default bg-black/60 backdrop-blur-[2px] md:hidden"
           onClick={close}
         />
       )}
@@ -363,27 +385,29 @@ function PartnerMobileDrawer(props: PartnerDashboardChromeProps) {
         id="partner-mobile-nav"
         style={{ top: MOBILE_HEADER_OFFSET, height: `calc(100dvh - ${MOBILE_HEADER_OFFSET})` }}
         className={cn(
-          'fixed left-0 z-50 flex w-[min(20rem,84vw)] flex-col overflow-hidden',
-          'border-r border-[var(--partner-line)] bg-[var(--partner-sidebar)] shadow-2xl transition-transform duration-300 ease-out md:hidden',
+          'fixed left-0 z-50 flex w-[min(20rem,82vw)] flex-col overflow-hidden',
+          'border-r border-border/80 bg-card shadow-2xl transition-transform duration-300 ease-out md:hidden',
           navOpen ? 'translate-x-0' : 'pointer-events-none -translate-x-full'
         )}
+        onClick={(e) => e.stopPropagation()}
         aria-hidden={!navOpen}
       >
         <IdentityBlock {...props} />
 
-        <nav className="min-h-0 flex-1 overflow-y-auto px-2.5" aria-label={`${portalLabel} navigation`}>
+        <nav className="min-h-0 flex-1 overflow-y-auto p-2" aria-label={`${portalLabel} navigation`}>
           <NavLinks nav={nav} homeHref={homeHref} pathname={pathname} onNavigate={close} />
         </nav>
 
-        <div className="shrink-0 border-t border-[var(--partner-line)] bg-[#F7F1EC]/70 px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        <div className="shrink-0 border-t border-border/60 bg-muted/15 px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          <InstallAppButton variant="drawer" />
           <div className="grid grid-cols-2 gap-1.5">
             <Link
               href={marketplaceHref}
               onClick={close}
-              className="flex h-10 items-center justify-center gap-1 rounded-xl border border-[var(--partner-line)] bg-white/80 text-[11px] font-semibold"
+              className="flex h-8 items-center justify-center gap-1 rounded-md border border-border bg-card text-[11px] font-semibold transition hover:bg-secondary sm:h-9 sm:text-xs"
             >
               <ExternalLink className="h-3 w-3" />
-              {marketplaceLabel}
+              {marketplaceLabel === 'Storefront' ? 'Store' : marketplaceLabel}
             </Link>
             <button
               type="button"
@@ -397,7 +421,7 @@ function PartnerMobileDrawer(props: PartnerDashboardChromeProps) {
                   setLoggingOut(false);
                 }
               }}
-              className="flex h-10 items-center justify-center gap-1 rounded-xl border border-[var(--partner-line)] bg-white/80 text-[11px] font-semibold text-[#9A4A52] disabled:opacity-50"
+              className="flex h-8 items-center justify-center gap-1 rounded-md border border-border bg-card text-[11px] font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50 sm:h-9 sm:text-xs dark:hover:bg-red-950/20"
             >
               <LogOut className="h-3 w-3" />
               {loggingOut ? '…' : 'Sign out'}
@@ -427,7 +451,7 @@ function PartnerTabBar({
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-[55] border-t border-[var(--partner-line)] bg-[var(--partner-sidebar)]/95 pb-[max(0.4rem,env(safe-area-inset-bottom))] backdrop-blur-xl md:hidden"
+      className="fixed inset-x-0 bottom-0 z-[55] border-t border-border bg-card/95 pb-[max(0.4rem,env(safe-area-inset-bottom))] shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-card/90 md:hidden"
     >
       <div className="grid h-14 grid-cols-4">
         {tabs.map((tab) => {
@@ -476,19 +500,31 @@ function PartnerTabBar({
 function PartnerDashboardChromeInner(props: PartnerDashboardChromeProps) {
   const { children, statusBanner, statusTone, statusIcon: StatusIcon } = props;
   const { navOpen, setNavOpen } = usePartnerShell();
+  const pathname = usePathname();
+  const paneRef = useRef<HTMLDivElement>(null);
+  const [slideIn] = useState(readPartnerTabSlideIn);
+
+  usePartnerTabSwipe({
+    tabs: props.tabs,
+    homeHref: props.homeHref,
+    pathname,
+    navOpen,
+    setNavOpen,
+    paneRef,
+  });
 
   return (
     <div
       className={cn(
         figtree.className,
-        'partner-app partner-canvas-wash flex h-[100dvh] flex-col overflow-hidden'
+        'partner-app flex h-[100dvh] flex-col overflow-hidden bg-background'
       )}
     >
       <PartnerMobileHeader
         portalLabel={props.portalLabel}
         pageTitles={props.pageTitles}
-        statusLabel={props.statusLabel}
-        statusClassName={props.statusClassName}
+        marketplaceHref={props.marketplaceHref}
+        marketplaceLabel={props.marketplaceLabel}
       />
       <PartnerMobileDrawer {...props} />
 
@@ -500,23 +536,32 @@ function PartnerDashboardChromeInner(props: PartnerDashboardChromeProps) {
             if (navOpen) setNavOpen(false);
           }}
         >
-          <EmailVerificationBanner />
-          {statusBanner && statusTone ? (
-            <div
-              className={cn(
-                'border-b px-4 py-3 text-sm sm:px-6',
-                statusTone === 'pending' && 'border-[#E8D4B0]/80 bg-[#FBF3E6] text-[#6B4A1E]',
-                statusTone === 'rejected' && 'border-[#E8C4C8]/80 bg-[#F8ECEC] text-[#6B3036]',
-                statusTone === 'suspended' && 'border-[#D8D2CC]/80 bg-[#F3EFEA] text-[#4A433E]'
-              )}
-            >
-              <div className="mx-auto flex max-w-6xl gap-2">
-                {StatusIcon ? <StatusIcon className="mt-0.5 h-4 w-4 shrink-0 opacity-70" /> : null}
-                <p>{statusBanner}</p>
+          <div
+            ref={paneRef}
+            className={cn(
+              'min-h-full will-change-transform',
+              slideIn === 'next' && 'partner-tab-enter-next',
+              slideIn === 'prev' && 'partner-tab-enter-prev'
+            )}
+          >
+            <EmailVerificationBanner />
+            {statusBanner && statusTone ? (
+              <div
+                className={cn(
+                  'border-b px-4 py-3 text-sm sm:px-6',
+                  statusTone === 'pending' && 'border-amber-200/70 bg-amber-50 text-amber-900',
+                  statusTone === 'rejected' && 'border-rose-200/70 bg-rose-50 text-rose-900',
+                  statusTone === 'suspended' && 'border-slate-200/80 bg-slate-50 text-slate-800'
+                )}
+              >
+                <div className="mx-auto flex max-w-6xl gap-2">
+                  {StatusIcon ? <StatusIcon className="mt-0.5 h-4 w-4 shrink-0 opacity-70" /> : null}
+                  <p>{statusBanner}</p>
+                </div>
               </div>
-            </div>
-          ) : null}
-          {children}
+            ) : null}
+            {children}
+          </div>
         </main>
       </div>
       <PartnerTabBar tabs={props.tabs} homeHref={props.homeHref} />

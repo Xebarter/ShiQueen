@@ -57,12 +57,12 @@ export default function SupplierProductsPage() {
             }
           />
         ) : (
-          <PartnerCard className="divide-y divide-[#E8E2D9]">
+          <PartnerCard className="divide-y divide-border">
             {mine.map((product) => (
               <Link
                 key={product.id}
                 href={`/suppliers/products/${product.id}/edit`}
-                className="flex gap-3 p-3 transition hover:bg-white/70 sm:p-4"
+                className="flex gap-3 p-3 transition hover:bg-muted/40 sm:p-4"
               >
                 <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted">
                   {isRemoteProductImage(product.image) ? (

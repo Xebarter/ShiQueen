@@ -4,6 +4,7 @@ import { AdminSidebar } from '@/components/admin-sidebar';
 import { AdminShellProvider } from '@/components/admin/admin-shell';
 import { AdminMobileHeader } from '@/components/admin/admin-mobile-header';
 import { AdminMobileMain } from '@/components/admin/admin-mobile-main';
+import { AdminPwaRuntime } from '@/components/pwa/admin-pwa-runtime';
 import { useAuth } from '@/lib/auth-context';
 import { figtree } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
@@ -50,6 +51,7 @@ export default function AdminLayout({
           <AdminSidebar />
           <AdminMobileMain>{children}</AdminMobileMain>
         </div>
+        <AdminPwaRuntime />
       </div>
     </AdminShellProvider>
   );

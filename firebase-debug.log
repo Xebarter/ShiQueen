@@ -1,0 +1,42 @@
+[debug] [2026-08-13T10:06:12.444Z] ----------------------------------------------------------------------
+[debug] [2026-08-13T10:06:12.453Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\Enock\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js deploy --only storage --project kupama
+[debug] [2026-08-13T10:06:12.453Z] CLI Version:   15.26.0
+[debug] [2026-08-13T10:06:12.453Z] Platform:      win32
+[debug] [2026-08-13T10:06:12.454Z] Node Version:  v24.16.0
+[debug] [2026-08-13T10:06:12.454Z] Detected Agent: cursor
+[debug] [2026-08-13T10:06:12.454Z] Time:          Thu Aug 13 2026 13:06:12 GMT+0300 (East Africa Time)
+[debug] [2026-08-13T10:06:12.454Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-08-13T10:06:14.579Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-08-13T10:06:14.579Z] > authorizing via signed-in user (sebenock02777@gmail.com)
+[debug] [2026-08-13T10:06:14.579Z] [iam] checking project kupama for permissions ["firebase.projects.get","firebaserules.releases.create","firebaserules.releases.update","firebaserules.rulesets.create"]
+[debug] [2026-08-13T10:06:14.609Z] Checked if tokens are valid: false, expires at: 1786476413174
+[debug] [2026-08-13T10:06:14.610Z] Checked if tokens are valid: false, expires at: 1786476413174
+[debug] [2026-08-13T10:06:14.610Z] > refreshing access token with scopes: []
+[debug] [2026-08-13T10:06:14.617Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-08-13T10:06:14.617Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-08-13T10:06:15.226Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-08-13T10:06:15.227Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-08-13T10:06:15.257Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/kupama:testIamPermissions [none]
+[debug] [2026-08-13T10:06:15.258Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/kupama:testIamPermissions  x-goog-user-project=kupama
+[debug] [2026-08-13T10:06:15.258Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/kupama:testIamPermissions {"permissions":["firebase.projects.get","firebaserules.releases.create","firebaserules.releases.update","firebaserules.rulesets.create"]}
+[debug] [2026-08-13T10:06:17.494Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/kupama:testIamPermissions 200
+[debug] [2026-08-13T10:06:17.494Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/kupama:testIamPermissions {"permissions":["firebase.projects.get","firebaserules.releases.create","firebaserules.releases.update","firebaserules.rulesets.create"]}
+[info] 
+[info] === Deploying to 'kupama'...
+[info] 
+[info] i  deploying storage 
+[info] i  storage: ensuring required API firebasestorage.googleapis.com is enabled... 
+[debug] [2026-08-13T10:06:17.500Z] Checked if tokens are valid: true, expires at: 1786619174227
+[debug] [2026-08-13T10:06:17.500Z] Checked if tokens are valid: true, expires at: 1786619174227
+[debug] [2026-08-13T10:06:17.501Z] >>> [apiv2][query] GET https://firebasestorage.googleapis.com/v1alpha/projects/kupama/defaultBucket [none]
+[debug] [2026-08-13T10:06:28.011Z] *** [apiv2] error from fetch(https://firebasestorage.googleapis.com/v1alpha/projects/kupama/defaultBucket, {"headers":{},"method":"GET"}): ConnectTimeoutError: Connect Timeout Error (attempted addresses: 172.217.114.4:443, 172.217.115.4:443, 172.217.118.4:443, 172.217.117.4:443, 172.217.116.4:443, 172.217.113.4:443, 172.217.119.4:443, 172.217.112.4:443, timeout: 10000ms)
+[info] 
+
+Unexpected error when fetching default storage bucket.
+[debug] [2026-08-13T10:06:33.027Z] Error: Timed out.
+    at Timeout._onTimeout (C:\Users\Enock\AppData\Roaming\npm\node_modules\firebase-tools\lib\utils.js:296:49)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+[error] 
+[error] Error: An unexpected error has occurred.

@@ -211,7 +211,7 @@ async function uploadImageToStorage(
 
     if (uploadResponse.status === 403) {
       throw new Error(
-        'Storage permission denied. Sign out and back in, confirm Firestore users/{your-uid} has role "admin", then run: firebase deploy --only storage'
+        'Storage permission denied. Sign out and back in, then run: firebase deploy --only storage'
       );
     }
 
@@ -247,4 +247,83 @@ export async function uploadProductImageServer(
 
   const objectPath = `products/${productId}/${Date.now()}-${sanitizeFileName(fileName)}`;
   return uploadImageToStorage(idToken, objectPath, contentType, fileBuffer, 'Product image');
+}
+
+async function canUploadProviderLogo(
+  idToken: string,
+  uid: string,
+  email: string,
+  providerId: string
+): Promise<boolean> {
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  if (!projectId) {
+    throw new Error('Firebase project ID is not configured.');
+  }
+
+  try {
+    await verifyAdmin(idToken, uid, email);
+    return true;
+  } catch {
+    // Fall through to provider ownership check.
+  }
+
+  const headers = { Authorization: `Bearer ${idToken}` };
+
+  const [userResponse, providerResponse] = await Promise.all([
+    fetch(
+      `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/users/${uid}`,
+      { headers }
+    ),
+    fetch(
+      `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/serviceProviders/${providerId}`,
+      { headers }
+    ),
+  ]);
+
+  if (!userResponse.ok || !providerResponse.ok) return false;
+
+  const user = (await userResponse.json()) as {
+    fields?: {
+      providerId?: { stringValue?: string };
+      role?: { stringValue?: string };
+    };
+  };
+  const provider = (await providerResponse.json()) as {
+    fields?: { ownerUid?: { stringValue?: string } };
+  };
+
+  const linkedProviderId = user.fields?.providerId?.stringValue;
+  const ownerUid = provider.fields?.ownerUid?.stringValue;
+
+  return linkedProviderId === providerId && ownerUid === uid;
+}
+
+export async function uploadProviderLogoServer(
+  idToken: string,
+  providerId: string,
+  fileName: string,
+  contentType: string,
+  fileBuffer: Buffer
+): Promise<string> {
+  if (!ALLOWED_TYPES.includes(contentType)) {
+    throw new Error('Please upload a JPEG, PNG, WebP, or GIF image.');
+  }
+
+  if (fileBuffer.byteLength > MAX_FILE_SIZE) {
+    throw new Error('Each image must be 5MB or smaller.');
+  }
+
+  const trimmedId = providerId.trim();
+  if (!trimmedId) {
+    throw new Error('Provider ID is required.');
+  }
+
+  const { uid, email } = await verifyFirebaseToken(idToken);
+  const allowed = await canUploadProviderLogo(idToken, uid, email, trimmedId);
+  if (!allowed) {
+    throw new Error('You can only upload a logo for your own services business.');
+  }
+
+  const objectPath = `providers/${trimmedId}/${Date.now()}-${sanitizeFileName(fileName)}`;
+  return uploadImageToStorage(idToken, objectPath, contentType, fileBuffer, 'Provider logo');
 }

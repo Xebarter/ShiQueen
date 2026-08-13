@@ -20,6 +20,7 @@ import {
   Users,
 } from 'lucide-react';
 import { AdminPage } from '@/components/admin/admin-page';
+import { AdminEntityThumb } from '@/components/admin/admin-entity-thumb';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -283,21 +284,12 @@ export function AdminServiceProviderDetailPage() {
 
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex min-w-0 items-start gap-4">
-            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-primary/10 text-primary">
-              {isRemoteProductImage(provider.profileImage) ? (
-                <Image
-                  src={provider.profileImage}
-                  alt=""
-                  fill
-                  className="object-cover"
-                  sizes="64px"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center text-xl font-semibold">
-                  {(provider.businessName || provider.name).slice(0, 1).toUpperCase()}
-                </div>
-              )}
-            </div>
+            <AdminEntityThumb
+              src={provider.profileImage}
+              label={provider.businessName || provider.name}
+              sizeClassName="h-24 w-24"
+              sizes="96px"
+            />
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="truncate text-2xl font-bold tracking-tight sm:text-3xl">

@@ -31,6 +31,10 @@ import {
 } from '@/lib/types/suppliers';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import { AdminEntityThumb } from '@/components/admin/admin-entity-thumb';
+import { AdminBulkApproveBar, AdminSelectCheckbox } from '@/components/admin/admin-bulk-approve';
+import { isRemoteProductImage } from '@/components/product-image';
+import { useProducts } from '@/lib/products-context';
 
 type FilterId = 'all' | SupplierApprovalStatus | 'default';
 
@@ -93,11 +97,13 @@ function formatApplied(date: Date) {
 
 export function AdminSuppliersPage() {
   const { suppliers, loading, update, remove, refreshReady } = useSuppliers();
+  const { products } = useProducts();
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<FilterId>('all');
   const [counts, setCounts] = useState<Record<string, SupplierCatalogCounts>>({});
   const [countsLoading, setCountsLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -144,6 +150,17 @@ export function AdminSuppliersPage() {
     });
   }, [suppliers, searchTerm, filter]);
 
+  const catalogCoverBySupplier = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const product of products) {
+      const id = product.supplierId || DEFAULT_SUPPLIER_ID;
+      if (!map[id] && isRemoteProductImage(product.image)) {
+        map[id] = product.image;
+      }
+    }
+    return map;
+  }, [products]);
+
   const stats = useMemo(() => {
     return {
       total: suppliers.length,
@@ -152,6 +169,19 @@ export function AdminSuppliersPage() {
       linked: Object.values(counts).reduce((sum, c) => sum + c.total, 0),
     };
   }, [suppliers, counts]);
+
+  const pendingInView = useMemo(
+    () => filtered.filter((supplier) => supplier.approvalStatus === 'pending'),
+    [filtered]
+  );
+
+  useEffect(() => {
+    const allowed = new Set(pendingInView.map((supplier) => supplier.id));
+    setSelectedIds((prev) => {
+      const next = prev.filter((id) => allowed.has(id));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [pendingInView]);
 
   const handleApproval = async (
     supplier: Supplier,
@@ -178,6 +208,40 @@ export function AdminSuppliersPage() {
       );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to update status');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const toggleSelected = (id: string, checked: boolean) => {
+    setSelectedIds((prev) =>
+      checked ? (prev.includes(id) ? prev : [...prev, id]) : prev.filter((item) => item !== id)
+    );
+  };
+
+  const handleApproveSelected = async () => {
+    const targets = pendingInView.filter((supplier) => selectedIds.includes(supplier.id));
+    if (targets.length === 0) return;
+    if (
+      !confirm(
+        `Approve ${targets.length} supplier${targets.length === 1 ? '' : 's'}? They will appear on the storefront.`
+      )
+    ) {
+      return;
+    }
+    setBusyId('bulk');
+    try {
+      for (const supplier of targets) {
+        await setSupplierApprovalStatus(supplier.id, 'approved');
+      }
+      toast.success(
+        targets.length === 1
+          ? `${targets[0].name} approved`
+          : `${targets.length} suppliers approved`
+      );
+      setSelectedIds([]);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to approve suppliers');
     } finally {
       setBusyId(null);
     }
@@ -227,7 +291,7 @@ export function AdminSuppliersPage() {
   };
 
   const renderActions = (supplier: Supplier) => {
-    const busy = busyId === supplier.id;
+    const busy = busyId === supplier.id || busyId === 'bulk';
     return (
       <div className="flex flex-wrap justify-end gap-2">
         {supplier.approvalStatus === 'pending' && (
@@ -407,6 +471,20 @@ export function AdminSuppliersPage() {
               </button>
             ))}
           </div>
+          <AdminBulkApproveBar
+            pendingCount={pendingInView.length}
+            selectedCount={selectedIds.length}
+            allSelected={
+              pendingInView.length > 0 && selectedIds.length === pendingInView.length
+            }
+            someSelected={selectedIds.length > 0 && selectedIds.length < pendingInView.length}
+            onToggleAll={(checked) =>
+              setSelectedIds(checked ? pendingInView.map((supplier) => supplier.id) : [])
+            }
+            onApproveSelected={() => void handleApproveSelected()}
+            busy={busyId === 'bulk'}
+            noun="supplier"
+          />
         </CardHeader>
 
         <CardContent className="bg-muted/15 p-3 sm:p-4">
@@ -434,10 +512,30 @@ export function AdminSuppliersPage() {
                     className="rounded-xl border border-border/80 bg-card p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-primary/25 hover:shadow-md"
                   >
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                      <Link
-                        href={`/admin/suppliers/${supplier.id}`}
-                        className="min-w-0 flex-1 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                      >
+                      <div className="flex min-w-0 flex-1 items-start gap-3">
+                        {supplier.approvalStatus === 'pending' ? (
+                          <AdminSelectCheckbox
+                            className="mt-2"
+                            checked={selectedIds.includes(supplier.id)}
+                            onChange={(checked) => toggleSelected(supplier.id, checked)}
+                          />
+                        ) : null}
+                        <Link
+                          href={`/admin/suppliers/${supplier.id}`}
+                          className="min-w-0 flex-1 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        >
+                        <div className="flex items-start gap-3">
+                          <AdminEntityThumb
+                            src={
+                              isRemoteProductImage(supplier.logo)
+                                ? supplier.logo
+                                : catalogCoverBySupplier[supplier.id]
+                            }
+                            label={supplier.companyName || supplier.name}
+                            sizeClassName="h-20 w-20 sm:h-24 sm:w-24"
+                            sizes="96px"
+                          />
+                          <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="truncate text-base font-semibold group-hover:text-primary hover:text-primary">
                             {supplier.name}
@@ -479,7 +577,10 @@ export function AdminSuppliersPage() {
                             Reason: {supplier.rejectionReason}
                           </p>
                         )}
-                      </Link>
+                          </div>
+                        </div>
+                        </Link>
+                      </div>
                       <div
                         className="shrink-0"
                         onClick={(e) => e.stopPropagation()}

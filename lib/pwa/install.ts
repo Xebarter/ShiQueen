@@ -46,16 +46,49 @@ export function canPromptInstall() {
 export function isStandaloneDisplay() {
   if (typeof window === 'undefined') return false;
   const standalone = window.matchMedia('(display-mode: standalone)').matches;
-  const iosStandalone = 'standalone' in window.navigator && Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone);
+  const iosStandalone =
+    'standalone' in window.navigator &&
+    Boolean((window.navigator as Navigator & { standalone?: boolean }).standalone);
   return standalone || iosStandalone;
+}
+
+export function isIosDevice() {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  return (
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
+}
+
+export function isAndroidDevice() {
+  if (typeof navigator === 'undefined') return false;
+  return /Android/i.test(navigator.userAgent);
 }
 
 export function isIosSafari() {
   if (typeof navigator === 'undefined') return false;
   const ua = navigator.userAgent;
-  const iOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  const webkit = /WebKit/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
-  return iOS && webkit;
+  const inApp = /FBAN|FBAV|Instagram|Line\/|Twitter|MicroMessenger/i.test(ua);
+  const webkit = /WebKit/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|DuckDuckGo/.test(ua);
+  return isIosDevice() && webkit && !inApp;
+}
+
+export type InstallSurface =
+  | 'installed'
+  | 'native'
+  | 'ios-safari'
+  | 'ios-other'
+  | 'android'
+  | 'desktop';
+
+export function getInstallSurface(): InstallSurface {
+  if (isStandaloneDisplay()) return 'installed';
+  if (canPromptInstall()) return 'native';
+  if (isIosSafari()) return 'ios-safari';
+  if (isIosDevice()) return 'ios-other';
+  if (isAndroidDevice()) return 'android';
+  return 'desktop';
 }
 
 export function wasInstallDismissed() {

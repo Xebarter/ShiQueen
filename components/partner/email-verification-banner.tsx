@@ -16,7 +16,7 @@ export function EmailVerificationBanner() {
   if (!isPassword) return null;
 
   return (
-    <div className="border-b border-[#D5E4EF]/80 bg-[#EEF4F8] px-4 py-2.5 text-sm text-[#3D5A73] sm:px-6">
+    <div className="border-b border-sky-200/70 bg-sky-50 px-4 py-2.5 text-sm text-sky-900 sm:px-6">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2">
         <p className="flex items-center gap-2">
           <AlertCircle className="h-4 w-4 shrink-0" />

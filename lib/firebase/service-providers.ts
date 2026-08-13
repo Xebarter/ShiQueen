@@ -134,6 +134,12 @@ export async function createServiceProvider(
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
+
+  if (provider.approvalStatus === 'pending') {
+    void import('@/lib/pwa/notify-client').then(({ notifyAdminApprovalClients }) =>
+      notifyAdminApprovalClients('provider', id)
+    );
+  }
 }
 
 export async function updateServiceProvider(

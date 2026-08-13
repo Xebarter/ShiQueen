@@ -59,9 +59,9 @@ export default function ProviderListingsPage() {
               <Link
                 key={listing.id}
                 href={`/services/dashboard/listings/${listing.id}/edit`}
-                className="flex items-center gap-4 border-b border-[var(--partner-line)] px-5 py-4 last:border-0 transition hover:bg-[#FBF6F7]"
+                className="flex items-center gap-4 border-b border-border px-5 py-4 last:border-0 transition hover:bg-muted/40"
               >
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#F8E8EE] text-primary">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-muted text-primary">
                   <Scissors className="h-4 w-4" />
                 </span>
                 <div className="min-w-0 flex-1">

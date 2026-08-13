@@ -86,7 +86,7 @@ export default function SupplierProfilePage() {
           title="Business profile"
           description="How your company appears on the storefront."
         />
-      <form onSubmit={handleSubmit} className="max-w-xl space-y-4 rounded-2xl border border-[#E8E2D9] bg-card p-5 shadow-sm shadow-primary/5">
+      <form onSubmit={handleSubmit} className="max-w-xl space-y-4 rounded-xl border border-border/70 bg-card p-5 shadow-sm">
         <div className="space-y-2">
           <Label htmlFor="companyName">Company name</Label>
           <Input

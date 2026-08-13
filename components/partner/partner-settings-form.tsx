@@ -55,7 +55,7 @@ export function PartnerSettingsForm() {
 
   return (
     <div className="max-w-xl space-y-8">
-      <section className="partner-surface rounded-[1.4rem] p-5 sm:p-6">
+      <section className="rounded-xl border border-border/70 bg-card p-5 shadow-sm sm:p-6">
         <h2 className="text-base font-semibold">Sign-in method</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           You signed in with {provider}.
@@ -83,7 +83,7 @@ export function PartnerSettingsForm() {
       {provider === 'Email' && (
         <form
           onSubmit={handlePassword}
-          className="partner-surface space-y-4 rounded-[1.4rem] p-5 sm:p-6"
+          className="space-y-4 rounded-xl border border-border/70 bg-card p-5 shadow-sm sm:p-6"
         >
           <h2 className="text-base font-semibold">Change password</h2>
           <div className="space-y-1.5">
@@ -114,7 +114,7 @@ export function PartnerSettingsForm() {
 
       <form
         onSubmit={handlePrefs}
-        className="partner-surface space-y-3 rounded-[1.4rem] p-5 sm:p-6"
+        className="space-y-3 rounded-xl border border-border/70 bg-card p-5 shadow-sm sm:p-6"
       >
         <h2 className="text-base font-semibold">Notifications</h2>
         <p className="text-sm text-muted-foreground">
@@ -143,11 +143,11 @@ export function PartnerSettingsForm() {
         </Button>
       </form>
 
-      <section className="partner-surface space-y-3 rounded-[1.4rem] p-5 sm:p-6">
+      <section className="space-y-3 rounded-xl border border-border/70 bg-card p-5 shadow-sm sm:p-6">
         <h2 className="text-base font-semibold">Install app</h2>
         <p className="text-sm text-muted-foreground">
-          Add this dashboard to your home screen. New orders and bookings will play a sound,
-          vibrate, and show a notification.
+          Add this dashboard to your home screen. On Android, Chrome can install it directly. On
+          iPhone or iPad, use Safari → Share → Add to Home Screen.
         </p>
         <InstallAppButton />
         {!getVapidKey() ? (

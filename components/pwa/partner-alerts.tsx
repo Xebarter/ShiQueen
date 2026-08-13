@@ -87,7 +87,7 @@ export function PartnerAlerts() {
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-16 z-[70] flex justify-center px-3 md:top-4">
-      <div className="pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-2xl border border-primary/20 bg-white/95 p-3 shadow-lg backdrop-blur">
+      <div className="pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-xl border border-border/70 bg-card p-3 shadow-lg">
         <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <Bell className="h-4 w-4" />
         </span>

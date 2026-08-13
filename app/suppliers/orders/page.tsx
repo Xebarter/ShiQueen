@@ -14,6 +14,7 @@ import { subscribeOrdersForSupplier } from '@/lib/firebase/orders';
 import type { Order } from '@/lib/types/database';
 import { formatUGX } from '@/lib/wholesale-data';
 import { InstallWelcomeCard } from '@/components/pwa/install-welcome-card';
+import { cn } from '@/lib/utils';
 
 const STATUS: Record<Order['status'], string> = {
   pending: 'bg-amber-500/15 text-amber-800',
@@ -50,7 +51,7 @@ export default function SupplierOrdersPage() {
             description="When customers buy your listings, they will show up here."
           />
         ) : (
-          <PartnerCard className="divide-y divide-[#E8E2D9]">
+          <PartnerCard className="divide-y divide-border">
             {orders.map((order) => (
               <div key={order.id} className="px-4 py-3.5">
                 <div className="flex flex-wrap items-start justify-between gap-3">

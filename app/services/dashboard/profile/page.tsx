@@ -1,16 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 import toast from 'react-hot-toast';
-import { Loader2 } from 'lucide-react';
+import { ImagePlus, Loader2 } from 'lucide-react';
 import { ProviderShell } from '@/components/provider/provider-shell';
 import { PartnerPage, PartnerPageHeader } from '@/components/partner/partner-page';
+import { isRemoteProductImage } from '@/components/product-image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth-context';
 import { useServices } from '@/lib/services-context';
 import { updateServiceProvider } from '@/lib/firebase/service-providers';
+import { uploadProviderLogo } from '@/lib/firebase/storage';
 import { SERVICE_CATALOG } from '@/lib/service-catalog';
 import { cn } from '@/lib/utils';
 
@@ -18,7 +21,9 @@ export default function ProviderProfilePage() {
   const { providerId } = useAuth();
   const { providers } = useServices();
   const provider = providers.find((p) => p.id === providerId);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [form, setForm] = useState({
     name: '',
     businessName: '',
@@ -29,6 +34,7 @@ export default function ProviderProfilePage() {
     categoryIds: [] as string[],
     mobileServiceEnabled: false,
     serviceAreas: '',
+    profileImage: '',
   });
 
   useEffect(() => {
@@ -43,6 +49,7 @@ export default function ProviderProfilePage() {
       categoryIds: provider.categoryIds,
       mobileServiceEnabled: provider.mobileServiceEnabled,
       serviceAreas: provider.serviceAreas.join(', '),
+      profileImage: provider.profileImage,
     });
   }, [provider]);
 
@@ -55,6 +62,43 @@ export default function ProviderProfilePage() {
       </ProviderShell>
     );
   }
+
+  const previewInitial =
+    form.businessName.trim().charAt(0).toUpperCase() ||
+    form.name.trim().charAt(0).toUpperCase() ||
+    'S';
+
+  const persistLogo = async (profileImage: string) => {
+    await updateServiceProvider(providerId, { profileImage });
+    setForm((f) => ({ ...f, profileImage }));
+  };
+
+  const handleLogoUpload = async (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    setUploadingLogo(true);
+    try {
+      const url = await uploadProviderLogo(providerId, file);
+      await persistLogo(url);
+      toast.success('Logo uploaded');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not upload logo');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const handleLogoRemove = async () => {
+    setUploadingLogo(true);
+    try {
+      await persistLogo('');
+      toast.success('Logo removed');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not remove logo');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,6 +118,7 @@ export default function ProviderProfilePage() {
           .split(',')
           .map((s) => s.trim())
           .filter(Boolean),
+        profileImage: form.profileImage,
       });
       toast.success('Profile saved');
     } catch (error) {
@@ -91,7 +136,69 @@ export default function ProviderProfilePage() {
           title="Business profile"
           description="How you appear on the services marketplace."
         />
-      <form onSubmit={handleSubmit} className="partner-surface max-w-xl space-y-4 rounded-[1.4rem] p-5 sm:p-6">
+      <form onSubmit={handleSubmit} className="max-w-xl space-y-4 rounded-xl border border-border/70 bg-card p-5 shadow-sm sm:p-6">
+        <div className="space-y-2">
+          <Label>Business logo</Label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            className="hidden"
+            onChange={(e) => {
+              void handleLogoUpload(e.target.files);
+              e.target.value = '';
+            }}
+          />
+          <div className="flex items-center gap-4">
+            <div className="relative h-20 w-20 overflow-hidden rounded-2xl border border-border bg-muted">
+              {isRemoteProductImage(form.profileImage) ? (
+                <Image
+                  src={form.profileImage}
+                  alt={`${form.businessName || 'Business'} logo`}
+                  fill
+                  className="object-cover"
+                  sizes="80px"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center text-lg font-semibold text-muted-foreground">
+                  {previewInitial}
+                </div>
+              )}
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={uploadingLogo}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {uploadingLogo ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <ImagePlus className="mr-1.5 h-3.5 w-3.5" />
+                  )}
+                  {uploadingLogo ? 'Uploading…' : form.profileImage ? 'Change logo' : 'Upload logo'}
+                </Button>
+                {form.profileImage ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={uploadingLogo}
+                    onClick={() => void handleLogoRemove()}
+                  >
+                    Remove
+                  </Button>
+                ) : null}
+              </div>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                JPEG, PNG, WebP, or GIF · up to 5MB
+              </p>
+            </div>
+          </div>
+        </div>
         <div className="space-y-2">
           <Label htmlFor="name">Your name</Label>
           <Input id="name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
@@ -173,7 +280,7 @@ export default function ProviderProfilePage() {
             onChange={(e) => setForm((f) => ({ ...f, serviceAreas: e.target.value }))}
           />
         </div>
-        <Button type="submit" disabled={saving}>
+        <Button type="submit" disabled={saving || uploadingLogo}>
           {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           Save profile
         </Button>

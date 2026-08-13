@@ -13,6 +13,14 @@ service firebase.storage {
         && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
+    function isProviderOwner(providerId) {
+      return request.auth != null
+        && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.providerId == providerId
+        && firestore.exists(/databases/(default)/documents/serviceProviders/$(providerId))
+        && firestore.get(/databases/(default)/documents/serviceProviders/$(providerId)).data.ownerUid == request.auth.uid;
+    }
+
     // Product photos + marketing banners (admin/products, admin/ads)
     match /products/{productId}/{fileName} {
       // Anyone can view product images on the storefront
@@ -20,6 +28,14 @@ service firebase.storage {
 
       // Only admins can upload, replace, or delete product images
       allow write: if isAdmin()
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Service provider logos / profile photos
+    match /providers/{providerId}/{fileName} {
+      allow read: if true;
+      allow write: if (isAdmin() || isProviderOwner(providerId))
         && request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
     }

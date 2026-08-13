@@ -107,7 +107,7 @@ export default function ProviderBookingDetailPage() {
 
         <PartnerCard className="grid gap-6 p-6 sm:grid-cols-2">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Customer
             </p>
             <p className="mt-2 font-medium">{booking.customerName}</p>
@@ -117,10 +117,10 @@ export default function ProviderBookingDetailPage() {
             )}
           </div>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Payment
             </p>
-            <p className="mt-2 font-brand text-2xl font-medium tabular-nums">
+            <p className="mt-2 text-2xl font-bold tabular-nums">
               {formatUGX(booking.total)}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -129,7 +129,7 @@ export default function ProviderBookingDetailPage() {
           </div>
           {booking.customerAddress && (
             <div className="sm:col-span-2">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Address
               </p>
               <p className="mt-2 text-sm leading-relaxed">{booking.customerAddress}</p>
@@ -137,7 +137,7 @@ export default function ProviderBookingDetailPage() {
           )}
           {booking.notes && (
             <div className="sm:col-span-2">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Notes
               </p>
               <p className="mt-2 text-sm leading-relaxed">{booking.notes}</p>
@@ -147,14 +147,13 @@ export default function ProviderBookingDetailPage() {
 
         <div className="mt-6 flex flex-wrap gap-2">
           {nextStatus && (
-            <Button className="h-10 rounded-full px-5" disabled={busy} onClick={() => changeStatus(nextStatus)}>
+            <Button disabled={busy} onClick={() => changeStatus(nextStatus)}>
               Mark {nextStatus.replace('_', ' ')}
             </Button>
           )}
           {booking.status !== 'cancelled' && booking.status !== 'completed' && (
             <Button
               variant="outline"
-              className="h-10 rounded-full px-5"
               disabled={busy}
               onClick={() => changeStatus('cancelled')}
             >

@@ -26,7 +26,7 @@ import {
   updateServiceReviewVisibility,
   deleteServiceReview,
 } from '@/lib/firebase/service-reviews';
-import { slugifyServiceName } from '@/lib/services-utils';
+import { slugifyServiceName, resolveListingImage } from '@/lib/services-utils';
 import { formatUGX } from '@/lib/wholesale-data';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -43,6 +43,8 @@ import {
   X,
 } from 'lucide-react';
 import type { ServiceBookingStatus } from '@/lib/types/services';
+import { AdminEntityThumb } from '@/components/admin/admin-entity-thumb';
+import { isRemoteProductImage } from '@/components/product-image';
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: BarChart3 },
@@ -305,12 +307,28 @@ export function AdminServicesPage() {
             <Card>
               <CardHeader><CardTitle>Top services</CardTitle></CardHeader>
               <CardContent className="space-y-2 text-sm">
-                {stats.topServices.map((s) => (
-                  <div key={s.id} className="flex justify-between">
-                    <span>{s.name}</span>
-                    <span className="text-muted-foreground">{s.bookingCount} bookings</span>
+                {stats.topServices.map((s) => {
+                  const provider = providers.find((p) => p.id === s.providerId);
+                  const image =
+                    resolveListingImage(s) ||
+                    (isRemoteProductImage(provider?.profileImage)
+                      ? provider!.profileImage
+                      : null);
+                  return (
+                  <div key={s.id} className="flex items-center justify-between gap-3">
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <AdminEntityThumb
+                        src={image}
+                        label={s.name}
+                        sizeClassName="h-12 w-12"
+                        sizes="48px"
+                      />
+                      <span className="truncate">{s.name}</span>
+                    </span>
+                    <span className="shrink-0 text-muted-foreground">{s.bookingCount} bookings</span>
                   </div>
-                ))}
+                  );
+                })}
               </CardContent>
             </Card>
             <Card>
@@ -320,10 +338,18 @@ export function AdminServicesPage() {
                   <Link
                     key={p.id}
                     href={`/admin/services/providers/${p.id}`}
-                    className="flex justify-between hover:text-primary"
+                    className="flex items-center justify-between gap-3 hover:text-primary"
                   >
-                    <span>{p.businessName}</span>
-                    <span className="text-muted-foreground">{p.completedJobs} jobs</span>
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <AdminEntityThumb
+                        src={p.profileImage}
+                        label={p.businessName || p.name}
+                        sizeClassName="h-12 w-12"
+                        sizes="48px"
+                      />
+                      <span className="truncate">{p.businessName}</span>
+                    </span>
+                    <span className="shrink-0 text-muted-foreground">{p.completedJobs} jobs</span>
                   </Link>
                 ))}
               </CardContent>
@@ -517,23 +543,48 @@ export function AdminServicesPage() {
               <tbody>
                 {listings.map((s) => {
                   const provider = providers.find((p) => p.id === s.providerId);
+                  const supplier = getSupplierById(s.supplierId);
+                  const image =
+                    resolveListingImage(s) ||
+                    (isRemoteProductImage(provider?.profileImage)
+                      ? provider.profileImage
+                      : null);
                   return (
                   <tr key={s.id} className="border-t">
-                    <td className="px-4 py-3">{s.name}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <AdminEntityThumb src={image} label={s.name} sizeClassName="h-20 w-20" sizes="80px" />
+                        <span className="font-medium">{s.name}</span>
+                      </div>
+                    </td>
                     <td className="px-4 py-3">
                       {provider ? (
                         <Link
                           href={`/admin/services/providers/${provider.id}`}
-                          className="text-primary hover:underline"
+                          className="flex items-center gap-2 text-primary hover:underline"
                         >
-                          {provider.businessName || provider.name}
+                          <AdminEntityThumb
+                            src={provider.profileImage}
+                            label={provider.businessName || provider.name}
+                            sizeClassName="h-12 w-12"
+                        sizes="48px"
+                          />
+                          <span>{provider.businessName || provider.name}</span>
                         </Link>
                       ) : (
                         <span className="text-muted-foreground">Unassigned</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {getSupplierById(s.supplierId)?.name ?? 'SheQueen'}
+                    <td className="px-4 py-3">
+                      <span className="flex items-center gap-2 text-muted-foreground">
+                        <AdminEntityThumb
+                          src={supplier?.logo}
+                          label={supplier?.name ?? 'SheQueen'}
+                          sizeClassName="h-12 w-12"
+                        sizes="48px"
+                        />
+                        <span>{supplier?.name ?? 'SheQueen'}</span>
+                      </span>
                     </td>
                     <td className="px-4 py-3">{formatUGX(s.basePrice)}</td>
                     <td className="px-4 py-3">

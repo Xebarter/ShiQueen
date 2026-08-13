@@ -56,6 +56,7 @@ function mapSupplier(id: string, data: Record<string, unknown>): Supplier {
     address: String(data.address ?? ''),
     city: String(data.city ?? ''),
     notes: String(data.notes ?? ''),
+    logo: String(data.logo ?? data.profileImage ?? ''),
     categories,
     isDefault: Boolean(data.isDefault ?? false),
     isActive: Boolean(data.isActive ?? true),
@@ -83,6 +84,7 @@ export function buildDefaultSupplier(): Omit<Supplier, 'createdAt' | 'updatedAt'
     address: '',
     city: 'Kampala',
     notes: 'Default catalog supplier for products, packages, and services.',
+    logo: '',
     categories: ['products', 'packages', 'services'],
     isDefault: true,
     isActive: true,
@@ -171,6 +173,12 @@ export async function createSupplier(
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
+
+  if (supplier.approvalStatus === 'pending') {
+    void import('@/lib/pwa/notify-client').then(({ notifyAdminApprovalClients }) =>
+      notifyAdminApprovalClients('supplier', id)
+    );
+  }
 }
 
 export async function updateSupplier(
@@ -448,6 +456,7 @@ export async function linkSupplierRegistration(
     address: (input.address || '').trim(),
     city: input.city.trim(),
     notes: (input.notes || '').trim(),
+    logo: '',
     categories: input.categories.length > 0 ? input.categories : ['products', 'packages'],
     isDefault: false,
     isActive: false,

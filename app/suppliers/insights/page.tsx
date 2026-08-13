@@ -126,11 +126,11 @@ export default function SupplierDashboardPage() {
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Catalog revenue (matched orders)
           </p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">{formatUGX(revenue)}</p>
+          <p className="mt-1 text-2xl font-bold tabular-nums">{formatUGX(revenue)}</p>
         </PartnerCard>
 
         {lowStock.length > 0 && (
-          <section className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-950">
+          <section className="mb-8 rounded-xl border border-amber-200/70 bg-amber-50 p-4 text-amber-950">
             <p className="flex items-center gap-2 text-sm font-medium">
               <AlertTriangle className="h-4 w-4" />
               {lowStock.length} item{lowStock.length === 1 ? '' : 's'} need inventory attention
@@ -143,12 +143,12 @@ export default function SupplierDashboardPage() {
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               Recent products
             </h2>
-            <PartnerCard className="divide-y divide-[#E8E2D9]">
+            <PartnerCard className="divide-y divide-border">
               {myProducts.slice(0, 5).map((product) => (
                 <Link
                   key={product.id}
                   href={`/suppliers/products/${product.id}/edit`}
-                  className="flex items-center justify-between px-4 py-3.5 transition hover:bg-white/70"
+                  className="flex items-center justify-between px-4 py-3.5 transition hover:bg-muted/40"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{product.name}</p>

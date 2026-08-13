@@ -42,6 +42,7 @@ import {
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import { AdminEntityThumb } from '@/components/admin/admin-entity-thumb';
 
 type CatalogTab = 'products' | 'packages' | 'services';
 
@@ -258,7 +259,18 @@ export function AdminSupplierDetailPage() {
         </Link>
 
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
+          <div className="flex min-w-0 items-start gap-4">
+            <AdminEntityThumb
+              src={
+                isRemoteProductImage(supplier.logo)
+                  ? supplier.logo
+                  : supplierProducts.find((p) => isRemoteProductImage(p.image))?.image
+              }
+              label={supplier.companyName || supplier.name}
+              sizeClassName="h-24 w-24"
+              sizes="96px"
+            />
+            <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="truncate text-2xl font-bold tracking-tight sm:text-3xl">
                 {supplier.name}
@@ -284,6 +296,7 @@ export function AdminSupplierDetailPage() {
               {[supplier.companyName, supplier.contactName].filter(Boolean).join(' · ') ||
                 'Supplier profile'}
             </p>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-2">

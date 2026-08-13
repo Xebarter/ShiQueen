@@ -42,7 +42,7 @@ export default function SupplierInventoryPage() {
           <PartnerCard>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="border-b border-[#E8E2D9] bg-[#FBF8F4] text-left text-xs uppercase tracking-wide text-muted-foreground">
+                <thead className="border-b border-border bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground">
                   <tr>
                     <th className="px-4 py-3">Product</th>
                     <th className="px-4 py-3">SKU</th>
@@ -53,7 +53,7 @@ export default function SupplierInventoryPage() {
                 </thead>
                 <tbody>
                   {mine.map((product) => (
-                    <tr key={product.id} className="border-b border-[#E8E2D9] last:border-0">
+                    <tr key={product.id} className="border-b border-border last:border-0">
                       <td className="px-4 py-3">
                         <Link
                           href={`/suppliers/products/${product.id}/edit`}

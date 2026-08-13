@@ -20,6 +20,8 @@ export type PartnerPageTitle = {
   exact?: boolean;
 };
 
+export const PARTNER_TAB_SLIDE_KEY = 'shequeen-partner-tab-slide';
+
 /** Nested home routes (e.g. booking detail) stay highlighted on the home tab. */
 export function isPartnerNavActive(
   pathname: string,
@@ -54,4 +56,22 @@ export function getPartnerPageTitle(
     }
   }
   return 'Dashboard';
+}
+
+/** Index of the footer tab for swipe paging. More is active while the drawer is open. */
+export function getPartnerTabIndex(
+  pathname: string,
+  tabs: readonly PartnerTabItem[],
+  homeHref: string,
+  navOpen: boolean
+): number {
+  if (navOpen) {
+    const more = tabs.findIndex((tab) => tab.action === 'more');
+    return more;
+  }
+  if (pathname.includes('/edit') || pathname.endsWith('/new')) return -1;
+  return tabs.findIndex((tab) => {
+    if (!tab.href) return false;
+    return isPartnerNavActive(pathname, tab.href, homeHref);
+  });
 }

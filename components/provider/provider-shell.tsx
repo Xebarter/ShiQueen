@@ -36,7 +36,7 @@ export const PROVIDER_NAV: readonly PartnerNavItem[] = [
 export const PROVIDER_TABS: readonly PartnerTabItem[] = [
   { href: PROVIDER_HOME_HREF, label: 'Bookings', icon: ClipboardList },
   { href: '/services/dashboard/listings', label: 'Listings', icon: Scissors },
-  { href: '/services/dashboard/availability', label: 'Hours', icon: CalendarClock },
+  { href: '/services/dashboard/profile', label: 'Profile', icon: UserRound },
   { label: 'More', icon: Menu, action: 'more' },
 ];
 
@@ -56,24 +56,24 @@ export const PROVIDER_STATUS_META: Record<
 > = {
   pending: {
     label: 'Pending approval',
-    className: 'bg-[#F8EBD8] text-[#8A5A1E] ring-[#E0C48A]/50',
+    className: 'bg-amber-500/15 text-amber-800 ring-amber-500/25',
     banner:
       'Your provider account is awaiting admin approval. You can finish your profile now — listing services unlocks once you are approved.',
   },
   approved: {
     label: 'Approved',
-    className: 'bg-[#E5F2EA] text-[#2F5A40] ring-[#B7D4C2]/50',
+    className: 'bg-emerald-500/15 text-emerald-800 ring-emerald-500/25',
     banner: 'Your account is approved. Active listings appear on the public services marketplace.',
   },
   rejected: {
     label: 'Rejected',
-    className: 'bg-[#F6E4E6] text-[#7A3B42] ring-[#E0B8BC]/50',
+    className: 'bg-rose-500/15 text-rose-800 ring-rose-500/25',
     banner:
       'Your application was not approved. Contact SheQueen support if you believe this is a mistake.',
   },
   suspended: {
     label: 'Suspended',
-    className: 'bg-[#F1ECE8] text-[#6B5E56] ring-[#D8D2CC]/50',
+    className: 'bg-slate-500/15 text-slate-800 ring-slate-500/25',
     banner:
       'Your provider account is suspended. Public listings are hidden until an admin reactivates you.',
   },
@@ -110,7 +110,7 @@ export function ProviderShell({ children }: ProviderShellProps) {
       <div
         className={cn(
           figtree.className,
-          'flex min-h-[100dvh] items-center justify-center bg-[#F7F5F2]'
+          'admin-app flex min-h-[100dvh] items-center justify-center bg-background'
         )}
       >
         <div className="text-center">
@@ -129,6 +129,7 @@ export function ProviderShell({ children }: ProviderShellProps) {
       marketplaceLabel="Marketplace"
       businessName={provider?.businessName || provider?.name || 'Services dashboard'}
       email={profile?.email}
+      avatarUrl={provider?.profileImage}
       statusLabel={statusMeta.label}
       statusClassName={statusMeta.className}
       statusBanner={

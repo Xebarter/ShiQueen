@@ -55,12 +55,12 @@ export default function SupplierPackagesPage() {
             }
           />
         ) : (
-          <PartnerCard className="divide-y divide-[#E8E2D9]">
+          <PartnerCard className="divide-y divide-border">
             {mine.map((pkg) => (
               <Link
                 key={pkg.id}
                 href={`/suppliers/packages/${pkg.id}/edit`}
-                className="flex items-center justify-between gap-3 px-4 py-3.5 transition hover:bg-white/70"
+                className="flex items-center justify-between gap-3 px-4 py-3.5 transition hover:bg-muted/40"
               >
                 <div className="min-w-0">
                   <p className="truncate font-medium">{pkg.name}</p>

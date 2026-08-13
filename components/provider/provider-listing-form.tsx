@@ -113,7 +113,7 @@ export function ProviderListingForm({ mode, providerId, initial }: ProviderListi
   return (
     <form
       onSubmit={handleSubmit}
-      className="partner-surface max-w-xl space-y-4 rounded-[1.4rem] p-5 sm:p-6"
+      className="max-w-xl space-y-4 rounded-xl border border-border/70 bg-card p-5 shadow-sm sm:p-6"
     >
       <div className="space-y-2">
         <Label htmlFor="name">Service name</Label>

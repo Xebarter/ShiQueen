@@ -17,6 +17,7 @@ export interface Supplier {
   address: string;
   city: string;
   notes: string;
+  logo: string;
   categories: SupplierCategory[];
   isDefault: boolean;
   isActive: boolean;

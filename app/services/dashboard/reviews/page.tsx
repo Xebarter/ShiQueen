@@ -40,11 +40,11 @@ export default function ProviderReviewsPage() {
             {mine.map((review) => (
               <article
                 key={review.id}
-                className="border-b border-[var(--partner-line)] px-5 py-5 last:border-0"
+                className="border-b border-border px-5 py-5 last:border-0"
               >
                 <div className="flex items-center justify-between gap-3">
                   <p className="font-medium">{review.customerName}</p>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#F4EBD4] px-2.5 py-0.5 text-[11px] font-semibold text-[#8A6A2A]">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-500/20">
                     <Star className="h-3 w-3 fill-current" />
                     {review.rating}/5
                   </span>

@@ -68,7 +68,7 @@ export default function ProviderBookingsPage() {
                 'rounded-full px-3.5 py-1.5 text-xs font-medium transition',
                 filter === item.id
                   ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'bg-white/70 text-muted-foreground ring-1 ring-inset ring-[var(--partner-line)] hover:bg-white'
+                  : 'bg-background text-muted-foreground ring-1 ring-inset ring-border hover:bg-secondary'
               )}
             >
               {item.label}
@@ -87,7 +87,7 @@ export default function ProviderBookingsPage() {
               <Link
                 key={booking.id}
                 href={`/services/dashboard/bookings/${booking.id}`}
-                className="flex items-center justify-between gap-4 border-b border-[var(--partner-line)] px-5 py-4 last:border-0 transition hover:bg-[#FBF6F7]"
+                className="flex items-center justify-between gap-4 border-b border-border px-5 py-4 last:border-0 transition hover:bg-muted/40"
               >
                 <div className="min-w-0">
                   <p className="truncate font-medium">{booking.serviceName}</p>

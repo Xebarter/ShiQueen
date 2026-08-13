@@ -1,8 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import {
   BadgeCheck,
   Check,
@@ -18,7 +17,8 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { isRemoteProductImage } from '@/components/product-image';
+import { AdminEntityThumb } from '@/components/admin/admin-entity-thumb';
+import { AdminBulkApproveBar, AdminSelectCheckbox } from '@/components/admin/admin-bulk-approve';
 import { useServices } from '@/lib/services-context';
 import {
   updateServiceProvider,
@@ -63,6 +63,7 @@ export function AdminServiceProvidersDirectory() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<FilterId>('all');
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const listingCounts = useMemo(() => {
     const map: Record<string, { total: number; active: number }> = {};
@@ -121,6 +122,19 @@ export function AdminServiceProvidersDirectory() {
     [providers, listings]
   );
 
+  const pendingInView = useMemo(
+    () => filtered.filter((provider) => provider.approvalStatus === 'pending'),
+    [filtered]
+  );
+
+  useEffect(() => {
+    const allowed = new Set(pendingInView.map((provider) => provider.id));
+    setSelectedIds((prev) => {
+      const next = prev.filter((id) => allowed.has(id));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [pendingInView]);
+
   const handleToggle = async (
     provider: ServiceProvider,
     patch: Partial<Pick<ServiceProvider, 'isActive' | 'isVerified'>>
@@ -158,6 +172,40 @@ export function AdminServiceProvidersDirectory() {
       toast.success(`${provider.businessName} ${status}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to update approval');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const toggleSelected = (id: string, checked: boolean) => {
+    setSelectedIds((prev) =>
+      checked ? (prev.includes(id) ? prev : [...prev, id]) : prev.filter((item) => item !== id)
+    );
+  };
+
+  const handleApproveSelected = async () => {
+    const targets = pendingInView.filter((provider) => selectedIds.includes(provider.id));
+    if (targets.length === 0) return;
+    if (
+      !confirm(
+        `Approve ${targets.length} provider${targets.length === 1 ? '' : 's'}? They will appear on the services page.`
+      )
+    ) {
+      return;
+    }
+    setBusyId('bulk');
+    try {
+      for (const provider of targets) {
+        await setProviderApprovalStatus(provider.id, 'approved');
+      }
+      toast.success(
+        targets.length === 1
+          ? `${targets[0].businessName || targets[0].name} approved`
+          : `${targets.length} providers approved`
+      );
+      setSelectedIds([]);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to approve providers');
     } finally {
       setBusyId(null);
     }
@@ -259,6 +307,20 @@ export function AdminServiceProvidersDirectory() {
               </button>
             ))}
           </div>
+          <AdminBulkApproveBar
+            pendingCount={pendingInView.length}
+            selectedCount={selectedIds.length}
+            allSelected={
+              pendingInView.length > 0 && selectedIds.length === pendingInView.length
+            }
+            someSelected={selectedIds.length > 0 && selectedIds.length < pendingInView.length}
+            onToggleAll={(checked) =>
+              setSelectedIds(checked ? pendingInView.map((provider) => provider.id) : [])
+            }
+            onApproveSelected={() => void handleApproveSelected()}
+            busy={busyId === 'bulk'}
+            noun="provider"
+          />
         </CardHeader>
 
         <CardContent className="bg-muted/15 p-3 sm:p-4">
@@ -283,33 +345,32 @@ export function AdminServiceProvidersDirectory() {
                 const categoryNames = provider.categoryIds
                   .map((id) => categories.find((c) => c.id === id)?.name)
                   .filter(Boolean);
-                const busy = busyId === provider.id;
+                const busy = busyId === provider.id || busyId === 'bulk';
                 return (
                   <div
                     key={provider.id}
                     className="rounded-xl border border-border/80 bg-card p-4 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:border-primary/25 hover:shadow-md"
                   >
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                      <Link
-                        href={`/admin/services/providers/${provider.id}`}
-                        className="min-w-0 flex-1 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                      >
+                      <div className="flex min-w-0 flex-1 items-start gap-3">
+                        {provider.approvalStatus === 'pending' ? (
+                          <AdminSelectCheckbox
+                            className="mt-2"
+                            checked={selectedIds.includes(provider.id)}
+                            onChange={(checked) => toggleSelected(provider.id, checked)}
+                          />
+                        ) : null}
+                        <Link
+                          href={`/admin/services/providers/${provider.id}`}
+                          className="min-w-0 flex-1 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        >
                         <div className="flex items-start gap-3">
-                          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-primary/10 text-primary">
-                            {isRemoteProductImage(provider.profileImage) ? (
-                              <Image
-                                src={provider.profileImage}
-                                alt=""
-                                fill
-                                className="object-cover"
-                                sizes="48px"
-                              />
-                            ) : (
-                              <div className="flex h-full items-center justify-center text-sm font-semibold">
-                                {(provider.businessName || provider.name).slice(0, 1).toUpperCase()}
-                              </div>
-                            )}
-                          </div>
+                          <AdminEntityThumb
+                            src={provider.profileImage}
+                            label={provider.businessName || provider.name}
+                            sizeClassName="h-20 w-20 sm:h-24 sm:w-24"
+                            sizes="96px"
+                          />
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="truncate text-base font-semibold hover:text-primary">
@@ -379,7 +440,8 @@ export function AdminServiceProvidersDirectory() {
                             )}
                           </div>
                         </div>
-                      </Link>
+                        </Link>
+                      </div>
                       <div className="flex flex-wrap justify-end gap-2">
                         {provider.approvalStatus === 'pending' && (
                           <>

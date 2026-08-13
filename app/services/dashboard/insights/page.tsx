@@ -64,33 +64,31 @@ export default function ProviderDashboardPage() {
   return (
     <ProviderShell>
       <PartnerPage>
-        <div className="partner-surface relative mb-8 overflow-hidden rounded-[1.6rem] p-6 sm:p-8">
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#F8E8EE] via-white/40 to-[#F6EEDC]/80" />
-          <div className="relative flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <div className="mb-8 rounded-xl border border-border/70 bg-card p-5 shadow-sm sm:p-6">
+          <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/70">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Insights
               </p>
-              <h1 className="mt-2 font-brand text-3xl font-medium tracking-tight sm:text-[2.5rem]">
+              <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
                 {greeting}
               </h1>
-              <p className="mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
+              <p className="mt-2 max-w-md text-sm text-muted-foreground">
                 {[provider?.businessName || 'Your studio', provider?.city].filter(Boolean).join(' · ')}
               </p>
             </div>
             <div className="flex flex-col items-start gap-4 md:items-end">
               <div className="text-left md:text-right">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Completed earnings
                 </p>
-                <p className="mt-1 font-brand text-3xl font-medium tabular-nums tracking-tight">
+                <p className="mt-1 text-2xl font-bold tabular-nums tracking-tight">
                   {formatUGX(earnings)}
                 </p>
               </div>
               <ApprovedActionLink
                 allowed={allowed}
                 href="/services/dashboard/listings/new"
-                className="h-10 rounded-full px-4 shadow-[0_10px_24px_rgba(120,40,70,0.12)]"
               >
                 <Plus className="h-4 w-4" />
                 Add listing
@@ -138,7 +136,7 @@ export default function ProviderDashboardPage() {
                 <Link
                   key={booking.id}
                   href={`/services/dashboard/bookings/${booking.id}`}
-                  className="flex items-center justify-between gap-4 border-b border-[var(--partner-line)] px-5 py-4 last:border-0 transition hover:bg-[#FBF6F7]"
+                  className="flex items-center justify-between gap-4 border-b border-border px-5 py-4 last:border-0 transition hover:bg-muted/40"
                 >
                   <div className="min-w-0">
                     <p className="truncate font-medium">{booking.serviceName}</p>

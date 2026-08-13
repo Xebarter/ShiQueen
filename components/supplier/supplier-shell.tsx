@@ -116,7 +116,7 @@ export function SupplierShell({ children, publicPage = false }: SupplierShellPro
       <div
         className={cn(
           figtree.className,
-          'flex min-h-[100dvh] items-center justify-center bg-[#F7F5F2]'
+          'admin-app flex min-h-[100dvh] items-center justify-center bg-background'
         )}
       >
         <div className="text-center">

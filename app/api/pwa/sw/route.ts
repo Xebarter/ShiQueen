@@ -57,10 +57,13 @@ if (FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.messagingSenderId && FIREBASE_CONF
       const title = (payload.notification && payload.notification.title) || payload.data?.title || 'SheQueen';
       const body = (payload.notification && payload.notification.body) || payload.data?.body || 'You have a new update.';
       const url = payload.data?.url || '/';
+      const tag = payload.data?.tag || payload.data?.type || 'shequeen';
       return self.registration.showNotification(title, {
         body,
         icon: '/web-app-manifest-192x192.png',
         badge: '/web-app-manifest-192x192.png',
+        tag,
+        renotify: true,
         data: { url, type: payload.data?.type || '' },
         vibrate: [180, 80, 180, 80, 240],
       });

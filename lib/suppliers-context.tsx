@@ -115,6 +115,7 @@ export function SuppliersProvider({ children }: { children: ReactNode }) {
         address: data.address,
         city: data.city,
         notes: data.notes,
+        logo: data.logo ?? '',
         categories: data.categories,
         isDefault: data.isDefault,
         isActive: data.isActive,
