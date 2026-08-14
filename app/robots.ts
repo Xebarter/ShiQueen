@@ -6,6 +6,10 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
+        userAgent: ['facebookexternalhit', 'Twitterbot', 'WhatsApp', 'TelegramBot'],
+        allow: '/',
+      },
+      {
         userAgent: '*',
         allow: '/',
         disallow: [

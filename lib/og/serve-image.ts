@@ -1,7 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { NextResponse } from 'next/server';
-import { composeShareJpeg } from '@/lib/og/compose';
 
 export const CACHE_CONTROL =
   'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400';
@@ -91,13 +90,18 @@ export async function serveDefaultOgImage(): Promise<NextResponse> {
       },
     });
   } catch {
-    const fallback = await composeShareJpeg({});
-    return new NextResponse(new Uint8Array(fallback), {
-      headers: {
-        'Content-Type': 'image/jpeg',
-        'Cache-Control': CACHE_CONTROL,
-        'CDN-Cache-Control': 'public, s-maxage=604800, stale-while-revalidate=86400',
-      },
-    });
+    try {
+      const { composeShareJpeg } = await import('@/lib/og/compose');
+      const fallback = await composeShareJpeg({});
+      return new NextResponse(new Uint8Array(fallback), {
+        headers: {
+          'Content-Type': 'image/jpeg',
+          'Cache-Control': CACHE_CONTROL,
+          'CDN-Cache-Control': 'public, s-maxage=604800, stale-while-revalidate=86400',
+        },
+      });
+    } catch {
+      return new NextResponse(null, { status: 404 });
+    }
   }
 }

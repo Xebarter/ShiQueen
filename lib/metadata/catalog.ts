@@ -5,6 +5,7 @@ import type { ServiceCategory, ServiceListing } from '@/lib/types/services';
 import { BRAND_NAME } from '@/lib/brand';
 import { SEO_CITY, SEO_COUNTRY, pageMetadata } from '@/lib/seo/site';
 import { toAbsoluteUrl } from '@/lib/site-url';
+import { resolveProductOgImage } from '@/lib/metadata/resolve-og-image';
 
 function firstSentence(text: string, fallback: string): string {
   const trimmed = text.replace(/\s+/g, ' ').trim();
@@ -30,12 +31,14 @@ export function buildProductMetadata(product: Product): Metadata {
   );
 
   const cacheBust = product.updatedAt?.getTime?.() || 0;
+  const productPhoto = resolveProductOgImage(product);
+  const composed = toAbsoluteUrl(`${productOgImagePath(product.id)}?v=${cacheBust}`);
 
   return pageMetadata({
     title: product.name,
     description,
     path,
-    image: toAbsoluteUrl(`${productOgImagePath(product.id)}?v=${cacheBust}`),
+    image: productPhoto || composed,
     imageWidth: 1200,
     imageHeight: 630,
     keywords: [

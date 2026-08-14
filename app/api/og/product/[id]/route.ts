@@ -1,6 +1,7 @@
 import { getProductForSeo } from '@/lib/seo/catalog-server';
 import { resolveProductOgImage } from '@/lib/metadata/resolve-og-image';
 import { renderShareOgImage } from '@/lib/og/render';
+import { serveDefaultOgImage } from '@/lib/og/serve-image';
 
 export const runtime = 'nodejs';
 export const revalidate = 86400;
@@ -11,15 +12,19 @@ type Props = {
 };
 
 export async function GET(_request: Request, { params }: Props) {
-  const { id } = await params;
-  const product = await getProductForSeo(id);
-  const imageUrl = product ? resolveProductOgImage(product) : undefined;
-  const version = product?.updatedAt?.getTime?.() ?? 0;
+  try {
+    const { id } = await params;
+    const product = await getProductForSeo(id);
+    const imageUrl = product ? resolveProductOgImage(product) : undefined;
+    const version = product?.updatedAt?.getTime?.() ?? 0;
 
-  return renderShareOgImage({
-    cacheKey: `product:${id}:${version}:${imageUrl ?? ''}`,
-    imageUrl,
-    title: product?.name,
-    eyebrow: product?.category,
-  });
+    return await renderShareOgImage({
+      cacheKey: `product:${id}:${version}:${imageUrl ?? ''}`,
+      imageUrl,
+      title: product?.name,
+      eyebrow: product?.category,
+    });
+  } catch {
+    return serveDefaultOgImage();
+  }
 }

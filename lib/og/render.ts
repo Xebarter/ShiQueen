@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCachedOg, setCachedOg } from '@/lib/og/cache';
-import { composeShareJpeg } from '@/lib/og/compose';
-import { fetchOgPhotoBuffer } from '@/lib/og/photo';
-import { CACHE_CONTROL, serveDefaultOgImage } from '@/lib/og/serve-image';
+import { CACHE_CONTROL, serveDefaultOgImage, serveRemoteImage } from '@/lib/og/serve-image';
 
 export function ogJpegResponse(jpeg: Buffer): NextResponse {
   return new NextResponse(new Uint8Array(jpeg), {
@@ -24,9 +22,10 @@ export async function renderShareOgImage(options: {
   const cached = getCachedOg(options.cacheKey);
   if (cached) return ogJpegResponse(cached);
 
-  const photo = options.imageUrl ? await fetchOgPhotoBuffer(options.imageUrl) : null;
-
   try {
+    const { fetchOgPhotoBuffer } = await import('@/lib/og/photo');
+    const { composeShareJpeg } = await import('@/lib/og/compose');
+    const photo = options.imageUrl ? await fetchOgPhotoBuffer(options.imageUrl) : null;
     const jpeg = await composeShareJpeg({
       photo,
       title: options.title,
@@ -35,14 +34,10 @@ export async function renderShareOgImage(options: {
     setCachedOg(options.cacheKey, jpeg);
     return ogJpegResponse(jpeg);
   } catch {
-    try {
-      const jpeg = await composeShareJpeg({
-        title: options.title,
-        eyebrow: options.eyebrow,
-      });
-      return ogJpegResponse(jpeg);
-    } catch {
-      return serveDefaultOgImage();
+    if (options.imageUrl) {
+      const original = await serveRemoteImage(options.imageUrl);
+      if (original) return original;
     }
+    return serveDefaultOgImage();
   }
 }
