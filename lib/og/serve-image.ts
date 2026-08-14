@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 export const CACHE_CONTROL =
   'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400';
 
-function sniffImageType(bytes: Uint8Array, fallbackUrl: string): string | null {
+export function sniffImageType(bytes: Uint8Array, fallbackUrl: string): string | null {
   if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
     return 'image/jpeg';
   }
