@@ -29,9 +29,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     if (!isFirebaseAdminConfigured()) {
       return pageMetadata({
         title: 'Product',
-        description: `Shop this product at ${BRAND_NAME}, a women's online shop in Uganda.`,
+        description: `Shop this at ${BRAND_NAME}.`,
         path: `/products/${id}`,
         image: toAbsoluteUrl(productOgImagePath(id)),
+        imageWidth: 1200,
+        imageHeight: 630,
       });
     }
     return buildFallbackMetadata('Product not found');

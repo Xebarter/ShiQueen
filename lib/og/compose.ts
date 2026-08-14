@@ -2,9 +2,6 @@ import sharp from 'sharp';
 import { BRAND_NAME, BRAND_THEME } from '@/lib/brand';
 import { OG_HEIGHT, OG_WIDTH } from '@/lib/og/size';
 
-const PREP_MAX = 1600;
-const PRODUCT_MAX_WIDTH = OG_WIDTH - 64;
-const PRODUCT_MAX_HEIGHT = OG_HEIGHT - 40;
 const OG_JPEG_LIMIT = 300_000;
 const GOLD = '#C9A36A';
 const CREAM = '#FAF5F4';
@@ -20,15 +17,6 @@ function escapeXml(value: string): string {
 
 function chromeOverlay(): Buffer {
   return Buffer.from(`<svg width="${OG_WIDTH}" height="${OG_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <radialGradient id="vig" cx="50%" cy="46%" r="74%">
-      <stop offset="50%" stop-color="#2d1228" stop-opacity="0"/>
-      <stop offset="100%" stop-color="#2d1228" stop-opacity="0.32"/>
-    </radialGradient>
-  </defs>
-  <rect width="${OG_WIDTH}" height="${OG_HEIGHT}" fill="url(#vig)"/>
-  <rect x="18" y="18" width="${OG_WIDTH - 36}" height="${OG_HEIGHT - 36}" fill="none" stroke="${GOLD}" stroke-opacity="0.48" stroke-width="1.5"/>
-  <rect x="24" y="24" width="${OG_WIDTH - 48}" height="${OG_HEIGHT - 48}" fill="none" stroke="${CREAM}" stroke-opacity="0.16" stroke-width="1"/>
   <rect x="32" y="26" rx="22" ry="22" width="172" height="44" fill="${CREAM}"/>
   <text x="118" y="55" text-anchor="middle" font-size="22" font-weight="700" font-family="Georgia, Times New Roman, serif" fill="${BRAND_THEME.themeColor}">${BRAND_NAME}</text>
   <rect x="0" y="${OG_HEIGHT - 6}" width="${OG_WIDTH}" height="6" fill="${GOLD}"/>
@@ -66,38 +54,22 @@ async function encodeOgJpeg(pipeline: sharp.Sharp): Promise<Buffer> {
 }
 
 async function composeProductPhoto(photo: Buffer): Promise<Buffer> {
-  const prepared = await sharp(photo, {
+  const filled = await sharp(photo, {
     failOn: 'none',
     sequentialRead: true,
     animated: false,
     limitInputPixels: 40_000_000,
   })
     .rotate()
-    .resize(PREP_MAX, PREP_MAX, {
-      fit: 'inside',
-      withoutEnlargement: true,
+    .resize(OG_WIDTH, OG_HEIGHT, {
+      fit: 'cover',
+      position: 'centre',
       kernel: 'cubic',
     })
     .toBuffer();
 
-  const background = await sharp(prepared)
-    .resize(OG_WIDTH, OG_HEIGHT, { fit: 'cover', position: 'centre', kernel: 'cubic' })
-    .blur(20)
-    .modulate({ brightness: 0.58, saturation: 1.06 })
-    .toBuffer();
-
-  const product = await sharp(prepared)
-    .resize(PRODUCT_MAX_WIDTH, PRODUCT_MAX_HEIGHT, { fit: 'inside', kernel: 'cubic' })
-    .toBuffer({ resolveWithObject: true });
-
-  const left = Math.max(0, Math.round((OG_WIDTH - product.info.width) / 2));
-  const top = Math.max(0, Math.round((OG_HEIGHT - product.info.height) / 2));
-
   return encodeOgJpeg(
-    sharp(background).composite([
-      { input: product.data, left, top },
-      { input: chromeOverlay(), blend: 'over' },
-    ])
+    sharp(filled).composite([{ input: chromeOverlay(), blend: 'over' }])
   );
 }
 

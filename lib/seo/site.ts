@@ -101,7 +101,9 @@ export function pageMetadata(options: {
       card: 'summary_large_image',
       title: ogTitle,
       description: options.description,
-      images: [image],
+      images: imageWidth && imageHeight
+        ? [{ url: image, width: imageWidth, height: imageHeight }]
+        : [image],
     },
   };
 }
