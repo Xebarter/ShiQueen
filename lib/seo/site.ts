@@ -64,7 +64,11 @@ export function pageMetadata(options: {
     url: image,
     secureUrl: image.startsWith('https://') ? image : undefined,
     alt: ogTitle,
-    type: image.includes('/api/og/') || image.endsWith('.png') ? 'image/png' : undefined,
+    type: image.includes('/api/og/') || image.endsWith('.jpg') || image.endsWith('.jpeg')
+      ? 'image/jpeg'
+      : image.endsWith('.png')
+        ? 'image/png'
+        : undefined,
     ...(options.imageWidth && options.imageHeight
       ? {
           width: options.imageWidth,

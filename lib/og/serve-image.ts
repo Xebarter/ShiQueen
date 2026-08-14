@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { NextResponse } from 'next/server';
+import { composeShareJpeg } from '@/lib/og/compose';
 
 export const CACHE_CONTROL =
   'public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400';
@@ -79,11 +80,21 @@ export async function serveRemoteImage(url: string): Promise<NextResponse | null
 }
 
 export async function serveDefaultOgImage(): Promise<NextResponse> {
-  const buf = await readFile(join(process.cwd(), 'public/web-app-manifest-512x512.png'));
-  return new NextResponse(buf, {
-    headers: {
-      'Content-Type': 'image/png',
-      'Cache-Control': CACHE_CONTROL,
-    },
-  });
+  try {
+    const buf = await readFile(join(process.cwd(), 'public/web-app-manifest-512x512.png'));
+    return new NextResponse(buf, {
+      headers: {
+        'Content-Type': 'image/png',
+        'Cache-Control': CACHE_CONTROL,
+      },
+    });
+  } catch {
+    const fallback = await composeShareJpeg({});
+    return new NextResponse(new Uint8Array(fallback), {
+      headers: {
+        'Content-Type': 'image/jpeg',
+        'Cache-Control': CACHE_CONTROL,
+      },
+    });
+  }
 }

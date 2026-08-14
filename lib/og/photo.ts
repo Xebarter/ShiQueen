@@ -1,6 +1,6 @@
 import { sniffImageType } from '@/lib/og/serve-image';
 
-export async function fetchOgPhotoSrc(url: string): Promise<string | null> {
+export async function fetchOgPhotoBuffer(url: string): Promise<Buffer | null> {
   try {
     const upstream = await fetch(url, {
       headers: {
@@ -9,26 +9,19 @@ export async function fetchOgPhotoSrc(url: string): Promise<string | null> {
       },
       redirect: 'follow',
       cache: 'no-store',
+      signal: AbortSignal.timeout(8000),
     });
     if (!upstream.ok) return null;
 
     const buffer = Buffer.from(await upstream.arrayBuffer());
     if (buffer.byteLength === 0) return null;
 
-    const headerType = (upstream.headers.get('content-type') ?? '')
-      .split(';')[0]
-      .trim()
-      .toLowerCase();
     const sniffed = sniffImageType(new Uint8Array(buffer), url);
-    const contentType =
-      sniffed ??
-      (headerType.startsWith('image/') && !headerType.includes('avif') ? headerType : null) ??
-      'image/jpeg';
+    if (sniffed?.includes('avif')) return null;
 
-    if (contentType.includes('avif')) return null;
-
-    return `data:${contentType};base64,${buffer.toString('base64')}`;
+    return buffer;
   } catch {
     return null;
   }
 }
+
