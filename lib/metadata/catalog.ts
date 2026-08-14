@@ -14,11 +14,11 @@ function firstSentence(text: string, fallback: string): string {
 }
 
 export function productOgImagePath(productId: string): string {
-  return `/api/og/product/${productId}`;
+  return `/og/product/${encodeURIComponent(productId)}.jpg`;
 }
 
 export function packageOgImagePath(packageId: string): string {
-  return `/api/og/package/${packageId}`;
+  return `/og/package/${encodeURIComponent(packageId)}.jpg`;
 }
 
 export function buildProductMetadata(product: Product): Metadata {

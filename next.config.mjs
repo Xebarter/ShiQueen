@@ -10,6 +10,8 @@ const nextConfig = {
     return [
       { source: '/sw.js', destination: '/api/pwa/sw' },
       { source: '/api/dpo/callback', destination: '/api/payments/card/callback' },
+      { source: '/og/product/:id.jpg', destination: '/api/og/product/:id' },
+      { source: '/og/package/:id.jpg', destination: '/api/og/package/:id' },
     ];
   },
   async redirects() {

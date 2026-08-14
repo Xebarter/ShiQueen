@@ -60,19 +60,22 @@ export function pageMetadata(options: {
     : options.title.includes(BRAND_NAME)
       ? options.title
       : `${options.title} | ${BRAND_NAME}`;
+  const isOgJpeg =
+    image.includes('/og/product/') ||
+    image.includes('/og/package/') ||
+    image.includes('/api/og/');
+  const isJpeg = isOgJpeg || /\.jpe?g(\?|#|$)/i.test(image);
+  const imageWidth = options.imageWidth ?? (isOgJpeg ? 1200 : undefined);
+  const imageHeight = options.imageHeight ?? (isOgJpeg ? 630 : undefined);
   const ogImage = {
     url: image,
     secureUrl: image.startsWith('https://') ? image : undefined,
     alt: ogTitle,
-    type: image.includes('/api/og/') || image.endsWith('.jpg') || image.endsWith('.jpeg')
-      ? 'image/jpeg'
-      : image.endsWith('.png')
-        ? 'image/png'
-        : undefined,
-    ...(options.imageWidth && options.imageHeight
+    type: isJpeg ? 'image/jpeg' : /\.png(\?|#|$)/i.test(image) ? 'image/png' : undefined,
+    ...(imageWidth && imageHeight
       ? {
-          width: options.imageWidth,
-          height: options.imageHeight,
+          width: imageWidth,
+          height: imageHeight,
         }
       : {}),
   };

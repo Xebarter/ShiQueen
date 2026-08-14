@@ -2,6 +2,14 @@ import sharp from 'sharp';
 import { BRAND_NAME, BRAND_THEME } from '@/lib/brand';
 import { OG_HEIGHT, OG_WIDTH } from '@/lib/og/size';
 
+const PREP_MAX = 1600;
+const PRODUCT_MAX_WIDTH = OG_WIDTH - 64;
+const PRODUCT_MAX_HEIGHT = OG_HEIGHT - 40;
+const OG_JPEG_LIMIT = 300_000;
+const GOLD = '#C9A36A';
+const CREAM = '#FAF5F4';
+const BLUSH = '#F5E6C8';
+
 function escapeXml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -10,41 +18,87 @@ function escapeXml(value: string): string {
     .replace(/"/g, '&quot;');
 }
 
-function overlaySvg(title?: string, eyebrow?: string): Buffer {
-  const label = title
-    ? escapeXml(title.length > 48 ? `${title.slice(0, 45).trimEnd()}…` : title)
-    : '';
-  const category = eyebrow ? escapeXml(eyebrow.toUpperCase()) : '';
-
+function chromeOverlay(): Buffer {
   return Buffer.from(`<svg width="${OG_WIDTH}" height="${OG_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#2d1228" stop-opacity="0.16"/>
-      <stop offset="42%" stop-color="#2d1228" stop-opacity="0"/>
-      <stop offset="100%" stop-color="#2d1228" stop-opacity="0.58"/>
-    </linearGradient>
+    <radialGradient id="vig" cx="50%" cy="46%" r="74%">
+      <stop offset="50%" stop-color="#2d1228" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#2d1228" stop-opacity="0.32"/>
+    </radialGradient>
   </defs>
-  <rect width="${OG_WIDTH}" height="${OG_HEIGHT}" fill="url(#g)"/>
-  <rect x="22" y="22" width="${OG_WIDTH - 44}" height="${OG_HEIGHT - 44}" fill="none" stroke="rgba(245,230,200,0.42)" stroke-width="1"/>
-  <rect x="44" y="40" rx="28" ry="28" width="196" height="52" fill="rgb(250,245,244)"/>
-  <text x="142" y="74" text-anchor="middle" font-size="26" font-weight="700" font-family="Georgia, Times New Roman, serif" fill="${BRAND_THEME.themeColor}">${BRAND_NAME}</text>
-  ${category ? `<text x="48" y="538" font-size="18" font-weight="600" font-family="Arial, Helvetica, sans-serif" fill="#F5E6C8" letter-spacing="3.2">${category}</text>` : ''}
-  ${label ? `<text x="48" y="592" font-size="${label.length > 36 ? 36 : 44}" font-weight="700" font-family="Georgia, Times New Roman, serif" fill="#FAF5F4">${label}</text>` : ''}
-  <rect x="0" y="623" width="${OG_WIDTH}" height="7" fill="#C9A36A"/>
+  <rect width="${OG_WIDTH}" height="${OG_HEIGHT}" fill="url(#vig)"/>
+  <rect x="18" y="18" width="${OG_WIDTH - 36}" height="${OG_HEIGHT - 36}" fill="none" stroke="${GOLD}" stroke-opacity="0.48" stroke-width="1.5"/>
+  <rect x="24" y="24" width="${OG_WIDTH - 48}" height="${OG_HEIGHT - 48}" fill="none" stroke="${CREAM}" stroke-opacity="0.16" stroke-width="1"/>
+  <rect x="32" y="26" rx="22" ry="22" width="172" height="44" fill="${CREAM}"/>
+  <text x="118" y="55" text-anchor="middle" font-size="22" font-weight="700" font-family="Georgia, Times New Roman, serif" fill="${BRAND_THEME.themeColor}">${BRAND_NAME}</text>
+  <rect x="0" y="${OG_HEIGHT - 6}" width="${OG_WIDTH}" height="6" fill="${GOLD}"/>
 </svg>`);
 }
 
-async function jpegUnderLimit(pipeline: sharp.Sharp, maxBytes = 280_000): Promise<Buffer> {
-  for (const quality of [82, 74, 66, 58]) {
-    try {
-      const buffer = await pipeline.clone().jpeg({ quality, mozjpeg: true }).toBuffer();
-      if (buffer.byteLength <= maxBytes) return buffer;
-    } catch {
-      const buffer = await pipeline.clone().jpeg({ quality }).toBuffer();
-      if (buffer.byteLength <= maxBytes) return buffer;
-    }
-  }
-  return pipeline.jpeg({ quality: 52 }).toBuffer();
+function fallbackOverlay(title?: string, eyebrow?: string): Buffer {
+  const label = title
+    ? escapeXml(title.length > 42 ? `${title.slice(0, 39).trimEnd()}…` : title)
+    : escapeXml(BRAND_NAME);
+  const category = eyebrow ? escapeXml(eyebrow.toUpperCase()) : '';
+  const titleSize = label.length > 28 ? 34 : 44;
+
+  return Buffer.from(`<svg width="${OG_WIDTH}" height="${OG_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#3d1a36"/>
+      <stop offset="100%" stop-color="${BRAND_THEME.themeColor}"/>
+    </linearGradient>
+  </defs>
+  <rect width="${OG_WIDTH}" height="${OG_HEIGHT}" fill="url(#bg)"/>
+  <rect x="22" y="22" width="${OG_WIDTH - 44}" height="${OG_HEIGHT - 44}" fill="none" stroke="${GOLD}" stroke-opacity="0.5" stroke-width="1.5"/>
+  <rect x="32" y="26" rx="22" ry="22" width="172" height="44" fill="${CREAM}"/>
+  <text x="118" y="55" text-anchor="middle" font-size="22" font-weight="700" font-family="Georgia, Times New Roman, serif" fill="${BRAND_THEME.themeColor}">${BRAND_NAME}</text>
+  ${category ? `<text x="600" y="268" text-anchor="middle" font-size="18" font-weight="600" font-family="Arial, Helvetica, sans-serif" fill="${BLUSH}" letter-spacing="4">${category}</text>` : ''}
+  <text x="600" y="${category ? 338 : 320}" text-anchor="middle" font-size="${titleSize}" font-weight="700" font-family="Georgia, Times New Roman, serif" fill="${CREAM}">${label}</text>
+  <rect x="0" y="${OG_HEIGHT - 6}" width="${OG_WIDTH}" height="6" fill="${GOLD}"/>
+</svg>`);
+}
+
+async function encodeOgJpeg(pipeline: sharp.Sharp): Promise<Buffer> {
+  const first = await pipeline.clone().jpeg({ quality: 74, chromaSubsampling: '4:2:0' }).toBuffer();
+  if (first.byteLength <= OG_JPEG_LIMIT) return first;
+  return pipeline.jpeg({ quality: 58, chromaSubsampling: '4:2:0' }).toBuffer();
+}
+
+async function composeProductPhoto(photo: Buffer): Promise<Buffer> {
+  const prepared = await sharp(photo, {
+    failOn: 'none',
+    sequentialRead: true,
+    animated: false,
+    limitInputPixels: 40_000_000,
+  })
+    .rotate()
+    .resize(PREP_MAX, PREP_MAX, {
+      fit: 'inside',
+      withoutEnlargement: true,
+      kernel: 'cubic',
+    })
+    .toBuffer();
+
+  const background = await sharp(prepared)
+    .resize(OG_WIDTH, OG_HEIGHT, { fit: 'cover', position: 'centre', kernel: 'cubic' })
+    .blur(20)
+    .modulate({ brightness: 0.58, saturation: 1.06 })
+    .toBuffer();
+
+  const product = await sharp(prepared)
+    .resize(PRODUCT_MAX_WIDTH, PRODUCT_MAX_HEIGHT, { fit: 'inside', kernel: 'cubic' })
+    .toBuffer({ resolveWithObject: true });
+
+  const left = Math.max(0, Math.round((OG_WIDTH - product.info.width) / 2));
+  const top = Math.max(0, Math.round((OG_HEIGHT - product.info.height) / 2));
+
+  return encodeOgJpeg(
+    sharp(background).composite([
+      { input: product.data, left, top },
+      { input: chromeOverlay(), blend: 'over' },
+    ])
+  );
 }
 
 export async function composeShareJpeg(options: {
@@ -52,22 +106,23 @@ export async function composeShareJpeg(options: {
   title?: string;
   eyebrow?: string;
 }): Promise<Buffer> {
-  const overlay = overlaySvg(options.title, options.eyebrow);
-  const base = options.photo
-    ? sharp(options.photo).rotate().resize(OG_WIDTH, OG_HEIGHT, {
-        fit: 'cover',
-        position: 'centre',
-      })
-    : sharp({
-        create: {
-          width: OG_WIDTH,
-          height: OG_HEIGHT,
-          channels: 3,
-          background: BRAND_THEME.themeColor,
-        },
-      });
+  if (options.photo && options.photo.byteLength > 0) {
+    try {
+      return await composeProductPhoto(options.photo);
+    } catch {
+      // Fall through to the branded card so crawlers still get a 1200×630 JPEG.
+    }
+  }
 
-  return jpegUnderLimit(
-    base.composite([{ input: overlay, blend: 'over' }])
-  );
+  const overlay = fallbackOverlay(options.title, options.eyebrow);
+  const base = sharp({
+    create: {
+      width: OG_WIDTH,
+      height: OG_HEIGHT,
+      channels: 3,
+      background: BRAND_THEME.themeColor,
+    },
+  });
+
+  return encodeOgJpeg(base.composite([{ input: overlay, blend: 'over' }]));
 }
