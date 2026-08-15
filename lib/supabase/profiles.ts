@@ -98,12 +98,14 @@ function buildOfflineProfile(
   uid: string,
   email: string,
   displayName?: string,
+  photoURL?: string,
   extras?: Pick<UserProfile, 'role' | 'supplierId' | 'providerId'>
 ): UserProfile {
   return {
     uid,
     email,
     displayName,
+    photoURL,
     role: extras?.role ?? resolveUserRole(email),
     supplierId: extras?.supplierId,
     providerId: extras?.providerId,
@@ -141,7 +143,7 @@ export async function createUserProfile(
   uid: string,
   email: string,
   displayName?: string,
-  options?: { role?: UserRole; supplierId?: string; providerId?: string }
+  options?: { role?: UserRole; supplierId?: string; providerId?: string; photoURL?: string }
 ): Promise<UserProfile> {
   const supabase = getSupabaseClient();
   if (!supabase) throw new Error('Supabase not initialized');
@@ -152,6 +154,7 @@ export async function createUserProfile(
     uid,
     email,
     displayName,
+    photoURL: options?.photoURL,
     role,
     supplierId: options?.supplierId,
     providerId: options?.providerId,
@@ -161,6 +164,7 @@ export async function createUserProfile(
     id: profile.uid,
     email: profile.email,
     display_name: profile.displayName ?? null,
+    photo_url: profile.photoURL ?? null,
     role: profile.role,
     supplier_id: profile.supplierId ?? null,
     provider_id: profile.providerId ?? null,
@@ -182,31 +186,69 @@ export async function createUserProfile(
 export async function ensureUserProfile(
   uid: string,
   email: string,
-  displayName?: string
+  displayName?: string,
+  photoURL?: string
 ): Promise<UserProfile> {
   try {
     const existing = await getUserProfile(uid);
 
     if (existing) {
+      const incomingName = displayName?.trim() || '';
+      const incomingPhoto = photoURL?.trim() || '';
+      const nextDisplayName = incomingName || existing.displayName;
+      const nextPhotoURL = incomingPhoto || existing.photoURL;
+      const shouldSyncProfile =
+        (Boolean(incomingName) && incomingName !== (existing.displayName ?? '')) ||
+        (Boolean(incomingPhoto) && incomingPhoto !== (existing.photoURL ?? ''));
+
+      if (shouldSyncProfile) {
+        try {
+          await updateUserProfile(uid, {
+            ...(incomingName ? { displayName: incomingName } : {}),
+            ...(incomingPhoto ? { photoURL: incomingPhoto } : {}),
+          });
+        } catch (error) {
+          if (!isSupabaseOfflineError(error)) throw error;
+        }
+      }
+
       if (isAdminEmail(email) && existing.role !== 'admin') {
         try {
           await updateUserRole(uid, 'admin');
-          return { ...existing, role: 'admin', updatedAt: new Date() };
+          return {
+            ...existing,
+            displayName: nextDisplayName,
+            photoURL: nextPhotoURL,
+            role: 'admin',
+            updatedAt: new Date(),
+          };
         } catch (error) {
           if (isSupabaseOfflineError(error)) {
-            return { ...existing, role: 'admin', updatedAt: new Date() };
+            return {
+              ...existing,
+              displayName: nextDisplayName,
+              photoURL: nextPhotoURL,
+              role: 'admin',
+              updatedAt: new Date(),
+            };
           }
           throw error;
         }
       }
-      return existing;
+
+      return {
+        ...existing,
+        displayName: nextDisplayName,
+        photoURL: nextPhotoURL,
+        updatedAt: shouldSyncProfile ? new Date() : existing.updatedAt,
+      };
     }
 
-    return createUserProfile(uid, email, displayName);
+    return createUserProfile(uid, email, displayName, { photoURL });
   } catch (error) {
     if (isSupabaseOfflineError(error)) {
       console.warn('[ShiQueen] Supabase offline — using local profile for', email);
-      return buildOfflineProfile(uid, email, displayName);
+      return buildOfflineProfile(uid, email, displayName, photoURL);
     }
     throw error;
   }

@@ -21,6 +21,7 @@ export function HeaderAccountMenu() {
   const closeTimerRef = useRef<number | null>(null);
 
   const displayName = getDisplayName(profile?.displayName ?? user?.displayName, user?.email);
+  const photoURL = profile?.photoURL || user?.photoURL || null;
 
   const clearCloseTimer = useCallback(() => {
     if (closeTimerRef.current !== null) {
@@ -111,7 +112,13 @@ export function HeaderAccountMenu() {
         aria-haspopup="menu"
         aria-label="Account menu"
       >
-        <AccountAvatar email={user.email} variant="email-letter" size="sm" />
+        <AccountAvatar
+          displayName={displayName}
+          email={user.email}
+          photoURL={photoURL}
+          variant="email-letter"
+          size="sm"
+        />
       </button>
 
       <AnimatePresence>
@@ -131,7 +138,13 @@ export function HeaderAccountMenu() {
               <div className="relative border-b border-border/60 bg-gradient-to-br from-secondary/70 via-secondary/35 to-accent/10 px-4 py-3.5">
                 <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-primary/70 via-primary/40 to-accent/50" />
                 <div className="flex items-center gap-3">
-                  <AccountAvatar email={user.email} variant="email-letter" size="md" />
+                  <AccountAvatar
+                    displayName={displayName}
+                    email={user.email}
+                    photoURL={photoURL}
+                    variant="email-letter"
+                    size="md"
+                  />
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium tracking-tight text-foreground">
                       {displayName}

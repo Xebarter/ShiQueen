@@ -33,9 +33,21 @@ export function AccountAvatar({
 }: AccountAvatarProps) {
   const name = getDisplayName(displayName, email);
   const { size: sizeClass, text, image } = SIZES[size];
-  const useEmailLetter = variant === 'email-letter';
 
-  if (useEmailLetter) {
+  if (photoURL) {
+    return (
+      <Image
+        src={photoURL}
+        alt={name}
+        width={image}
+        height={image}
+        className={cn(sizeClass, 'rounded-full object-cover ring-1 ring-border', className)}
+        referrerPolicy="no-referrer"
+      />
+    );
+  }
+
+  if (variant === 'email-letter') {
     const initial = getEmailInitial(email);
     const colors = getAvatarColorsForLetter(initial);
 
@@ -57,18 +69,6 @@ export function AccountAvatar({
       >
         {initial}
       </span>
-    );
-  }
-
-  if (photoURL) {
-    return (
-      <Image
-        src={photoURL}
-        alt={name}
-        width={image}
-        height={image}
-        className={cn(sizeClass, 'rounded-full object-cover ring-1 ring-border', className)}
-      />
     );
   }
 

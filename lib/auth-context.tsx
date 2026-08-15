@@ -55,12 +55,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 function buildAuthFallbackProfile(
   uid: string,
   email: string,
-  displayName?: string
+  displayName?: string,
+  photoURL?: string
 ): UserProfile {
   return {
     uid,
     email,
     displayName,
+    photoURL,
     role: resolveUserRole(email),
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -72,14 +74,16 @@ async function loadUserProfile(currentUser: User): Promise<UserProfile> {
     return await ensureUserProfile(
       currentUser.uid,
       currentUser.email!,
-      currentUser.displayName ?? undefined
+      currentUser.displayName ?? undefined,
+      currentUser.photoURL ?? undefined
     );
   } catch (error) {
     console.error('Failed to load user profile:', error);
     return buildAuthFallbackProfile(
       currentUser.uid,
       currentUser.email!,
-      currentUser.displayName ?? undefined
+      currentUser.displayName ?? undefined,
+      currentUser.photoURL ?? undefined
     );
   }
 }
@@ -152,7 +156,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await ensureUserProfile(
           result.user.uid,
           result.user.email,
-          result.user.displayName ?? undefined
+          result.user.displayName ?? undefined,
+          result.user.photoURL ?? undefined
         );
       })
       .catch((error) => {
@@ -265,7 +270,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await ensureUserProfile(
         googleUser.uid,
         googleUser.email,
-        googleUser.displayName ?? undefined
+        googleUser.displayName ?? undefined,
+        googleUser.photoURL ?? undefined
       );
       await refreshFirebaseToken(googleUser, true);
     }
@@ -293,7 +299,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await ensureUserProfile(
           googleUser.uid,
           googleUser.email,
-          googleUser.displayName ?? undefined
+          googleUser.displayName ?? undefined,
+          googleUser.photoURL ?? undefined
         );
         await refreshFirebaseToken(googleUser, true);
       }
