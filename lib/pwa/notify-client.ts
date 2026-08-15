@@ -26,3 +26,16 @@ export async function notifyAdminApprovalClients(
     console.warn('[ShiQueen] Client admin approval alert ping failed:', error);
   }
 }
+
+export async function notifyAdminContactClients(id: string) {
+  if (typeof window === 'undefined' || !id) return;
+  try {
+    await fetch('/api/admin/alerts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'contact', id }),
+    });
+  } catch (error) {
+    console.warn('[ShiQueen] Client admin contact alert ping failed:', error);
+  }
+}

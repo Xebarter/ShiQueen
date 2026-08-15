@@ -7,13 +7,19 @@ import { useAuth } from '@/lib/auth-context';
 import { useSuppliers } from '@/lib/suppliers-context';
 import { useServices } from '@/lib/services-context';
 import { resolveUserPreferences } from '@/lib/account-settings';
-import { ADMIN_SERVICE_PROVIDERS_HREF, ADMIN_SUPPLIERS_HREF } from '@/lib/pwa/paths';
+import {
+  ADMIN_MESSAGES_HREF,
+  ADMIN_SERVICE_PROVIDERS_HREF,
+  ADMIN_SUPPLIERS_HREF,
+} from '@/lib/pwa/paths';
 import {
   registerPartnerPushToken,
   requestPartnerNotificationPermission,
   showPartnerNotification,
 } from '@/lib/pwa/messaging';
 import { playPartnerChime, vibratePartnerAlert } from '@/lib/pwa/sound';
+import { subscribeContactMessages } from '@/lib/firebase/contact-messages';
+import type { ContactMessage } from '@/lib/types/contact-messages';
 import { Button } from '@/components/ui/button';
 
 type Banner = {
@@ -50,8 +56,11 @@ export function AdminAlerts() {
   const [banner, setBanner] = useState<Banner | null>(null);
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default');
   const [promptHidden, setPromptHidden] = useState(true);
+  const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
+  const [contactLoading, setContactLoading] = useState(true);
   const seenSuppliers = useRef<Set<string> | null>(null);
   const seenProviders = useRef<Set<string> | null>(null);
+  const seenMessages = useRef<Set<string> | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) {
@@ -61,6 +70,23 @@ export function AdminAlerts() {
     setPermission(Notification.permission);
     setPromptHidden(window.localStorage.getItem(PROMPT_KEY) === 'hidden');
   }, []);
+
+  useEffect(() => {
+    if (!enabled) {
+      setContactMessages([]);
+      setContactLoading(false);
+      return;
+    }
+    setContactLoading(true);
+    const unsubscribe = subscribeContactMessages(
+      (next) => {
+        setContactMessages(next);
+        setContactLoading(false);
+      },
+      () => setContactLoading(false)
+    );
+    return unsubscribe;
+  }, [enabled]);
 
   useEffect(() => {
     if (!enabled || suppliersLoading) return;
@@ -114,6 +140,30 @@ export function AdminAlerts() {
     fireAlert(next, true);
   }, [enabled, providers, servicesLoading]);
 
+  useEffect(() => {
+    if (!enabled || contactLoading) return;
+    const ids = new Set(contactMessages.map((message) => message.id));
+    if (!seenMessages.current) {
+      seenMessages.current = ids;
+      return;
+    }
+    const fresh = contactMessages.filter((message) => !seenMessages.current!.has(message.id));
+    seenMessages.current = ids;
+    const newest = fresh[0];
+    if (!newest) return;
+    const next: Banner = {
+      id: `contact-${newest.id}`,
+      title: fresh.length > 1 ? `${fresh.length} new contact messages` : 'New contact message',
+      body:
+        fresh.length > 1
+          ? `${newest.name}: ${newest.subject} (+${fresh.length - 1} more)`
+          : `${newest.name}: ${newest.subject}`,
+      href: `${ADMIN_MESSAGES_HREF}?id=${encodeURIComponent(newest.id)}`,
+    };
+    setBanner(next);
+    fireAlert(next, true);
+  }, [enabled, contactMessages, contactLoading]);
+
   const enableNotifications = async () => {
     const next = await requestPartnerNotificationPermission();
     setPermission(next);
@@ -140,9 +190,9 @@ export function AdminAlerts() {
               <Bell className="h-4 w-4" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold">Approval alerts</p>
+              <p className="text-sm font-semibold">Admin alerts</p>
               <p className="text-xs text-muted-foreground">
-                Get a notification on this device when a supplier or provider requests approval.
+                Get notified for contact messages and approval requests on this device.
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <Button size="sm" onClick={() => void enableNotifications()}>

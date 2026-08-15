@@ -26,19 +26,14 @@ import {
 } from '@/lib/contact-info';
 import { cn } from '@/lib/utils';
 import { CONTACT_FAQS } from '@/lib/seo/home-faqs';
+import { CONTACT_MESSAGE_TOPICS } from '@/lib/types/contact-messages';
 
 const WHATSAPP_HREF = contactWhatsAppHref(
   "Hi ShiQueen, I'd like to get in touch."
 );
 const EMAIL = 'hello@shequeen.com';
 
-const TOPICS = [
-  { value: 'general', label: 'General inquiry' },
-  { value: 'order', label: 'Order support' },
-  { value: 'services', label: 'List my services' },
-  { value: 'wholesale', label: 'Wholesale & packages' },
-  { value: 'other', label: 'Something else' },
-];
+const TOPICS = CONTACT_MESSAGE_TOPICS;
 
 const CONTACT_CHANNELS = [
   {
@@ -89,11 +84,19 @@ export function ContactPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      const data = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send message. Please try again.');
+      }
       toast.success("Message sent! We'll get back to you soon.");
       setFormData({ name: '', email: '', topic: 'general', subject: '', message: '' });
-    } catch {
-      toast.error('Failed to send message. Please try again.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to send message. Please try again.');
     } finally {
       setLoading(false);
     }

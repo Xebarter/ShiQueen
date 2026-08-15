@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { isSupabaseAdminConfigured } from '@/lib/supabase/config';
 import { TABLES } from '@/lib/supabase/tables';
 import {
+  ADMIN_MESSAGES_HREF,
   ADMIN_SERVICE_PROVIDERS_HREF,
   ADMIN_SUPPLIERS_HREF,
   PROVIDER_HOME_HREF,
@@ -15,7 +16,7 @@ type AlertPayload = {
   title: string;
   body: string;
   url: string;
-  type: 'order' | 'booking' | 'supplier_approval' | 'provider_approval';
+  type: 'order' | 'booking' | 'supplier_approval' | 'provider_approval' | 'contact_message';
   tag?: string;
 };
 
@@ -152,5 +153,31 @@ export async function notifyAdminApprovalRequest(
     });
   } catch (error) {
     console.warn('[ShiQueen] Admin approval alert failed:', error);
+  }
+}
+
+export async function notifyAdminContactMessage(id: string): Promise<void> {
+  if (!isSupabaseAdminConfigured() || !id) return;
+  try {
+    const admin = getSupabaseAdmin();
+    const { data } = await admin
+      .from(TABLES.contactMessages)
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (!data) return;
+
+    const tokens = await tokensForAdmins();
+    const name = String(data.name || 'Someone');
+    const subject = String(data.subject || 'New contact message');
+    await sendToTokens(tokens, {
+      type: 'contact_message',
+      title: 'New contact message',
+      body: `${name}: ${subject}`,
+      url: `${ADMIN_MESSAGES_HREF}?id=${encodeURIComponent(id)}`,
+      tag: `contact-${id}`,
+    });
+  } catch (error) {
+    console.warn('[ShiQueen] Admin contact message alert failed:', error);
   }
 }

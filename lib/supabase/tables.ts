@@ -15,6 +15,7 @@ export const TABLES = {
   serviceBookings: 'service_bookings',
   serviceReviews: 'service_reviews',
   providerAvailability: 'provider_availability',
+  contactMessages: 'contact_messages',
 } as const;
 
 /** @deprecated Use TABLES */
@@ -36,4 +37,5 @@ export const COLLECTIONS = {
   serviceBookings: TABLES.serviceBookings,
   serviceReviews: TABLES.serviceReviews,
   providerAvailability: TABLES.providerAvailability,
+  contactMessages: TABLES.contactMessages,
 } as const;
