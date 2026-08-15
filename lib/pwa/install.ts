@@ -31,6 +31,27 @@ export function bindInstallPromptListener() {
   });
 }
 
+if (typeof window !== 'undefined') {
+  bindInstallPromptListener();
+}
+
+function waitForDeferredPrompt(ms: number) {
+  if (deferredPrompt) return Promise.resolve();
+  bindInstallPromptListener();
+  return new Promise<void>((resolve) => {
+    const finish = () => {
+      window.clearTimeout(timer);
+      promptListeners.delete(onChange);
+      resolve();
+    };
+    const onChange = () => {
+      if (deferredPrompt) finish();
+    };
+    promptListeners.add(onChange);
+    const timer = window.setTimeout(finish, ms);
+  });
+}
+
 export function subscribeInstallAvailability(onChange: () => void) {
   bindInstallPromptListener();
   promptListeners.add(onChange);
@@ -103,6 +124,9 @@ export function dismissInstallCard() {
 }
 
 export async function promptInstall(): Promise<'accepted' | 'dismissed' | 'unavailable'> {
+  if (!deferredPrompt) {
+    await waitForDeferredPrompt(2500);
+  }
   if (!deferredPrompt) return 'unavailable';
   await deferredPrompt.prompt();
   const { outcome } = await deferredPrompt.userChoice;

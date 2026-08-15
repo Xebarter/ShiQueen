@@ -144,12 +144,11 @@ export function PartnerSettingsForm() {
       </form>
 
       <section className="space-y-3 rounded-xl border border-border/70 bg-card p-5 shadow-sm sm:p-6">
-        <h2 className="text-base font-semibold">Install app</h2>
+        <h2 className="text-base font-semibold">Get the app</h2>
         <p className="text-sm text-muted-foreground">
-          Add this dashboard to your home screen. On Android, Chrome can install it directly. On
-          iPhone or iPad, use Safari → Share → Add to Home Screen.
+          Tap below to add this dashboard to your device.
         </p>
-        <InstallAppButton />
+        <InstallAppButton className="w-full sm:w-auto" />
         {!getVapidKey() ? (
           <p className="text-xs text-muted-foreground">
             Background push needs a VAPID key. Foreground sound and vibration still work while the

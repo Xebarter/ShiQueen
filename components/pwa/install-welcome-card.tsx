@@ -50,12 +50,11 @@ export function InstallWelcomeCard({ appName }: InstallWelcomeCardProps) {
           <Smartphone className="h-5 w-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">Add {appName} to your home screen</p>
+          <p className="text-base font-semibold">Get {appName} on this device</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Install the app for faster access, plus sound and notification alerts when new work
-            comes in. Works on Android and iPhone.
+            Tap below to add this dashboard as an app.
           </p>
-          <InstallAppButton className="mt-3" />
+          <InstallAppButton className="mt-4 w-full sm:w-auto" />
         </div>
         <button
           type="button"
