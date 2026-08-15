@@ -4,15 +4,17 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Archive,
+  ArrowLeft,
   Inbox,
   Loader2,
   Mail,
   MailOpen,
+  Reply,
   Search,
   Trash2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AdminPage, AdminPageHeader } from '@/components/admin/admin-page';
 import {
@@ -25,6 +27,7 @@ import {
   type ContactMessage,
   type ContactMessageStatus,
 } from '@/lib/types/contact-messages';
+import { getEmailInitial, getAvatarColorsForLetter } from '@/lib/user-display';
 import { cn } from '@/lib/utils';
 
 type StatusFilter = 'all' | ContactMessageStatus;
@@ -34,6 +37,66 @@ function formatWhen(date: Date) {
     dateStyle: 'medium',
     timeStyle: 'short',
   });
+}
+
+function formatListWhen(date: Date) {
+  const now = new Date();
+  const sameDay =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+
+  if (sameDay) {
+    return date.toLocaleTimeString('en-UG', {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  }
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday =
+    date.getFullYear() === yesterday.getFullYear() &&
+    date.getMonth() === yesterday.getMonth() &&
+    date.getDate() === yesterday.getDate();
+
+  if (isYesterday) return 'Yesterday';
+
+  return date.toLocaleDateString('en-UG', {
+    month: 'short',
+    day: 'numeric',
+    year: date.getFullYear() === now.getFullYear() ? undefined : 'numeric',
+  });
+}
+
+function SenderAvatar({ name, email }: { name: string; email: string }) {
+  const initial = getEmailInitial(email) || name.trim().charAt(0).toUpperCase() || '?';
+  const colors = getAvatarColorsForLetter(initial);
+
+  return (
+    <span
+      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
+      style={{ backgroundColor: colors.background, color: colors.foreground }}
+      aria-hidden
+    >
+      {initial}
+    </span>
+  );
+}
+
+function StatusBadge({ status }: { status: ContactMessageStatus }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex w-fit rounded-full px-2.5 py-0.5 text-[11px] font-semibold capitalize',
+        status === 'unread' && 'bg-primary/10 text-primary',
+        status === 'read' && 'bg-muted text-muted-foreground',
+        status === 'archived' && 'bg-amber-100 text-amber-800'
+      )}
+    >
+      {status}
+    </span>
+  );
 }
 
 export function AdminMessagesPage() {
@@ -81,25 +144,26 @@ export function AdminMessagesPage() {
     });
   }, [messages, searchTerm, statusFilter]);
 
-  const selected =
-    filtered.find((message) => message.id === selectedId) ??
-    messages.find((message) => message.id === selectedId) ??
-    filtered[0] ??
-    null;
-
-  useEffect(() => {
-    if (!selected) return;
-    if (selectedId !== selected.id) setSelectedId(selected.id);
-  }, [selected, selectedId]);
+  const selected = useMemo(() => {
+    if (!selectedId) return null;
+    return (
+      filtered.find((message) => message.id === selectedId) ??
+      messages.find((message) => message.id === selectedId) ??
+      null
+    );
+  }, [filtered, messages, selectedId]);
 
   const unreadCount = messages.filter((message) => message.status === 'unread').length;
+  const showDetail = Boolean(selected);
 
   const markStatus = async (message: ContactMessage, status: ContactMessageStatus) => {
     if (message.status === status) return;
     setBusyId(message.id);
     try {
       await updateContactMessageStatus(message.id, status);
-      toast.success(status === 'read' ? 'Marked as read' : status === 'unread' ? 'Marked unread' : 'Archived');
+      toast.success(
+        status === 'read' ? 'Marked as read' : status === 'unread' ? 'Marked unread' : 'Archived'
+      );
     } catch {
       toast.error('Could not update message');
     } finally {
@@ -112,6 +176,10 @@ export function AdminMessagesPage() {
     if (message.status === 'unread') {
       void markStatus(message, 'read');
     }
+  };
+
+  const handleBackToList = () => {
+    setSelectedId(null);
   };
 
   const handleDelete = async (message: ContactMessage) => {
@@ -129,17 +197,24 @@ export function AdminMessagesPage() {
   };
 
   return (
-    <AdminPage>
-      <AdminPageHeader
-        title="Messages"
-        description="Contact form submissions from the website"
-      />
+    <AdminPage className="pb-6 sm:pb-8">
+      <div className={cn(showDetail && 'hidden lg:block')}>
+        <AdminPageHeader
+          title="Messages"
+          description="Contact form submissions from the website"
+        />
+      </div>
 
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div
+        className={cn(
+          'mb-3 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 scrollbar-hide',
+          showDetail && 'hidden lg:flex'
+        )}
+      >
         {(
           [
             { id: 'all', label: 'All' },
-            { id: 'unread', label: `Unread${unreadCount ? ` (${unreadCount})` : ''}` },
+            { id: 'unread', label: unreadCount ? `Unread (${unreadCount})` : 'Unread' },
             { id: 'read', label: 'Read' },
             { id: 'archived', label: 'Archived' },
           ] as const
@@ -149,9 +224,10 @@ export function AdminMessagesPage() {
             type="button"
             onClick={() => setStatusFilter(filter.id)}
             className={cn(
-              'rounded-full px-3 py-1.5 text-xs font-medium transition sm:text-sm',
+              'shrink-0 rounded-full px-3.5 py-2 text-sm font-medium transition',
+              'min-h-10 touch-manipulation',
               statusFilter === filter.id
-                ? 'bg-primary text-primary-foreground'
+                ? 'bg-primary text-primary-foreground shadow-sm'
                 : 'border border-border bg-background text-muted-foreground hover:text-foreground'
             )}
           >
@@ -160,93 +236,150 @@ export function AdminMessagesPage() {
         ))}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]">
-        <Card className="overflow-hidden border-border/70 shadow-sm">
-          <CardHeader className="border-b border-border/60 bg-muted/10 space-y-3">
-            <div>
-              <CardTitle className="text-lg">Inbox</CardTitle>
-              <CardDescription>
-                {loading
-                  ? 'Loading…'
-                  : `${filtered.length} message${filtered.length === 1 ? '' : 's'}`}
-              </CardDescription>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:items-start">
+        {/* Inbox list — full screen on mobile until a message is opened */}
+        <Card
+          className={cn(
+            'overflow-hidden border-border/70 shadow-sm',
+            showDetail && 'hidden lg:block'
+          )}
+        >
+          <div className="space-y-3 border-b border-border/60 bg-muted/10 px-4 py-3 sm:px-5 sm:py-4">
+            <div className="flex items-baseline justify-between gap-3">
+              <div>
+                <h2 className="text-base font-semibold tracking-tight sm:text-lg">Inbox</h2>
+                <p className="text-xs text-muted-foreground sm:text-sm">
+                  {loading
+                    ? 'Loading…'
+                    : `${filtered.length} message${filtered.length === 1 ? '' : 's'}`}
+                </p>
+              </div>
             </div>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="search"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search name, email, subject…"
-                className="w-full rounded-lg border border-border bg-background py-2.5 pl-10 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                className="w-full rounded-xl border border-border bg-background py-3 pl-10 pr-3 text-base focus:outline-none focus:ring-2 focus:ring-primary sm:py-2.5 sm:text-sm"
               />
             </div>
-          </CardHeader>
-          <CardContent className="p-0">
+          </div>
+
+          <div className="p-0">
             {loading ? (
-              <div className="flex justify-center py-12">
+              <div className="flex justify-center py-16">
                 <Loader2 className="h-7 w-7 animate-spin text-primary" />
               </div>
             ) : filtered.length === 0 ? (
-              <div className="px-4 py-12 text-center text-sm text-muted-foreground">
-                <Inbox className="mx-auto mb-3 h-8 w-8 opacity-50" />
-                No messages found
+              <div className="px-4 py-16 text-center text-sm text-muted-foreground">
+                <Inbox className="mx-auto mb-3 h-9 w-9 opacity-40" />
+                <p className="font-medium text-foreground/80">No messages found</p>
+                <p className="mt-1 text-xs">Try another filter or search term.</p>
               </div>
             ) : (
-              <ul className="max-h-[70vh] divide-y divide-border overflow-y-auto">
+              <ul className="divide-y divide-border lg:max-h-[min(70vh,40rem)] lg:overflow-y-auto">
                 {filtered.map((message) => {
                   const active = selected?.id === message.id;
+                  const unread = message.status === 'unread';
                   return (
                     <li key={message.id}>
                       <button
                         type="button"
                         onClick={() => handleSelect(message)}
                         className={cn(
-                          'w-full px-4 py-3.5 text-left transition hover:bg-secondary/50',
-                          active && 'bg-secondary/70',
-                          message.status === 'unread' && 'bg-primary/[0.04]'
+                          'flex w-full items-start gap-3 px-4 py-3.5 text-left transition',
+                          'min-h-[4.5rem] touch-manipulation active:bg-secondary/70',
+                          'hover:bg-secondary/50',
+                          active && 'bg-secondary/70 lg:bg-secondary/70',
+                          unread && !active && 'bg-primary/[0.03]'
                         )}
                       >
-                        <div className="flex items-start justify-between gap-2">
+                        <SenderAvatar name={message.name} email={message.email} />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-2">
+                            <p
+                              className={cn(
+                                'truncate text-[15px] leading-tight',
+                                unread ? 'font-semibold text-foreground' : 'font-medium text-foreground/90'
+                              )}
+                            >
+                              {message.name}
+                            </p>
+                            <span className="shrink-0 pt-0.5 text-[11px] tabular-nums text-muted-foreground">
+                              {formatListWhen(message.createdAt)}
+                            </span>
+                          </div>
                           <p
                             className={cn(
-                              'truncate text-sm',
-                              message.status === 'unread' ? 'font-semibold' : 'font-medium'
+                              'mt-0.5 truncate text-sm',
+                              unread ? 'font-medium text-foreground/85' : 'text-foreground/75'
                             )}
                           >
-                            {message.name}
+                            {message.subject}
                           </p>
-                          {message.status === 'unread' ? (
-                            <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                          ) : null}
+                          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+                            {contactTopicLabel(message.topic)}
+                            {message.message ? ` · ${message.message}` : ''}
+                          </p>
                         </div>
-                        <p className="mt-0.5 truncate text-sm text-foreground/90">{message.subject}</p>
-                        <p className="mt-1 truncate text-xs text-muted-foreground">
-                          {contactTopicLabel(message.topic)} · {formatWhen(message.createdAt)}
-                        </p>
+                        {unread ? (
+                          <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                        ) : (
+                          <span className="mt-2 h-2 w-2 shrink-0" aria-hidden />
+                        )}
                       </button>
                     </li>
                   );
                 })}
               </ul>
             )}
-          </CardContent>
+          </div>
         </Card>
 
-        <Card className="border-border/70 shadow-sm">
+        {/* Message detail — full screen on mobile when selected */}
+        <Card
+          className={cn(
+            'relative border-border/70 shadow-sm',
+            !showDetail && 'hidden lg:flex lg:min-h-[24rem] lg:flex-col',
+            showDetail && 'flex min-h-[calc(100dvh-5.5rem)] flex-col lg:min-h-0'
+          )}
+        >
           {!selected ? (
-            <CardContent className="flex min-h-[24rem] flex-col items-center justify-center py-16 text-center text-muted-foreground">
-              <Mail className="mb-3 h-8 w-8 opacity-50" />
-              <p>Select a message to read it</p>
+            <CardContent className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center text-muted-foreground">
+              <Mail className="mb-3 h-9 w-9 opacity-40" />
+              <p className="font-medium text-foreground/80">Select a message</p>
+              <p className="mt-1 max-w-xs text-sm">
+                Choose a conversation from the inbox to read and reply.
+              </p>
             </CardContent>
           ) : (
             <>
-              <CardHeader className="border-b border-border/60 space-y-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0">
-                    <CardTitle className="text-xl leading-snug">{selected.subject}</CardTitle>
-                    <CardDescription className="mt-2 space-y-1">
-                      <span className="block">
+              <div className="sticky top-0 z-10 border-b border-border/60 bg-card/95 backdrop-blur-sm">
+                <div className="flex items-center gap-2 px-3 py-2.5 lg:hidden">
+                  <button
+                    type="button"
+                    onClick={handleBackToList}
+                    className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+                    aria-label="Back to inbox"
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </button>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold">{selected.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">{selected.email}</p>
+                  </div>
+                  <StatusBadge status={selected.status} />
+                </div>
+
+                <div className="space-y-3 px-4 py-4 sm:px-5">
+                  <div className="hidden items-start justify-between gap-3 lg:flex">
+                    <div className="min-w-0">
+                      <h2 className="text-xl font-semibold leading-snug tracking-tight">
+                        {selected.subject}
+                      </h2>
+                      <p className="mt-2 text-sm text-muted-foreground">
                         From{' '}
                         <a
                           href={`mailto:${selected.email}`}
@@ -254,27 +387,101 @@ export function AdminMessagesPage() {
                         >
                           {selected.name} &lt;{selected.email}&gt;
                         </a>
-                      </span>
-                      <span className="block">
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">
                         {contactTopicLabel(selected.topic)} · {formatWhen(selected.createdAt)}
-                      </span>
-                    </CardDescription>
+                      </p>
+                    </div>
+                    <StatusBadge status={selected.status} />
                   </div>
-                  <span
-                    className={cn(
-                      'inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-medium capitalize',
-                      selected.status === 'unread' && 'bg-primary/10 text-primary',
-                      selected.status === 'read' && 'bg-muted text-muted-foreground',
-                      selected.status === 'archived' && 'bg-amber-100 text-amber-800'
-                    )}
-                  >
-                    {selected.status}
-                  </span>
+
+                  <div className="lg:hidden">
+                    <h2 className="text-lg font-semibold leading-snug tracking-tight">
+                      {selected.subject}
+                    </h2>
+                    <p className="mt-1.5 text-xs text-muted-foreground">
+                      {contactTopicLabel(selected.topic)} · {formatWhen(selected.createdAt)}
+                    </p>
+                  </div>
+
+                  {/* Desktop / tablet actions */}
+                  <div className="hidden flex-wrap gap-2 sm:flex">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={busyId === selected.id}
+                      onClick={() =>
+                        void markStatus(
+                          selected,
+                          selected.status === 'unread' ? 'read' : 'unread'
+                        )
+                      }
+                      className="gap-1.5"
+                    >
+                      {selected.status === 'unread' ? (
+                        <MailOpen className="h-4 w-4" />
+                      ) : (
+                        <Mail className="h-4 w-4" />
+                      )}
+                      {selected.status === 'unread' ? 'Mark read' : 'Mark unread'}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={busyId === selected.id || selected.status === 'archived'}
+                      onClick={() => void markStatus(selected, 'archived')}
+                      className="gap-1.5"
+                    >
+                      <Archive className="h-4 w-4" />
+                      Archive
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={busyId === selected.id}
+                      onClick={() => void handleDelete(selected)}
+                      className="gap-1.5 text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete
+                    </Button>
+                    <a
+                      href={`mailto:${selected.email}?subject=${encodeURIComponent(`Re: ${selected.subject}`)}`}
+                      className="inline-flex"
+                    >
+                      <Button type="button" size="sm" className="gap-1.5">
+                        <Reply className="h-4 w-4" />
+                        Reply by email
+                      </Button>
+                    </a>
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
+              </div>
+
+              <CardContent className="flex-1 px-4 py-5 sm:px-5 sm:pt-6 pb-28 sm:pb-6">
+                <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-foreground/90 sm:text-base">
+                  {selected.message}
+                </p>
+              </CardContent>
+
+              {/* Mobile sticky action bar */}
+              <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border/70 bg-card/95 px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:hidden">
+                <div className="mx-auto flex max-w-lg items-center gap-2">
+                  <a
+                    href={`mailto:${selected.email}?subject=${encodeURIComponent(`Re: ${selected.subject}`)}`}
+                    className="min-w-0 flex-1"
+                  >
+                    <Button type="button" className="h-11 w-full gap-2 text-[15px]">
+                      <Reply className="h-4 w-4" />
+                      Reply
+                    </Button>
+                  </a>
                   <Button
                     type="button"
-                    size="sm"
+                    size="icon"
                     variant="outline"
                     disabled={busyId === selected.id}
                     onClick={() =>
@@ -283,53 +490,39 @@ export function AdminMessagesPage() {
                         selected.status === 'unread' ? 'read' : 'unread'
                       )
                     }
-                    className="gap-1.5"
+                    className="h-11 w-11 shrink-0"
+                    aria-label={selected.status === 'unread' ? 'Mark read' : 'Mark unread'}
                   >
                     {selected.status === 'unread' ? (
                       <MailOpen className="h-4 w-4" />
                     ) : (
                       <Mail className="h-4 w-4" />
                     )}
-                    {selected.status === 'unread' ? 'Mark read' : 'Mark unread'}
                   </Button>
                   <Button
                     type="button"
-                    size="sm"
+                    size="icon"
                     variant="outline"
                     disabled={busyId === selected.id || selected.status === 'archived'}
                     onClick={() => void markStatus(selected, 'archived')}
-                    className="gap-1.5"
+                    className="h-11 w-11 shrink-0"
+                    aria-label="Archive"
                   >
                     <Archive className="h-4 w-4" />
-                    Archive
                   </Button>
                   <Button
                     type="button"
-                    size="sm"
+                    size="icon"
                     variant="outline"
                     disabled={busyId === selected.id}
                     onClick={() => void handleDelete(selected)}
-                    className="gap-1.5 text-red-600 hover:text-red-700"
+                    className="h-11 w-11 shrink-0 text-red-600 hover:text-red-700"
+                    aria-label="Delete"
                   >
                     <Trash2 className="h-4 w-4" />
-                    Delete
                   </Button>
-                  <a
-                    href={`mailto:${selected.email}?subject=${encodeURIComponent(`Re: ${selected.subject}`)}`}
-                    className="inline-flex"
-                  >
-                    <Button type="button" size="sm" className="gap-1.5">
-                      <Mail className="h-4 w-4" />
-                      Reply by email
-                    </Button>
-                  </a>
                 </div>
-              </CardHeader>
-              <CardContent className="pt-6">
-                <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-foreground/90">
-                  {selected.message}
-                </p>
-              </CardContent>
+              </div>
             </>
           )}
         </Card>
