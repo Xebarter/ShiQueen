@@ -7,7 +7,6 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AdminPage } from '@/components/admin/admin-page';
 import { PackageActiveBadge } from '@/components/admin/admin-wholesale-shared';
 import { PackageCoverDisplay } from '@/components/packages/package-cover-display';
@@ -22,7 +21,7 @@ import {
 } from '@/lib/types/wholesale';
 import { useProducts } from '@/lib/products-context';
 import { useServices } from '@/lib/services-context';
-import { productsToCatalog, getRetailPricesMap, formatUGX } from '@/lib/wholesale-data';
+import { productsToCatalog, formatUGX } from '@/lib/wholesale-data';
 import { uploadPackageImage, uploadPackageItemImage } from '@/lib/firebase/storage';
 import { resolveListingImage } from '@/lib/services-utils';
 import {
@@ -33,7 +32,6 @@ import {
   getPackageCoverImages,
   getPackageItemImage,
   getPackageItemKind,
-  getPackageItemName,
   getPackageItemRefId,
   getPackageItemRetailUnit,
   getPackageTypeLabel,
@@ -57,15 +55,10 @@ import {
   ArrowLeft,
   Boxes,
   Check,
-  ImageIcon,
-  Layers,
   Loader2,
   Plus,
   Save,
   Search,
-  Sparkles,
-  Tag,
-  Target,
   Trash2,
   Upload,
   X,
@@ -116,21 +109,9 @@ const BUNDLE_TYPES: {
   label: string;
   description: string;
 }[] = [
-  {
-    value: 'fixed',
-    label: 'Fixed',
-    description: 'Pre-selected products with a set price',
-  },
-  {
-    value: 'customizable',
-    label: 'Customizable',
-    description: 'Curated base the customer can tailor',
-  },
-  {
-    value: 'mix-and-match',
-    label: 'Mix & Match',
-    description: 'Flexible picks up to an item limit',
-  },
+  { value: 'fixed', label: 'Fixed', description: 'Set items & price' },
+  { value: 'customizable', label: 'Customizable', description: 'Base + options' },
+  { value: 'mix-and-match', label: 'Mix & Match', description: 'Pick up to a limit' },
 ];
 
 export function PackageForm({
@@ -146,7 +127,6 @@ export function PackageForm({
   const { activeListings } = useServices();
   const { defaultSupplierId } = useSuppliers();
   const isSupplierPortal = portal === 'supplier';
-  const resolvedSupplierId = forcedSupplierId || defaultSupplierId;
   const products = useMemo(() => {
     if (!isSupplierPortal || !forcedSupplierId) return allProducts;
     return allProducts.filter((p) => p.supplierId === forcedSupplierId);
@@ -158,7 +138,6 @@ export function PackageForm({
   }, [activeListings, forcedSupplierId, isSupplierPortal]);
   const listHref = backHref ?? (isSupplierPortal ? '/suppliers/packages' : '/admin/packages');
   const catalog = productsToCatalog(products);
-  const retailPrices = getRetailPricesMap(catalog);
   const coverFileRef = useRef<HTMLInputElement>(null);
   const itemImageRefs = useRef<Record<number, HTMLInputElement | null>>({});
   const [saving, setSaving] = useState(false);
@@ -171,7 +150,6 @@ export function PackageForm({
   const [supplierId, setSupplierId] = useState(
     initialData?.supplierId ?? forcedSupplierId ?? defaultSupplierId
   );
-  const [nameTemplate, setNameTemplate] = useState('');
   const [name, setName] = useState(initialData?.name ?? '');
   const [tagline, setTagline] = useState(initialData?.tagline ?? '');
   const [description, setDescription] = useState(initialData?.description ?? '');
@@ -394,12 +372,12 @@ export function PackageForm({
   const composition = useMemo(() => getPackageComposition(items), [items]);
   const compositionLabel =
     composition === 'mixed'
-      ? 'Products & services'
+      ? 'Mixed'
       : composition === 'services'
-        ? 'Services only'
+        ? 'Services'
         : composition === 'products'
-          ? 'Products only'
-          : 'No catalog items';
+          ? 'Products'
+          : 'Empty';
 
   const selectClass =
     'h-11 w-full rounded-lg border border-border/80 bg-background px-3 text-sm shadow-sm transition focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40';
@@ -409,7 +387,6 @@ export function PackageForm({
     'min-h-[110px] w-full rounded-lg border border-border/80 bg-background px-3 py-2.5 text-sm leading-relaxed shadow-sm transition focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40';
 
   const applyNameTemplate = (template: string) => {
-    setNameTemplate(template);
     setName(template);
     if (!tagline.trim() && category) {
       const cat = PACKAGE_CATEGORIES.find((c) => c.id === category);
@@ -444,7 +421,7 @@ export function PackageForm({
   const addItem = () => {
     const first = catalog[0];
     if (!first) {
-      toast.error('No products available to add. Add a service or custom item instead.');
+      toast.error('No products to add');
       return;
     }
     setItems([
@@ -456,7 +433,7 @@ export function PackageForm({
   const addServiceItem = () => {
     const first = serviceOptions[0];
     if (!first) {
-      toast.error('No active services available to add.');
+      toast.error('No services to add');
       return;
     }
     setItems([
@@ -560,7 +537,7 @@ export function PackageForm({
         return prev.filter((id) => id !== productId);
       }
       if (prev.length >= 4) {
-        toast.error('You can select at most 4 item images for the cover');
+        toast.error('Max 4 cover images');
         return prev;
       }
       return [...prev, productId];
@@ -579,17 +556,17 @@ export function PackageForm({
     }
 
     if (!tagline.trim() && !description.trim()) {
-      toast.error('Add a tagline or description explaining what need this bundle solves');
+      toast.error('Add a tagline or description');
       return;
     }
 
     if (!items.every(isValidPackageItem)) {
-      toast.error('Complete all package items — custom items need a name and retail price');
+      toast.error('Finish all items (custom needs name & price)');
       return;
     }
 
     if (coverMode === 'upload' && !uploadedImage) {
-      toast.error('Upload a cover image or switch to item collage');
+      toast.error('Upload a cover or use collage');
       return;
     }
 
@@ -603,7 +580,7 @@ export function PackageForm({
         : [];
 
     if (coverMode === 'products' && resolvedCoverIds.length === 0) {
-      toast.error('Add package items with images for the cover collage');
+      toast.error('Add items with images for the collage');
       return;
     }
 
@@ -642,118 +619,146 @@ export function PackageForm({
   const draftRule: PackageRule =
     ruleType === 'mix-and-match' ? { type: ruleType, itemLimit } : { type: ruleType };
 
+  const canSave =
+    Boolean(category) &&
+    name.trim().length > 0 &&
+    (tagline.trim().length > 0 || description.trim().length > 0) &&
+    items.length > 0 &&
+    items.every(isValidPackageItem) &&
+    completionSteps.hasCover &&
+    effectivePrice > 0 &&
+    Boolean(forcedSupplierId || supplierId);
+
+  const progressPct = Math.round((completionCount / completionTotal) * 100);
+
+  const SaveButton = ({
+    className,
+    fullWidth,
+  }: {
+    className?: string;
+    fullWidth?: boolean;
+  }) => (
+    <Button
+      type="submit"
+      form="package-form"
+      disabled={saving || !canSave}
+      className={cn(fullWidth && 'w-full', className)}
+    >
+      {saving ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Saving…
+        </>
+      ) : (
+        <>
+          <Save className="mr-2 h-4 w-4" />
+          {mode === 'create' ? 'Create' : 'Save'}
+        </>
+      )}
+    </Button>
+  );
+
   return (
-    <AdminPage>
-      <div className="mb-6 sm:mb-8">
-        <Link
-          href={listHref}
-          className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-primary transition-colors hover:underline"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Packages
-        </Link>
-
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-              <Boxes className="h-3.5 w-3.5" />
-              {mode === 'create' ? 'New package' : 'Editing package'}
+    <AdminPage className={cn('pb-28 sm:pb-8', isSupplierPortal && 'pb-40 sm:pb-8')}>
+      {/* Sticky toolbar */}
+      <div className="sticky top-0 z-30 -mx-4 mb-6 border-b border-border/70 bg-background/95 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6 md:top-0 md:-mx-8 md:px-8">
+        <div className="flex items-center gap-3">
+          <Link
+            href={listHref}
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border/80 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            aria-label="Back to packages"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h1 className="truncate text-base font-semibold tracking-tight sm:text-lg">
+                {mode === 'create' ? 'New package' : name || initialData?.name || 'Edit package'}
+              </h1>
+              <PackageActiveBadge isActive={isActive} />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              {mode === 'create' ? 'Create curated bundle' : 'Edit curated bundle'}
-            </h1>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground sm:text-base">
-              {mode === 'create'
-                ? 'Position a complete solution, add products, set the cover and price — then publish.'
-                : `Update “${initialData?.name}” — customers shop bundles by purpose on /packages.`}
-            </p>
+            <div className="mt-1.5 flex items-center gap-2">
+              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-300"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+              <span className="shrink-0 text-[11px] font-medium tabular-nums text-muted-foreground">
+                {completionCount}/{completionTotal}
+              </span>
+            </div>
           </div>
-
-          <div className="hidden shrink-0 gap-2 sm:flex">
-            <Link
-              href={listHref}
-              className={cn(saving && 'pointer-events-none opacity-50')}
-              aria-disabled={saving}
-            >
-              <Button type="button" variant="outline" disabled={saving}>
+          <div className="hidden shrink-0 items-center gap-2 sm:flex">
+            <Link href={listHref} className={cn(saving && 'pointer-events-none opacity-50')}>
+              <Button type="button" variant="outline" size="sm" disabled={saving}>
                 Cancel
               </Button>
             </Link>
-            <Button
-              type="submit"
-              form="package-form"
-              disabled={saving}
-              className="min-w-[10.5rem]"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving…
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  {mode === 'create' ? 'Create package' : 'Save changes'}
-                </>
-              )}
-            </Button>
+            <SaveButton />
           </div>
         </div>
       </div>
 
       <form id="package-form" onSubmit={handleSubmit}>
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="space-y-6 lg:col-span-2">
-            {/* Placement */}
-            <Card className="overflow-hidden border-border/70 shadow-sm">
-              <SectionHeader
-                icon={Target}
-                title="Placement"
-                description="Where this bundle sits in the catalog and who supplies it."
-              />
-              <CardContent className="grid gap-5 pt-6 sm:grid-cols-2">
-                <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="category">Category *</Label>
-                  <select
-                    id="category"
-                    value={category}
-                    onChange={(e) => {
-                      setCategory(e.target.value as PackageCategoryId);
-                      setNameTemplate('');
-                    }}
-                    className={selectClass}
-                    required
-                  >
-                    <option value="">Select a category…</option>
-                    {PACKAGE_CATEGORIES.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.label}
-                      </option>
-                    ))}
-                  </select>
-                  {category && (
-                    <FieldHint>
-                      {PACKAGE_CATEGORIES.find((c) => c.id === category)?.shortDescription}
-                    </FieldHint>
-                  )}
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem]">
+          <div className="space-y-5">
+            {/* Basics */}
+            <section className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <h2 className="text-sm font-semibold">Basics</h2>
+                <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border/70 px-3 py-1.5 text-xs font-medium transition hover:bg-muted/40">
+                  <input
+                    type="checkbox"
+                    checked={isSignature}
+                    onChange={(e) => setIsSignature(e.target.checked)}
+                    className="h-3.5 w-3.5 rounded border-border"
+                  />
+                  Signature
+                </label>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Category *</Label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {PACKAGE_CATEGORIES.map((cat) => {
+                      const selected = category === cat.id;
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => {
+                            setCategory(cat.id);
+                          }}
+                          className={cn(
+                            'rounded-full px-3 py-1.5 text-xs font-medium transition',
+                            selected
+                              ? 'bg-primary text-primary-foreground shadow-sm'
+                              : 'bg-secondary text-foreground hover:bg-secondary/80'
+                          )}
+                        >
+                          {cat.discoveryLabel}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {!isSupplierPortal && (
-                  <div className="sm:col-span-2">
-                    <SupplierSelect value={supplierId} onChange={setSupplierId} />
-                  </div>
+                  <SupplierSelect value={supplierId} onChange={setSupplierId} />
                 )}
 
                 {category === 'luxury' && (
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="tier">Queen tier</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="tier">Tier</Label>
                     <select
                       id="tier"
                       value={tier}
                       onChange={(e) => setTier(e.target.value as PackageTierId | '')}
                       className={selectClass}
                     >
-                      <option value="">No tier</option>
+                      <option value="">None</option>
                       {PACKAGE_TIERS.map((t) => (
                         <option key={t.id} value={t.id}>
                           {t.label}
@@ -763,114 +768,91 @@ export function PackageForm({
                   </div>
                 )}
 
-                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border/70 p-4 transition hover:bg-muted/30 sm:col-span-2">
-                  <input
-                    type="checkbox"
-                    checked={isSignature}
-                    onChange={(e) => setIsSignature(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 rounded border-border"
-                  />
-                  <div>
-                    <p className="text-sm font-medium">ShiQueen Signature bundle</p>
-                    <p className="text-xs text-muted-foreground">
-                      Feature as a flagship bundle on the storefront
-                    </p>
-                  </div>
-                </label>
-              </CardContent>
-            </Card>
-
-            {/* Storefront copy */}
-            <Card className="overflow-hidden border-border/70 shadow-sm">
-              <SectionHeader
-                icon={Sparkles}
-                title="Storefront copy"
-                description="Name, pitch, and highlights customers see on package cards and detail pages."
-              />
-              <CardContent className="space-y-5 pt-6">
                 {nameTemplates.length > 0 && (
                   <div className="space-y-2">
-                    <Label htmlFor="nameTemplate">Suggested names</Label>
-                    <select
-                      id="nameTemplate"
-                      value={nameTemplate}
-                      onChange={(e) => {
-                        if (e.target.value) applyNameTemplate(e.target.value);
-                      }}
-                      className={selectClass}
-                    >
-                      <option value="">Pick a suggested name (optional)…</option>
-                      {nameTemplates.map((template) => (
-                        <option key={template} value={template}>
+                    <Label>Quick name</Label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {nameTemplates.slice(0, 6).map((template) => (
+                        <button
+                          key={template}
+                          type="button"
+                          onClick={() => applyNameTemplate(template)}
+                          className={cn(
+                            'max-w-full truncate rounded-lg border px-2.5 py-1.5 text-left text-xs transition',
+                            name === template
+                              ? 'border-primary bg-primary/5 text-primary'
+                              : 'border-border/70 text-muted-foreground hover:border-primary/40 hover:text-foreground'
+                          )}
+                        >
                           {template}
-                        </option>
+                        </button>
                       ))}
-                    </select>
-                    <FieldHint>Selecting a name can also seed a tagline and highlights.</FieldHint>
+                    </div>
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="name">Bundle name *</Label>
-                  <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Bridal Beauty Package"
-                    className={fieldClass}
-                    required
-                    autoFocus={mode === 'create'}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="tagline">Tagline</Label>
-                  <Input
-                    id="tagline"
-                    value={tagline}
-                    onChange={(e) => setTagline(e.target.value)}
-                    placeholder="Complete solution for her wedding day glow"
-                    className={fieldClass}
-                    maxLength={120}
-                  />
-                  <FieldHint>
-                    One-line pitch on package cards · {tagline.length}/120
-                  </FieldHint>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description *</Label>
-                  <textarea
-                    id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Describe the need, occasion, or lifestyle goal this bundle addresses…"
-                    className={textareaClass}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <Label>Why this bundle</Label>
-                      <FieldHint>Up to 5 selling points · shown on the package detail page</FieldHint>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="name">Name *</Label>
+                    <Input
+                      id="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Package name"
+                      className={fieldClass}
+                      required
+                      autoFocus={mode === 'create'}
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <Label htmlFor="tagline">Tagline</Label>
+                      <span className="text-[11px] tabular-nums text-muted-foreground">
+                        {tagline.length}/120
+                      </span>
                     </div>
-                    <div className="flex gap-2">
-                      {category && (
+                    <Input
+                      id="tagline"
+                      value={tagline}
+                      onChange={(e) => setTagline(e.target.value)}
+                      placeholder="Short pitch"
+                      className={fieldClass}
+                      maxLength={120}
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="description">Description *</Label>
+                    <textarea
+                      id="description"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="What’s included and who it’s for"
+                      className={cn(textareaClass, 'min-h-[88px]')}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <Label>Highlights</Label>
+                    <div className="flex gap-1.5">
+                      {category ? (
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
+                          className="h-8"
                           onClick={addSuggestedHighlights}
                         >
-                          Use suggested
+                          Suggest
                         </Button>
-                      )}
+                      ) : null}
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
+                        className="h-8"
                         onClick={addHighlight}
                         disabled={highlights.length >= 5}
                       >
@@ -880,27 +862,29 @@ export function PackageForm({
                     </div>
                   </div>
                   {highlights.length === 0 ? (
-                    <p className="rounded-xl border border-dashed border-border/80 bg-muted/20 px-4 py-5 text-sm text-muted-foreground">
-                      Add a few reasons customers should choose this complete solution.
-                    </p>
+                    <button
+                      type="button"
+                      onClick={addHighlight}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border/80 bg-muted/15 px-4 py-4 text-sm text-muted-foreground transition hover:border-primary/40 hover:text-foreground"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add highlight
+                    </button>
                   ) : (
                     <div className="space-y-2">
                       {highlights.map((highlight, index) => (
                         <div key={index} className="flex gap-2">
-                          <span className="flex h-11 w-8 shrink-0 items-center justify-center text-xs font-semibold tabular-nums text-muted-foreground">
-                            {index + 1}
-                          </span>
                           <Input
                             value={highlight}
                             onChange={(e) => updateHighlight(index, e.target.value)}
-                            placeholder="Everything she needs in one order"
+                            placeholder={`Highlight ${index + 1}`}
                             className={fieldClass}
                           />
                           <Button
                             type="button"
-                            variant="outline"
+                            variant="ghost"
                             size="icon"
-                            className="h-11 w-11 shrink-0"
+                            className="h-11 w-11 shrink-0 text-muted-foreground"
                             onClick={() => removeHighlight(index)}
                             aria-label="Remove highlight"
                           >
@@ -911,73 +895,60 @@ export function PackageForm({
                     </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </section>
 
-            {/* Package items */}
-            <Card className="overflow-hidden border-border/70 shadow-sm">
-              <CardHeader className="border-b border-border/60 bg-muted/20">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="flex items-start gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                      <Layers className="h-4 w-4" />
-                    </span>
-                    <div className="min-w-0">
-                      <CardTitle>Package items</CardTitle>
-                      <CardDescription className="mt-0.5">
-                        {items.length} item{items.length === 1 ? '' : 's'} · {compositionLabel} ·
-                        retail value {formatUGX(basePrice)}
-                      </CardDescription>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addItem}
-                      className="gap-2"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Product
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addServiceItem}
-                      className="gap-2"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Service
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addCustomItem}
-                      className="gap-2"
-                    >
-                      <Sparkles className="h-4 w-4" />
-                      Custom
-                    </Button>
-                  </div>
+            {/* Items */}
+            <section className="rounded-2xl border border-border/70 bg-card shadow-sm">
+              <div className="flex flex-col gap-3 border-b border-border/60 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+                <div>
+                  <h2 className="text-sm font-semibold">Items</h2>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {items.length} · {compositionLabel} · {formatUGX(basePrice)}
+                  </p>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-6">
+                <div className="flex flex-wrap gap-1.5">
+                  <Button type="button" variant="outline" size="sm" className="h-8" onClick={addItem}>
+                    <Plus className="mr-1 h-3.5 w-3.5" />
+                    Product
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8"
+                    onClick={addServiceItem}
+                  >
+                    <Plus className="mr-1 h-3.5 w-3.5" />
+                    Service
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8"
+                    onClick={addCustomItem}
+                  >
+                    <Plus className="mr-1 h-3.5 w-3.5" />
+                    Custom
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-3 p-4 sm:p-5">
                 {(catalog.length > 6 || serviceOptions.length > 6) && (
                   <div className="relative">
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       value={catalogQuery}
                       onChange={(e) => setCatalogQuery(e.target.value)}
-                      placeholder="Filter products or services…"
+                      placeholder="Search catalog…"
                       className={cn(fieldClass, 'pl-9')}
                     />
                   </div>
                 )}
 
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {items.map((item, index) => {
                     const kind = getPackageItemKind(item);
                     const isCustom = kind === 'custom';
@@ -985,6 +956,7 @@ export function PackageForm({
                     const itemImage = getPackageItemImage(item, products, serviceOptions);
                     const unitRetail = getPackageItemRetailUnit(item, itemRetailPrices);
                     const lineRetail = unitRetail * item.quantity;
+                    const valid = isValidPackageItem(item);
                     const productSelectOptions = (() => {
                       if (isCustom || isService) return [];
                       const selected = catalog.find((p) => p.id === item.productId);
@@ -1008,19 +980,31 @@ export function PackageForm({
                     return (
                       <div
                         key={`${getPackageItemRefId(item)}-${index}`}
-                        className="rounded-xl border border-border/70 bg-gradient-to-br from-background to-muted/30 p-4"
+                        className={cn(
+                          'rounded-xl border bg-background p-3 transition sm:p-3.5',
+                          valid ? 'border-border/70' : 'border-amber-400/50 bg-amber-50/30'
+                        )}
                       >
-                        <div className="mb-3 flex items-center justify-between gap-3">
+                        <div className="mb-2.5 flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-[11px] font-bold tabular-nums text-primary">
+                            <span className="flex h-6 min-w-6 items-center justify-center rounded-md bg-muted px-1.5 text-[11px] font-bold tabular-nums text-muted-foreground">
                               {index + 1}
                             </span>
-                            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            <span
+                              className={cn(
+                                'rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+                                isCustom
+                                  ? 'bg-violet-500/10 text-violet-700'
+                                  : isService
+                                    ? 'bg-sky-500/10 text-sky-700'
+                                    : 'bg-emerald-500/10 text-emerald-700'
+                              )}
+                            >
                               {isCustom ? 'Custom' : isService ? 'Service' : 'Product'}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold tabular-nums text-foreground">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-semibold tabular-nums">
                               {formatUGX(lineRetail)}
                             </span>
                             <Button
@@ -1037,8 +1021,8 @@ export function PackageForm({
                           </div>
                         </div>
 
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                          <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
+                        <div className="flex gap-3">
+                          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-border bg-muted sm:h-14 sm:w-14">
                             {itemImage && isRemoteProductImage(itemImage) ? (
                               <Image
                                 src={itemImage}
@@ -1049,27 +1033,25 @@ export function PackageForm({
                               />
                             ) : (
                               <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                                <Boxes className="h-5 w-5" />
+                                <Boxes className="h-4 w-4" />
                               </div>
                             )}
                           </div>
 
-                          <div className="grid min-w-0 flex-1 gap-3 sm:grid-cols-12">
+                          <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-12 sm:gap-2.5">
                             {isCustom ? (
                               <>
-                                <div className="space-y-1.5 sm:col-span-5">
-                                  <Label className="text-xs">Name</Label>
+                                <div className="sm:col-span-5">
                                   <Input
                                     value={item.customName ?? ''}
                                     onChange={(e) =>
                                       updateItem(index, 'customName', e.target.value)
                                     }
-                                    placeholder="Product name"
-                                    className="h-10 rounded-lg border-border/80 shadow-sm"
+                                    placeholder="Name"
+                                    className="h-10 rounded-lg border-border/80"
                                   />
                                 </div>
-                                <div className="space-y-1.5 sm:col-span-3">
-                                  <Label className="text-xs">Retail (UGX)</Label>
+                                <div className="sm:col-span-3">
                                   <Input
                                     type="number"
                                     min={0}
@@ -1081,12 +1063,11 @@ export function PackageForm({
                                         parseInt(e.target.value) || 0
                                       )
                                     }
-                                    placeholder="0"
-                                    className="h-10 rounded-lg border-border/80 shadow-sm tabular-nums"
+                                    placeholder="Retail"
+                                    className="h-10 rounded-lg border-border/80 tabular-nums"
                                   />
                                 </div>
-                                <div className="space-y-1.5 sm:col-span-2">
-                                  <Label className="text-xs">Image</Label>
+                                <div className="sm:col-span-2">
                                   <input
                                     ref={(el) => {
                                       itemImageRefs.current[index] = el;
@@ -1103,7 +1084,7 @@ export function PackageForm({
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    className="h-10 w-full gap-1.5"
+                                    className="h-10 w-full"
                                     disabled={uploadingItemIndex === index}
                                     onClick={() => itemImageRefs.current[index]?.click()}
                                   >
@@ -1112,19 +1093,17 @@ export function PackageForm({
                                     ) : (
                                       <Upload className="h-3.5 w-3.5" />
                                     )}
-                                    {item.customImage ? 'Replace' : 'Upload'}
                                   </Button>
                                 </div>
                               </>
                             ) : isService ? (
-                              <div className="space-y-1.5 sm:col-span-7">
-                                <Label className="text-xs">Service</Label>
+                              <div className="sm:col-span-7">
                                 <select
                                   value={getPackageItemRefId(item)}
                                   onChange={(e) =>
                                     updateItem(index, 'serviceId', e.target.value)
                                   }
-                                  className="h-10 w-full rounded-lg border border-border/80 bg-background px-3 text-sm shadow-sm transition focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                  className="h-10 w-full rounded-lg border border-border/80 bg-background px-3 text-sm"
                                 >
                                   {serviceSelectOptions.length === 0 ? (
                                     <option value={getPackageItemRefId(item)}>No matches</option>
@@ -1138,14 +1117,13 @@ export function PackageForm({
                                 </select>
                               </div>
                             ) : (
-                              <div className="space-y-1.5 sm:col-span-7">
-                                <Label className="text-xs">Product</Label>
+                              <div className="sm:col-span-7">
                                 <select
                                   value={item.productId}
                                   onChange={(e) =>
                                     updateItem(index, 'productId', e.target.value)
                                   }
-                                  className="h-10 w-full rounded-lg border border-border/80 bg-background px-3 text-sm shadow-sm transition focus:outline-none focus:ring-2 focus:ring-primary/30"
+                                  className="h-10 w-full rounded-lg border border-border/80 bg-background px-3 text-sm"
                                 >
                                   {productSelectOptions.length === 0 ? (
                                     <option value={item.productId}>No matches</option>
@@ -1160,8 +1138,7 @@ export function PackageForm({
                               </div>
                             )}
 
-                            <div className="space-y-1.5 sm:col-span-2">
-                              <Label className="text-xs">Qty</Label>
+                            <div className="sm:col-span-2">
                               <Input
                                 type="number"
                                 min={1}
@@ -1169,15 +1146,15 @@ export function PackageForm({
                                 onChange={(e) =>
                                   updateItem(index, 'quantity', parseInt(e.target.value) || 1)
                                 }
-                                className="h-10 rounded-lg border-border/80 shadow-sm tabular-nums"
+                                className="h-10 rounded-lg border-border/80 tabular-nums"
+                                aria-label="Quantity"
                               />
                             </div>
-                            <div className="space-y-1.5 sm:col-span-3">
-                              <Label className="text-xs">Price override</Label>
+                            <div className={cn(isCustom ? 'sm:col-span-2' : 'sm:col-span-3')}>
                               <Input
                                 type="number"
                                 min={0}
-                                placeholder="Optional"
+                                placeholder="Override"
                                 value={item.price ?? ''}
                                 onChange={(e) =>
                                   updateItem(
@@ -1186,7 +1163,8 @@ export function PackageForm({
                                     e.target.value ? parseInt(e.target.value) : undefined
                                   )
                                 }
-                                className="h-10 rounded-lg border-border/80 shadow-sm tabular-nums"
+                                className="h-10 rounded-lg border-border/80 tabular-nums"
+                                aria-label="Price override"
                               />
                             </div>
                           </div>
@@ -1195,34 +1173,43 @@ export function PackageForm({
                     );
                   })}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </section>
 
-            {/* Cover */}
-            <Card className="overflow-hidden border-border/70 shadow-sm">
-              <SectionHeader
-                icon={ImageIcon}
-                title="Cover image"
-                description="Upload a photo or build a collage from up to 4 items in this package."
-              />
-              <CardContent className="space-y-5 pt-6">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <CoverModeCard
-                    selected={coverMode === 'upload'}
-                    title="Upload photo"
-                    description="Single custom cover for a polished look"
-                    onSelect={() => setCoverMode('upload')}
-                  />
-                  <CoverModeCard
-                    selected={coverMode === 'products'}
-                    title="Item collage"
-                    description="Combine up to 4 included product or service photos"
-                    onSelect={() => setCoverMode('products')}
-                  />
+            {/* Cover + Pricing */}
+            <section className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
+              <h2 className="mb-4 text-sm font-semibold">Cover & price</h2>
+
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <Label>Cover</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(
+                      [
+                        { id: 'upload' as const, label: 'Upload', hint: 'One photo' },
+                        { id: 'products' as const, label: 'Collage', hint: 'Up to 4' },
+                      ] as const
+                    ).map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setCoverMode(opt.id)}
+                        className={cn(
+                          'rounded-xl border px-3 py-3 text-left transition',
+                          coverMode === opt.id
+                            ? 'border-primary bg-primary/5 ring-2 ring-primary/15'
+                            : 'border-border/70 hover:border-primary/40'
+                        )}
+                      >
+                        <p className="text-sm font-semibold">{opt.label}</p>
+                        <p className="text-xs text-muted-foreground">{opt.hint}</p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {coverMode === 'upload' ? (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <input
                       ref={coverFileRef}
                       type="file"
@@ -1233,7 +1220,7 @@ export function PackageForm({
                         e.target.value = '';
                       }}
                     />
-                    <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-border/80 bg-muted">
+                    <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-border/80 bg-muted">
                       {isRemoteProductImage(uploadedImage) ? (
                         <>
                           <Image
@@ -1247,7 +1234,7 @@ export function PackageForm({
                             type="button"
                             onClick={() => setUploadedImage('')}
                             className="absolute right-2 top-2 rounded-full bg-background/90 p-1.5 text-red-600 shadow-sm hover:bg-background"
-                            aria-label="Remove cover image"
+                            aria-label="Remove cover"
                           >
                             <X className="h-4 w-4" />
                           </button>
@@ -1260,12 +1247,11 @@ export function PackageForm({
                           className="flex h-full w-full flex-col items-center justify-center gap-2 text-muted-foreground transition hover:bg-muted/80"
                         >
                           {uploadingCover ? (
-                            <Loader2 className="h-8 w-8 animate-spin opacity-60" />
+                            <Loader2 className="h-7 w-7 animate-spin opacity-60" />
                           ) : (
-                            <Upload className="h-8 w-8 opacity-50" />
+                            <Upload className="h-7 w-7 opacity-50" />
                           )}
-                          <p className="text-sm font-medium">Click to upload cover</p>
-                          <p className="text-xs">JPEG, PNG, WebP, or GIF · up to 5MB</p>
+                          <p className="text-sm font-medium">Upload cover</p>
                         </button>
                       )}
                     </div>
@@ -1273,6 +1259,7 @@ export function PackageForm({
                       <Button
                         type="button"
                         variant="outline"
+                        size="sm"
                         className="gap-2"
                         disabled={uploadingCover}
                         onClick={() => coverFileRef.current?.click()}
@@ -1282,41 +1269,39 @@ export function PackageForm({
                         ) : (
                           <Upload className="h-4 w-4" />
                         )}
-                        Replace cover
+                        Replace
                       </Button>
                     )}
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    <div className="relative aspect-[4/3] overflow-hidden rounded-xl border border-border/80 bg-muted">
+                  <div className="space-y-3">
+                    <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-border/80 bg-muted">
                       <PackageCoverDisplay
                         images={previewCoverImages}
-                        alt="Package cover preview"
+                        alt="Cover preview"
                         sizes="(max-width:768px) 100vw, 50vw"
                       />
                     </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <p className="text-muted-foreground">
-                        {coverProductIds.length} of {Math.min(4, coverOptions.length || 4)}{' '}
-                        selected (max 4)
-                      </p>
-                      <Button
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>
+                        {coverProductIds.length}/{Math.min(4, coverOptions.length || 4)} selected
+                      </span>
+                      <button
                         type="button"
-                        variant="ghost"
-                        size="sm"
+                        className="font-medium text-primary hover:underline"
                         onClick={() =>
                           setCoverProductIds(getUniquePackageProductIds(items).slice(0, 4))
                         }
                       >
-                        Select first 4
-                      </Button>
+                        First 4
+                      </button>
                     </div>
                     {coverOptions.length === 0 ? (
-                      <p className="rounded-xl border border-dashed border-border/80 bg-muted/20 px-4 py-6 text-center text-sm text-muted-foreground">
-                        Add package items with images above to build the collage.
+                      <p className="rounded-xl border border-dashed border-border/80 px-4 py-5 text-center text-sm text-muted-foreground">
+                        Add items with images first
                       </p>
                     ) : (
-                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      <div className="grid grid-cols-4 gap-2">
                         {coverOptions.map((option) => {
                           const selected = coverProductIds.includes(option.id);
                           const hasImage = isRemoteProductImage(option.image);
@@ -1327,36 +1312,32 @@ export function PackageForm({
                               disabled={!hasImage}
                               onClick={() => toggleCoverProduct(option.id)}
                               className={cn(
-                                'relative overflow-hidden rounded-xl border text-left transition-all',
-                                !hasImage && 'cursor-not-allowed opacity-50',
+                                'relative aspect-square overflow-hidden rounded-lg border transition',
+                                !hasImage && 'cursor-not-allowed opacity-40',
                                 selected
-                                  ? 'border-primary ring-2 ring-primary/25'
-                                  : 'border-border/80 hover:border-primary/40'
+                                  ? 'border-primary ring-2 ring-primary/20'
+                                  : 'border-border/70 hover:border-primary/40'
                               )}
+                              title={option.name}
                             >
-                              <div className="relative aspect-square bg-muted">
-                                {hasImage ? (
-                                  <Image
-                                    src={option.image!}
-                                    alt={option.name}
-                                    fill
-                                    sizes="120px"
-                                    className="object-cover"
-                                  />
-                                ) : (
-                                  <div className="flex h-full items-center justify-center text-muted-foreground">
-                                    <Boxes className="h-6 w-6" />
-                                  </div>
-                                )}
-                                {selected && (
-                                  <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
-                                    <Check className="h-3.5 w-3.5" />
-                                  </span>
-                                )}
-                              </div>
-                              <p className="truncate px-2 py-2 text-xs font-medium">
-                                {option.name}
-                              </p>
+                              {hasImage ? (
+                                <Image
+                                  src={option.image!}
+                                  alt={option.name}
+                                  fill
+                                  sizes="80px"
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full items-center justify-center bg-muted text-muted-foreground">
+                                  <Boxes className="h-4 w-4" />
+                                </div>
+                              )}
+                              {selected && (
+                                <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                                  <Check className="h-3 w-3" />
+                                </span>
+                              )}
                             </button>
                           );
                         })}
@@ -1364,44 +1345,32 @@ export function PackageForm({
                     )}
                   </div>
                 )}
-              </CardContent>
-            </Card>
 
-            {/* Pricing */}
-            <Card className="overflow-hidden border-border/70 shadow-sm">
-              <SectionHeader
-                icon={Tag}
-                title="Behaviour & pricing"
-                description="How items combine and what customers pay for the bundle."
-              />
-              <CardContent className="space-y-6 pt-6">
-                <div className="space-y-3">
-                  <Label>Bundle type</Label>
-                  <div className="grid gap-3 sm:grid-cols-3">
+                <div className="space-y-2">
+                  <Label>Type</Label>
+                  <div className="grid grid-cols-3 gap-2">
                     {BUNDLE_TYPES.map((type) => (
                       <button
                         key={type.value}
                         type="button"
                         onClick={() => setRuleType(type.value)}
                         className={cn(
-                          'rounded-xl border p-4 text-left transition-all',
+                          'rounded-xl border px-2.5 py-2.5 text-left transition',
                           ruleType === type.value
-                            ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                            : 'border-border/80 hover:border-primary/40 hover:bg-muted/40'
+                            ? 'border-primary bg-primary/5 ring-2 ring-primary/15'
+                            : 'border-border/70 hover:border-primary/40'
                         )}
                       >
                         <p className="text-sm font-semibold">{type.label}</p>
-                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                          {type.description}
-                        </p>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">{type.description}</p>
                       </button>
                     ))}
                   </div>
                 </div>
 
                 {ruleType === 'mix-and-match' && (
-                  <div className="max-w-xs space-y-2">
-                    <Label htmlFor="itemLimit">Item limit</Label>
+                  <div className="max-w-[10rem] space-y-2">
+                    <Label htmlFor="itemLimit">Limit</Label>
                     <Input
                       id="itemLimit"
                       type="number"
@@ -1410,37 +1379,45 @@ export function PackageForm({
                       onChange={(e) => setItemLimit(parseInt(e.target.value) || 1)}
                       className={fieldClass}
                     />
-                    <FieldHint>Maximum products a customer can pick in this mix.</FieldHint>
                   </div>
                 )}
 
-                <div className="space-y-3">
-                  <Label>Pricing mode</Label>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <PricingModeCard
-                      selected={pricingMode === 'auto'}
-                      title="Calculated total"
-                      description="Sum of item prices, including overrides"
-                      onSelect={() => setPricingMode('auto')}
-                    />
-                    <PricingModeCard
-                      selected={pricingMode === 'custom'}
-                      title="Custom price"
-                      description="Set a package price below or above retail"
-                      onSelect={() => setPricingMode('custom')}
-                    />
+                <div className="space-y-2">
+                  <Label>Price mode</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(
+                      [
+                        { id: 'auto' as const, label: 'Auto', hint: 'Sum of items' },
+                        { id: 'custom' as const, label: 'Custom', hint: 'Set price' },
+                      ] as const
+                    ).map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setPricingMode(opt.id)}
+                        className={cn(
+                          'rounded-xl border px-3 py-2.5 text-left transition',
+                          pricingMode === opt.id
+                            ? 'border-primary bg-primary/5 ring-2 ring-primary/15'
+                            : 'border-border/70 hover:border-primary/40'
+                        )}
+                      >
+                        <p className="text-sm font-semibold">{opt.label}</p>
+                        <p className="text-xs text-muted-foreground">{opt.hint}</p>
+                      </button>
+                    ))}
                   </div>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Retail value</Label>
+                    <Label>Retail</Label>
                     <div className="flex h-11 items-center rounded-lg border border-border/80 bg-muted/40 px-3 text-sm font-medium tabular-nums">
                       {formatUGX(basePrice)}
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="discountedPrice">Package price (UGX) *</Label>
+                    <Label htmlFor="discountedPrice">Price (UGX) *</Label>
                     {pricingMode === 'auto' ? (
                       <Input
                         id="discountedPrice"
@@ -1456,7 +1433,7 @@ export function PackageForm({
                         min={0}
                         value={discountedPrice}
                         onChange={(e) => setDiscountedPrice(e.target.value)}
-                        placeholder="550000"
+                        placeholder="0"
                         className={cn(fieldClass, 'font-semibold tabular-nums')}
                         required
                       />
@@ -1465,97 +1442,48 @@ export function PackageForm({
                 </div>
 
                 {effectivePrice > 0 && savingsAmount > 0 && (
-                  <div className="rounded-xl border border-accent/25 bg-accent/10 px-4 py-3.5">
-                    <p className="text-xs font-medium uppercase tracking-wide text-accent">
-                      Customer savings
-                    </p>
-                    <p className="mt-0.5 text-xl font-bold tabular-nums text-accent">
-                      {savingsPercentage.toFixed(1)}% · {formatUGX(savingsAmount)}
-                    </p>
+                  <div className="flex items-center justify-between rounded-xl border border-accent/25 bg-accent/10 px-4 py-3">
+                    <span className="text-xs font-medium uppercase tracking-wide text-accent">
+                      Savings
+                    </span>
+                    <span className="text-sm font-bold tabular-nums text-accent">
+                      {savingsPercentage.toFixed(0)}% · {formatUGX(savingsAmount)}
+                    </span>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </section>
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6 lg:sticky lg:top-20 lg:self-start">
-            <div className="flex gap-2 sm:hidden">
-              <Link
-                href={listHref}
-                className={cn('flex-1', saving && 'pointer-events-none opacity-50')}
-                aria-disabled={saving}
-              >
-                <Button type="button" variant="outline" className="w-full" disabled={saving}>
-                  Cancel
-                </Button>
-              </Link>
-              <Button type="submit" className="min-w-[9rem] flex-1" disabled={saving}>
-                {saving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving…
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    {mode === 'create' ? 'Create' : 'Save'}
-                  </>
+          <aside className="space-y-4 lg:sticky lg:top-[4.75rem] lg:self-start">
+            <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+              <div className="relative aspect-[4/3] bg-muted">
+                <PackageCoverDisplay
+                  images={previewCoverImages}
+                  alt={name || 'Preview'}
+                  sizes="352px"
+                />
+                {savingsAmount > 0 && (
+                  <span className="absolute right-2 top-2 rounded-full bg-accent px-2.5 py-1 text-xs font-bold text-accent-foreground shadow-sm">
+                    −{savingsPercentage.toFixed(0)}%
+                  </span>
                 )}
-              </Button>
-            </div>
-
-            <Card className="overflow-hidden border-border/70 shadow-sm">
-              <CardHeader className="border-b border-border/60 bg-muted/20">
-                <CardTitle>Storefront preview</CardTitle>
-                <CardDescription>How this package appears on /packages</CardDescription>
-              </CardHeader>
-              <CardContent className="pt-5">
-                <div className="relative mb-4 aspect-[4/3] overflow-hidden rounded-xl bg-muted ring-1 ring-border/60">
-                  <PackageCoverDisplay
-                    images={previewCoverImages}
-                    alt={name || 'Package preview'}
-                    sizes="320px"
-                  />
-                  {savingsAmount > 0 && (
-                    <span className="absolute right-2 top-2 rounded-full bg-accent px-2.5 py-1 text-xs font-bold text-accent-foreground shadow-sm">
-                      âˆ’{savingsPercentage.toFixed(0)}%
-                    </span>
-                  )}
+              </div>
+              <div className="space-y-3 p-4">
+                {category ? (
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">
+                    {PACKAGE_CATEGORIES.find((c) => c.id === category)?.discoveryLabel}
+                  </p>
+                ) : null}
+                <div>
+                  <p className="font-semibold leading-snug">{name || 'Package name'}</p>
+                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                    {tagline.trim() || description || 'Add details to preview'}
+                  </p>
                 </div>
 
-                {category && (
-                  <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-primary">
-                    {PACKAGE_CATEGORIES.find((c) => c.id === category)?.label}
-                  </p>
-                )}
-                <p className="font-semibold leading-snug">{name || 'Package name'}</p>
-                {tagline.trim() ? (
-                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{tagline}</p>
-                ) : (
-                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                    {description || 'Add a tagline or description for the card pitch.'}
-                  </p>
-                )}
-
-                {highlights.filter((h) => h.trim()).length > 0 && (
-                  <ul className="mt-3 space-y-1.5 border-t border-border/60 pt-3">
-                    {highlights
-                      .filter((h) => h.trim())
-                      .slice(0, 3)
-                      .map((h, i) => (
-                        <li
-                          key={i}
-                          className="flex gap-2 text-xs text-muted-foreground"
-                        >
-                          <Check className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
-                          <span className="line-clamp-1">{h}</span>
-                        </li>
-                      ))}
-                  </ul>
-                )}
-
-                <div className="mt-4 space-y-2 border-t border-border/60 pt-4 text-sm">
+                <div className="space-y-1.5 border-t border-border/60 pt-3 text-sm">
                   <div className="flex justify-between gap-3">
                     <span className="text-muted-foreground">Type</span>
                     <span className="font-medium">{getPackageTypeLabel(draftRule.type)}</span>
@@ -1564,130 +1492,70 @@ export function PackageForm({
                     <span className="text-muted-foreground">Items</span>
                     <span className="font-medium tabular-nums">{items.length}</span>
                   </div>
-                  {items.length > 0 && (
-                    <ul className="space-y-1 border-t border-border/60 pt-2">
-                      {items.slice(0, 4).map((item, index) => (
-                        <li
-                          key={index}
-                          className="flex justify-between gap-2 text-xs text-muted-foreground"
-                        >
-                          <span className="truncate">
-                            {getPackageItemName(item, itemNames)}
-                            {isCustomPackageItem(item) && (
-                              <span className="ml-1 text-[10px] uppercase">(custom)</span>
-                            )}
-                          </span>
-                          <span className="shrink-0 tabular-nums">Ã—{item.quantity}</span>
-                        </li>
-                      ))}
-                      {items.length > 4 && (
-                        <li className="text-xs text-muted-foreground">
-                          +{items.length - 4} more
-                        </li>
-                      )}
-                    </ul>
-                  )}
                   <div className="flex justify-between gap-3">
-                    <span className="text-muted-foreground">Retail value</span>
+                    <span className="text-muted-foreground">Retail</span>
                     <span className="font-medium tabular-nums">{formatUGX(basePrice)}</span>
                   </div>
                   <div className="flex justify-between gap-3 pt-1">
-                    <span className="text-muted-foreground">Package price</span>
+                    <span className="text-muted-foreground">Price</span>
                     <span className="text-base font-bold tabular-nums text-primary">
                       {effectivePrice > 0 ? formatUGX(effectivePrice) : '—'}
                     </span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
-            <Card className="overflow-hidden border-border/70 shadow-sm">
-              <CardHeader className="border-b border-border/60 bg-muted/20">
-                <div className="flex items-center justify-between gap-2">
-                  <CardTitle>Before you save</CardTitle>
-                  <span className="text-xs font-medium tabular-nums text-muted-foreground">
-                    {completionCount}/{completionTotal}
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3 pt-5">
+            <div className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-semibold">Ready</h3>
+                <span className="text-xs tabular-nums text-muted-foreground">{progressPct}%</span>
+              </div>
+              <div className="space-y-2">
                 <ChecklistItem done={completionSteps.hasPositioning} label="Category & name" />
-                <ChecklistItem done={completionSteps.hasDetails} label="Tagline or description" />
-                <ChecklistItem done={completionSteps.hasItems} label="Complete package items" />
-                <ChecklistItem done={completionSteps.hasCover} label="Cover image ready" />
-                <ChecklistItem done={completionSteps.hasPricing} label="Package price set" />
-              </CardContent>
-            </Card>
-
-            <Card className="overflow-hidden border-border/70 shadow-sm">
-              <CardHeader className="border-b border-border/60 bg-muted/20">
-                <CardTitle>Visibility</CardTitle>
-                <CardDescription>Control whether customers can see this package</CardDescription>
-              </CardHeader>
-              <CardContent className="pt-5">
-                <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border/70 p-4 transition-colors hover:bg-muted/30">
-                  <div>
-                    <p className="text-sm font-medium">Active on storefront</p>
-                    <p className="text-xs text-muted-foreground">
-                      Visible on /packages when enabled
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <PackageActiveBadge isActive={isActive} />
-                    <input
-                      type="checkbox"
-                      checked={isActive}
-                      onChange={(e) => setIsActive(e.target.checked)}
-                      className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
-                    />
-                  </div>
-                </label>
-              </CardContent>
-            </Card>
-
-            <Card className="border-dashed border-border/80 bg-muted/20">
-              <CardContent className="py-4 text-xs leading-relaxed text-muted-foreground">
-                <p className="font-medium text-foreground">Pricing tip</p>
-                <p className="mt-1">
-                  Use <span className="font-medium text-foreground">calculated total</span> when
-                  the package price should match the sum of items. Use{' '}
-                  <span className="font-medium text-foreground">custom price</span> to offer a
-                  discount or premium bundle fee.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+                <ChecklistItem done={completionSteps.hasDetails} label="Details" />
+                <ChecklistItem done={completionSteps.hasItems} label="Items" />
+                <ChecklistItem done={completionSteps.hasCover} label="Cover" />
+                <ChecklistItem done={completionSteps.hasPricing} label="Price" />
+              </div>
+              <label className="mt-4 flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-border/70 px-3 py-2.5 transition hover:bg-muted/30">
+                <span className="text-sm font-medium">Active</span>
+                <input
+                  type="checkbox"
+                  checked={isActive}
+                  onChange={(e) => setIsActive(e.target.checked)}
+                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                />
+              </label>
+              <div className="mt-3 hidden sm:block">
+                <SaveButton fullWidth />
+              </div>
+            </div>
+          </aside>
         </div>
       </form>
-    </AdminPage>
-  );
-}
 
-function FieldHint({ children }: { children: React.ReactNode }) {
-  return <p className="text-xs text-muted-foreground">{children}</p>;
-}
-
-function SectionHeader({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  description: string;
-}) {
-  return (
-    <CardHeader className="border-b border-border/60 bg-muted/20">
-      <div className="flex items-start gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <Icon className="h-4 w-4" />
-        </span>
-        <div className="min-w-0">
-          <CardTitle>{title}</CardTitle>
-          <CardDescription className="mt-0.5">{description}</CardDescription>
+      {/* Mobile sticky save */}
+      <div
+        className={cn(
+          'fixed inset-x-0 z-40 border-t border-border/70 bg-background/95 p-3 backdrop-blur-md sm:hidden',
+          isSupplierPortal
+            ? 'bottom-[calc(3.75rem+env(safe-area-inset-bottom))]'
+            : 'bottom-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]'
+        )}
+      >
+        <div className="flex gap-2">
+          <Link href={listHref} className="flex-1">
+            <Button type="button" variant="outline" className="w-full" disabled={saving}>
+              Cancel
+            </Button>
+          </Link>
+          <div className="flex-[1.4]">
+            <SaveButton fullWidth />
+          </div>
         </div>
       </div>
-    </CardHeader>
+    </AdminPage>
   );
 }
 
@@ -1706,49 +1574,5 @@ function ChecklistItem({ done, label }: { done: boolean; label: string }) {
       </span>
       <span className={cn(done ? 'text-foreground' : 'text-muted-foreground')}>{label}</span>
     </div>
-  );
-}
-
-function PricingModeCard({
-  selected,
-  title,
-  description,
-  onSelect,
-}: {
-  selected: boolean;
-  title: string;
-  description: string;
-  onSelect: () => void;
-}) {
-  return (
-    <CoverModeCard selected={selected} title={title} description={description} onSelect={onSelect} />
-  );
-}
-
-function CoverModeCard({
-  selected,
-  title,
-  description,
-  onSelect,
-}: {
-  selected: boolean;
-  title: string;
-  description: string;
-  onSelect: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={cn(
-        'rounded-xl border p-4 text-left transition-all',
-        selected
-          ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-          : 'border-border/80 hover:border-primary/40 hover:bg-muted/40'
-      )}
-    >
-      <p className="text-sm font-semibold">{title}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{description}</p>
-    </button>
   );
 }
