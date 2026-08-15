@@ -31,6 +31,7 @@ import { formatUGX } from '@/lib/wholesale-data';
 import type { ServiceListing } from '@/lib/types/services';
 import Image from 'next/image';
 import {
+  SEARCH_HISTORY_UPDATED_EVENT,
   readRecentSearchQueries,
   recordSearchHistory,
 } from '@/lib/search-history';
@@ -61,6 +62,12 @@ function getHitHref(hit: CatalogSearchHit): string {
   if (hit.type === 'product') return `/products/${hit.product.id}`;
   if (hit.type === 'package') return `/packages/${hit.pkg.id}`;
   return `/services/${hit.listing.slug}`;
+}
+
+function getHitLabel(hit: CatalogSearchHit): string {
+  if (hit.type === 'product') return hit.product.name;
+  if (hit.type === 'package') return hit.pkg.name;
+  return hit.listing.name;
 }
 
 function SearchResultRow({
@@ -236,6 +243,8 @@ export function SearchBar({ className }: { className?: string }) {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const [mounted, setMounted] = useState(false);
+  const queryRef = useRef(query);
+  queryRef.current = query;
 
   const deferredQuery = useDeferredValue(query);
   const trimmedQuery = deferredQuery.trim();
@@ -287,7 +296,14 @@ export function SearchBar({ className }: { className?: string }) {
 
   useEffect(() => {
     setMounted(true);
-    setRecentSearches(readRecentSearchQueries(RECENT_PREVIEW));
+    const syncRecent = () => setRecentSearches(readRecentSearchQueries(RECENT_PREVIEW));
+    syncRecent();
+    window.addEventListener(SEARCH_HISTORY_UPDATED_EVENT, syncRecent);
+    window.addEventListener('storage', syncRecent);
+    return () => {
+      window.removeEventListener(SEARCH_HISTORY_UPDATED_EVENT, syncRecent);
+      window.removeEventListener('storage', syncRecent);
+    };
   }, []);
 
   useLayoutEffect(() => {
@@ -330,17 +346,22 @@ export function SearchBar({ className }: { className?: string }) {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
+  const rememberSearch = useCallback((value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    recordSearchHistory(trimmed, 'catalog');
+  }, []);
+
   const commitSearch = useCallback(
     (value: string) => {
       const trimmed = value.trim();
       if (!trimmed) return;
-      recordSearchHistory(trimmed, 'catalog');
-      setRecentSearches(readRecentSearchQueries(RECENT_PREVIEW));
+      rememberSearch(trimmed);
       setQuery('');
       setIsOpen(false);
       router.push(`/shop?q=${encodeURIComponent(trimmed)}`);
     },
-    [router]
+    [rememberSearch, router]
   );
 
   const handleClear = useCallback(() => {
@@ -350,38 +371,41 @@ export function SearchBar({ className }: { className?: string }) {
     inputRef.current?.focus();
   }, []);
 
-  const handleRecentSelect = useCallback((value: string) => {
-    const trimmed = value.trim();
-    if (!trimmed) return;
-    recordSearchHistory(trimmed, 'catalog');
-    setRecentSearches(readRecentSearchQueries(RECENT_PREVIEW));
-    setQuery(trimmed);
-    setActiveIndex(-1);
-    setIsOpen(true);
-    inputRef.current?.focus();
-  }, []);
+  const handleRecentSelect = useCallback(
+    (value: string) => {
+      const trimmed = value.trim();
+      if (!trimmed) return;
+      rememberSearch(trimmed);
+      setQuery(trimmed);
+      setActiveIndex(-1);
+      setIsOpen(true);
+      inputRef.current?.focus();
+    },
+    [rememberSearch]
+  );
 
   const handleResultSelect = useCallback(
     (hit: CatalogSearchHit) => {
       const href = getHitHref(hit);
-      if (trimmedQuery) recordSearchHistory(trimmedQuery, 'catalog');
-      setRecentSearches(readRecentSearchQueries(RECENT_PREVIEW));
+      const typed = queryRef.current.trim();
+      // Prefer the typed query; fall back to the clicked item name.
+      rememberSearch(typed || getHitLabel(hit));
       setQuery('');
       setIsOpen(false);
       setActiveIndex(-1);
       router.push(href);
     },
-    [trimmedQuery, router]
+    [rememberSearch, router]
   );
 
   const handleViewAllSelect = useCallback(() => {
-    if (!trimmedQuery) return;
-    recordSearchHistory(trimmedQuery, 'catalog');
-    setRecentSearches(readRecentSearchQueries(RECENT_PREVIEW));
+    const typed = queryRef.current.trim() || trimmedQuery;
+    if (!typed) return;
+    rememberSearch(typed);
     setQuery('');
     setIsOpen(false);
-    router.push(`/shop?q=${encodeURIComponent(trimmedQuery)}`);
-  }, [trimmedQuery, router]);
+    router.push(`/shop?q=${encodeURIComponent(typed)}`);
+  }, [rememberSearch, router, trimmedQuery]);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (!showDropdown && event.key === 'ArrowDown' && trimmedQuery) {

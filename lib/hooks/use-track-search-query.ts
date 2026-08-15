@@ -5,7 +5,7 @@ import { recordSearchHistory, type SearchHistorySource } from '@/lib/search-hist
 
 /**
  * Records a search query after it stays unchanged for `debounceMs`.
- * Use for URL-synced or live search fields so partial typing is not stored.
+ * Flushes the latest query on unmount so navigating to a result still saves history.
  */
 export function useTrackSearchQuery(
   query: string | null | undefined,
@@ -13,6 +13,10 @@ export function useTrackSearchQuery(
   debounceMs = 900
 ) {
   const lastRecorded = useRef('');
+  const queryRef = useRef(query);
+  const sourceRef = useRef(source);
+  queryRef.current = query;
+  sourceRef.current = source;
 
   useEffect(() => {
     const trimmed = query?.trim() ?? '';
@@ -26,4 +30,13 @@ export function useTrackSearchQuery(
 
     return () => window.clearTimeout(timer);
   }, [query, source, debounceMs]);
+
+  useEffect(() => {
+    return () => {
+      const trimmed = queryRef.current?.trim() ?? '';
+      if (!trimmed || trimmed === lastRecorded.current) return;
+      lastRecorded.current = trimmed;
+      recordSearchHistory(trimmed, sourceRef.current);
+    };
+  }, []);
 }

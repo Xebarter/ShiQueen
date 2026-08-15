@@ -91,8 +91,12 @@ export function recordSearchHistory(
     ),
   ].slice(0, MAX_SEARCH_HISTORY);
 
-  localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(next));
-  notify();
+  try {
+    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(next));
+    notify();
+  } catch (error) {
+    console.warn('[ShiQueen] Could not save search history:', error);
+  }
   return next;
 }
 
@@ -101,15 +105,23 @@ export function removeSearchHistoryEntry(query: string): SearchHistoryEntry[] {
   const next = readSearchHistory().filter(
     (entry) => entry.query.toLowerCase() !== query.trim().toLowerCase()
   );
-  localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(next));
-  notify();
+  try {
+    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(next));
+    notify();
+  } catch (error) {
+    console.warn('[ShiQueen] Could not update search history:', error);
+  }
   return next;
 }
 
 export function clearSearchHistory(): void {
   if (typeof window === 'undefined') return;
-  localStorage.removeItem(SEARCH_HISTORY_KEY);
-  notify();
+  try {
+    localStorage.removeItem(SEARCH_HISTORY_KEY);
+    notify();
+  } catch (error) {
+    console.warn('[ShiQueen] Could not clear search history:', error);
+  }
 }
 
 export function formatSearchHistoryDate(iso: string): string {

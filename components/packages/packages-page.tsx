@@ -48,6 +48,7 @@ import {
   trackPackageView,
 } from '@/lib/package-merchandising';
 import { useTrackSearchQuery } from '@/lib/hooks/use-track-search-query';
+import { recordSearchHistory } from '@/lib/search-history';
 import {
   filterPackagesByCollection,
   getPackageCollection,
@@ -386,8 +387,14 @@ export function PackagesPage() {
           suggestions={suggestions}
           onSearchChange={handleSearchChange}
           onClear={() => handleSearchChange('')}
-          onViewAllResults={scrollToBrowse}
-          onSelectSuggestion={(id) => router.push(`/packages/${id}`)}
+          onViewAllResults={() => {
+            if (search.trim()) recordSearchHistory(search.trim(), 'packages');
+            scrollToBrowse();
+          }}
+          onSelectSuggestion={(id) => {
+            if (search.trim()) recordSearchHistory(search.trim(), 'packages');
+            router.push(`/packages/${id}`);
+          }}
         />
 
         {isSearchMode ? (

@@ -37,6 +37,7 @@ import { SlidersHorizontal, ShoppingCart, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
 import { useTrackSearchQuery } from '@/lib/hooks/use-track-search-query';
+import { recordSearchHistory } from '@/lib/search-history';
 
 const SUMMARY_SECTION_ID = 'bulk-order-summary';
 const RESULTS_SECTION_ID = 'wholesale-results';
@@ -138,6 +139,7 @@ function BulkOrdersPageInner() {
 
   const handleSelectSuggestion = useCallback(
     (id: string) => {
+      if (searchTerm.trim()) recordSearchHistory(searchTerm.trim(), 'wholesale');
       const el = document.getElementById(`wholesale-product-${id}`);
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -147,7 +149,7 @@ function BulkOrdersPageInner() {
       }
       scrollToResults();
     },
-    [scrollToResults]
+    [scrollToResults, searchTerm]
   );
 
   const handleAddProduct = useCallback(
