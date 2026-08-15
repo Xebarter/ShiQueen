@@ -186,6 +186,8 @@
   }
   .partner-tab-pane {
     backface-visibility: hidden;
+    transform: translateZ(0);
+    touch-action: pan-y;
   }
   .partner-app[data-chrome='premium'] .partner-page-shell {
     --partner-card-shadow: 0 8px 30px oklch(0.40 0.13 340 / 6%);
@@ -206,47 +208,41 @@
     display: none;
   }
   .partner-tab-enter-next {
-    animation: partner-tab-enter-next 320ms cubic-bezier(0.22, 1, 0.36, 1);
+    animation: partner-tab-enter-next 300ms cubic-bezier(0.32, 0.72, 0, 1) both;
   }
   .partner-tab-enter-prev {
-    animation: partner-tab-enter-prev 320ms cubic-bezier(0.22, 1, 0.36, 1);
+    animation: partner-tab-enter-prev 300ms cubic-bezier(0.32, 0.72, 0, 1) both;
   }
   .partner-tab-exit-next {
-    animation: partner-tab-exit-next 240ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: partner-tab-exit-next 280ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
   }
   .partner-tab-exit-prev {
-    animation: partner-tab-exit-prev 240ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: partner-tab-exit-prev 280ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
   }
   @keyframes partner-tab-enter-next {
     from {
-      transform: translate3d(18%, 0, 0);
-      opacity: 0.55;
+      transform: translate3d(100%, 0, 0);
     }
     to {
       transform: translate3d(0, 0, 0);
-      opacity: 1;
     }
   }
   @keyframes partner-tab-enter-prev {
     from {
-      transform: translate3d(-18%, 0, 0);
-      opacity: 0.55;
+      transform: translate3d(-100%, 0, 0);
     }
     to {
       transform: translate3d(0, 0, 0);
-      opacity: 1;
     }
   }
   @keyframes partner-tab-exit-next {
     to {
-      transform: translate3d(-18%, 0, 0);
-      opacity: 0.55;
+      transform: translate3d(-100%, 0, 0);
     }
   }
   @keyframes partner-tab-exit-prev {
     to {
-      transform: translate3d(18%, 0, 0);
-      opacity: 0.55;
+      transform: translate3d(100%, 0, 0);
     }
   }
   @media (prefers-reduced-motion: reduce) {

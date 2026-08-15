@@ -33,7 +33,6 @@ type ProductFormProps = {
 function emptyForm(defaultSupplierId = '') {
   return {
     name: '',
-    sku: '',
     category: 'Clothing',
     supplierId: defaultSupplierId,
     price: '',
@@ -52,7 +51,6 @@ function emptyForm(defaultSupplierId = '') {
 function productToFormState(product: Product) {
   return {
     name: product.name,
-    sku: product.sku,
     category: product.category,
     supplierId: product.supplierId,
     price: String(product.price),
@@ -181,8 +179,8 @@ export function ProductForm({
   };
 
   const handleSave = async () => {
-    if (!formData.name.trim() || !formData.sku.trim()) {
-      toast.error('Name and SKU are required.');
+    if (!formData.name.trim()) {
+      toast.error('Name is required.');
       return;
     }
     if (!(forcedSupplierId || formData.supplierId)) {
@@ -199,7 +197,7 @@ export function ProductForm({
       wholesalePrice > 0 &&
       wholesalePrice >= price
     ) {
-      toast.error('Wholesale price must be lower than retail price.');
+      toast.error('Wholesale must be lower than retail.');
       return;
     }
 
@@ -215,7 +213,7 @@ export function ProductForm({
       const payload: Omit<Product, 'createdAt' | 'updatedAt'> = {
         id: productId,
         name: formData.name.trim(),
-        sku: formData.sku.trim(),
+        sku: initialProduct?.sku ?? '',
         category: formData.category,
         supplierId: forcedSupplierId || formData.supplierId,
         price,
@@ -270,36 +268,26 @@ export function ProductForm({
     }
   };
 
-  const allPreviews = [
-    ...imageUrls.map((url, index) => ({ type: 'saved' as const, url, index })),
-    ...pendingPreviews.map((url, index) => ({ type: 'pending' as const, url, index })),
-  ];
-
   return (
     <AdminPage>
       <div className="mb-6 sm:mb-8">
         <Link
           href={listHref}
-          className="mb-4 flex items-center gap-2 text-primary hover:underline"
+          className="mb-4 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Products
+          Products
         </Link>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-          {mode === 'create' ? 'Create Product' : 'Edit Product'}
+          {mode === 'create' ? 'New product' : 'Edit product'}
         </h1>
-        <p className="text-muted-foreground mt-1">
-          {mode === 'create'
-            ? 'Add a new product with photos to your catalog.'
-            : 'Update product details and images.'}
-        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Product Images</CardTitle>
+              <CardTitle>Images</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <input
@@ -314,7 +302,7 @@ export function ProductForm({
                 }}
               />
 
-              {allPreviews.length > 0 ? (
+              {imageUrls.length > 0 || pendingPreviews.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {imageUrls.map((url, index) => (
                     <div
@@ -325,7 +313,7 @@ export function ProductForm({
                       {index === 0 && (
                         <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
                           <Star className="w-3 h-3" />
-                          Primary
+                          Cover
                         </span>
                       )}
                       <div className="absolute top-2 right-2 flex gap-1">
@@ -334,7 +322,7 @@ export function ProductForm({
                             type="button"
                             onClick={() => setPrimaryImage(index)}
                             className="rounded-full bg-background/90 p-1.5 hover:bg-background"
-                            title="Set as primary"
+                            title="Set as cover"
                           >
                             <Star className="w-3.5 h-3.5" />
                           </button>
@@ -343,7 +331,7 @@ export function ProductForm({
                           type="button"
                           onClick={() => removeExistingImage(index)}
                           className="rounded-full bg-background/90 p-1.5 hover:bg-background text-red-600"
-                          title="Remove image"
+                          title="Remove"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
@@ -364,7 +352,7 @@ export function ProductForm({
                         type="button"
                         onClick={() => removePendingFile(index)}
                         className="absolute top-2 right-2 rounded-full bg-background/90 p-1.5 hover:bg-background text-red-600"
-                        title="Remove image"
+                        title="Remove"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -372,56 +360,51 @@ export function ProductForm({
                   ))}
                 </div>
               ) : (
-                <div className="rounded-xl border border-dashed border-border bg-secondary/40 px-6 py-10 text-center">
-                  <Upload className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    Upload product photos. The first image is used as the cover.
-                  </p>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-secondary/40 px-6 py-12 text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                >
+                  <Upload className="h-7 w-7" />
+                  <span className="text-sm">Add photos</span>
+                </button>
               )}
 
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Upload Images
-              </Button>
-              <p className="text-xs text-muted-foreground">
-                JPEG, PNG, WebP, or GIF · up to 5MB each
-              </p>
+              {(imageUrls.length > 0 || pendingPreviews.length > 0) && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload
+                </Button>
+              )}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
+              <CardTitle>Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="name">Product Name</Label>
+                <Label htmlFor="name">Name</Label>
                 <Input id="name" name="name" value={formData.name} onChange={handleInputChange} />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="sku">SKU</Label>
-                  <Input id="sku" name="sku" value={formData.sku} onChange={handleInputChange} />
-                </div>
-                <div>
-                  <Label htmlFor="category">Category</Label>
-                  <select
-                    id="category"
-                    name="category"
-                    value={formData.category}
-                    onChange={handleInputChange}
-                    className="mt-2 w-full px-3 py-2 border border-border rounded-lg bg-background"
-                  >
-                    {CATEGORIES.map((cat) => (
-                      <option key={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <Label htmlFor="category">Category</Label>
+                <select
+                  id="category"
+                  name="category"
+                  value={formData.category}
+                  onChange={handleInputChange}
+                  className="mt-2 w-full px-3 py-2 border border-border rounded-lg bg-background"
+                >
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat}>{cat}</option>
+                  ))}
+                </select>
               </div>
               {!isSupplierPortal && (
                 <SupplierSelect
@@ -445,11 +428,11 @@ export function ProductForm({
 
           <Card>
             <CardHeader>
-              <CardTitle>Pricing & Inventory</CardTitle>
+              <CardTitle>Pricing</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="price">Retail Price (UGX)</Label>
+                <Label htmlFor="price">Retail (UGX)</Label>
                 <Input
                   id="price"
                   name="price"
@@ -460,7 +443,7 @@ export function ProductForm({
                 />
               </div>
               <div>
-                <Label htmlFor="wholesalePrice">Wholesale Price (UGX)</Label>
+                <Label htmlFor="wholesalePrice">Wholesale (UGX)</Label>
                 <Input
                   id="wholesalePrice"
                   name="wholesalePrice"
@@ -468,16 +451,11 @@ export function ProductForm({
                   min="0"
                   value={formData.wholesalePrice}
                   onChange={handleInputChange}
-                  placeholder="Bulk unit price at MOQ"
                   disabled={!formData.isWholesaleEnabled}
                 />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Per-unit price for wholesale orders. Leave blank to use automatic volume tiers from
-                  retail price.
-                </p>
               </div>
               <div>
-                <Label htmlFor="originalPrice">Compare-at Price (UGX)</Label>
+                <Label htmlFor="originalPrice">Compare at (UGX)</Label>
                 <Input
                   id="originalPrice"
                   name="originalPrice"
@@ -485,11 +463,10 @@ export function ProductForm({
                   min="0"
                   value={formData.originalPrice}
                   onChange={handleInputChange}
-                  placeholder="Optional strikethrough price for retail"
                 />
               </div>
               <div>
-                <Label htmlFor="stock">Stock Quantity</Label>
+                <Label htmlFor="stock">Stock</Label>
                 <Input
                   id="stock"
                   name="stock"
@@ -500,7 +477,7 @@ export function ProductForm({
                 />
               </div>
               <div>
-                <Label htmlFor="minOrderQuantity">Min Wholesale Qty</Label>
+                <Label htmlFor="minOrderQuantity">Min qty</Label>
                 <Input
                   id="minOrderQuantity"
                   name="minOrderQuantity"
@@ -508,18 +485,31 @@ export function ProductForm({
                   min="1"
                   value={formData.minOrderQuantity}
                   onChange={handleInputChange}
+                  disabled={!formData.isWholesaleEnabled}
                 />
+              </div>
+              <div className="flex items-end pb-2">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    name="isWholesaleEnabled"
+                    checked={formData.isWholesaleEnabled}
+                    onChange={handleInputChange}
+                    className="rounded border-border"
+                  />
+                  Wholesale
+                </label>
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Variants & Details</CardTitle>
+              <CardTitle>Variants</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="sizes">Sizes (comma-separated)</Label>
+                <Label htmlFor="sizes">Sizes</Label>
                 <Input
                   id="sizes"
                   name="sizes"
@@ -529,7 +519,7 @@ export function ProductForm({
                 />
               </div>
               <div>
-                <Label htmlFor="colors">Colors (comma-separated)</Label>
+                <Label htmlFor="colors">Colors</Label>
                 <Input
                   id="colors"
                   name="colors"
@@ -539,27 +529,17 @@ export function ProductForm({
                 />
               </div>
               <div>
-                <Label htmlFor="details">Product Details (one per line)</Label>
+                <Label htmlFor="details">Highlights</Label>
                 <textarea
                   id="details"
                   name="details"
                   value={formData.details}
                   onChange={handleInputChange}
-                  rows={4}
+                  rows={3}
                   className="mt-2 w-full px-3 py-2 border border-border rounded-lg bg-background"
                   placeholder={'100% silk\nDry clean only'}
                 />
               </div>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  name="isWholesaleEnabled"
-                  checked={formData.isWholesaleEnabled}
-                  onChange={handleInputChange}
-                  className="rounded border-border"
-                />
-                Enable wholesale pricing for this product
-              </label>
             </CardContent>
           </Card>
         </div>
@@ -571,7 +551,7 @@ export function ProductForm({
             ) : (
               <Save className="w-4 h-4 mr-2" />
             )}
-            {mode === 'create' ? 'Create Product' : 'Save Changes'}
+            {mode === 'create' ? 'Create' : 'Save'}
           </Button>
 
           <Card>
@@ -580,51 +560,39 @@ export function ProductForm({
             </CardHeader>
             <CardContent>
               <div className="relative aspect-square rounded-xl overflow-hidden mb-4">
-                {allPreviews.length > 0 && isRemoteProductImage(imageUrls[0]) ? (
+                {imageUrls.length > 0 && isRemoteProductImage(imageUrls[0]) ? (
                   <Image src={imageUrls[0]} alt="" fill className="object-cover" />
                 ) : pendingPreviews[0] ? (
                   <Image src={pendingPreviews[0]} alt="" fill className="object-cover" />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center bg-secondary text-sm text-muted-foreground">
-                    No image yet
+                    No image
                   </div>
                 )}
               </div>
-              <p className="font-medium">{formData.name || 'Product name'}</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {formData.category || 'Category'} · {formData.sku || 'SKU'}
-              </p>
+              <p className="font-medium">{formData.name || 'Untitled'}</p>
+              <p className="text-sm text-muted-foreground mt-1">{formData.category}</p>
               {formData.price && (
                 <p className="mt-2 text-sm tabular-nums">
-                  Retail: USh {Number(formData.price).toLocaleString('en-UG')}
+                  USh {Number(formData.price).toLocaleString('en-UG')}
                 </p>
               )}
               {formData.isWholesaleEnabled && formData.wholesalePrice && (
-                <p className="text-sm tabular-nums text-primary">
-                  Wholesale: USh {Number(formData.wholesalePrice).toLocaleString('en-UG')}
+                <p className="text-sm tabular-nums text-muted-foreground">
+                  Wholesale USh {Number(formData.wholesalePrice).toLocaleString('en-UG')}
                 </p>
               )}
-              <p className="text-sm capitalize mt-3">
-                Status: {computeStatus(parseInt(formData.stock, 10) || 0)}
-              </p>
             </CardContent>
           </Card>
 
           {mode === 'edit' && initialProduct && (
-            <Card className="border-red-200">
-              <CardHeader>
-                <CardTitle className="text-red-700">Danger Zone</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  variant="outline"
-                  className="w-full text-red-600"
-                  onClick={handleDelete}
-                >
-                  Delete Product
-                </Button>
-              </CardContent>
-            </Card>
+            <Button
+              variant="outline"
+              className="w-full text-red-600 hover:text-red-700"
+              onClick={handleDelete}
+            >
+              Delete
+            </Button>
           )}
         </div>
       </div>

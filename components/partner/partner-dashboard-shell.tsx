@@ -19,6 +19,7 @@ import { EmailVerificationBanner } from '@/components/partner/email-verification
 import { PartnerPwaRuntime } from '@/components/pwa/partner-pwa-runtime';
 import {
   getPartnerPageTitle,
+  getPartnerTabIndex,
   isPartnerNavActive,
   type PartnerNavItem,
   type PartnerPageTitle,
@@ -28,7 +29,11 @@ import { isRemoteProductImage } from '@/components/product-image';
 import { getAvatarColorsForLetter, getEmailInitial } from '@/lib/user-display';
 import { figtree } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
-import { readPartnerTabSlideIn, usePartnerTabSwipe } from '@/components/partner/partner-tab-swipe';
+import {
+  readPartnerTabSlideIn,
+  usePartnerTabSwipe,
+  writePartnerTabSlide,
+} from '@/components/partner/partner-tab-swipe';
 import { InstallAppButton } from '@/components/pwa/install-app-button';
 
 type PartnerShellContextValue = {
@@ -464,6 +469,8 @@ function PartnerTabBar({
   const pathname = usePathname();
   const { navOpen, toggleNav } = usePartnerShell();
 
+  const currentIndex = getPartnerTabIndex(pathname, tabs, homeHref, navOpen);
+
   return (
     <nav
       aria-label="Primary"
@@ -475,7 +482,7 @@ function PartnerTabBar({
       )}
     >
       <div className="grid h-[3.75rem] grid-cols-4 px-1">
-        {tabs.map((tab) => {
+        {tabs.map((tab, index) => {
           const Icon = tab.icon;
           const active =
             tab.action === 'more'
@@ -519,7 +526,15 @@ function PartnerTabBar({
             );
           }
           return (
-            <Link key={tab.href} href={tab.href!} className={tabClass}>
+            <Link
+              key={tab.href}
+              href={tab.href!}
+              className={tabClass}
+              onClick={() => {
+                if (currentIndex < 0 || index === currentIndex) return;
+                writePartnerTabSlide(index > currentIndex ? 'next' : 'prev');
+              }}
+            >
               {activeIndicator}
               <Icon className={cn('relative h-5 w-5', active && premium && 'drop-shadow-sm')} />
               <span className="relative">{tab.label}</span>
@@ -571,7 +586,7 @@ function PartnerDashboardChromeInner(props: PartnerDashboardChromeProps) {
         <PartnerSidebar {...props} />
         <main
           className={cn(
-            'min-w-0 flex-1 overflow-x-hidden overflow-y-auto',
+            'min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain',
             premium && 'partner-premium-main'
           )}
           onClick={() => {
