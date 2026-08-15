@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ArrowRight, Sparkles, X, Grid3X3, LayoutGrid } from 'lucide-react';
+import { Sparkles, X, Grid3X3, LayoutGrid } from 'lucide-react';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
@@ -31,18 +31,11 @@ import {
   type ShopPriceRange,
   type ShopViewMode,
 } from '@/lib/shop-filters-context';
+import { ShopCategoryStrip, SHOP_CATEGORY_TABS } from '@/components/shop/shop-category-strip';
+import { CatalogBottomCta } from '@/components/shop/catalog-bottom-cta';
 import { cn } from '@/lib/utils';
 import { shopCategorySeo } from '@/lib/seo/site';
 import { isShopSeoCategory, shopCategoryPath } from '@/lib/seo/shop-categories';
-
-const CATEGORIES = [
-  { id: 'all', label: 'All Products', shortLabel: 'All' },
-  { id: 'clothing', label: 'Clothing', shortLabel: 'Clothes' },
-  { id: 'beauty', label: 'Beauty', shortLabel: 'Beauty' },
-  { id: 'wellness', label: 'Wellness', shortLabel: 'Wellness' },
-  { id: 'accessories', label: 'Accessories', shortLabel: 'Access.' },
-  { id: 'home', label: 'Home', shortLabel: 'Home' },
-];
 
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest' },
@@ -140,7 +133,7 @@ export function ShopPage({ initialCategory = 'all' }: { initialCategory?: string
     setQuickViewProduct,
   } = useProductMerchandising(displayProducts);
   const activeCategoryLabel =
-    CATEGORIES.find((c) => c.id === category)?.label ?? 'All Products';
+    SHOP_CATEGORY_TABS.find((c) => c.id === category)?.label ?? 'All Products';
   const categoryHeading =
     category !== 'all' && isShopSeoCategory(category)
       ? shopCategorySeo(category).title
@@ -167,321 +160,294 @@ export function ShopPage({ initialCategory = 'all' }: { initialCategory?: string
     [priceRange, sortBy, viewMode, clearFilters]
   );
 
+  const heroProducts = sections?.heroProducts ?? sections?.trending.slice(0, 4) ?? [];
+
   return (
     <ShopFiltersProvider value={shopFiltersContext}>
       <Header />
       <main className="overflow-x-clip mobile-scroll-optimize">
-
-      {/* Hero */}
-      <section className="relative overflow-hidden border-b border-border/50">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-background" />
-        <div className="relative mx-auto max-w-7xl px-4 pb-5 pt-6 sm:px-6 md:pb-6 md:pt-8 lg:px-8">
-          <div className="grid items-start gap-5 lg:grid-cols-2 lg:gap-8">
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.06 }}
-              className="order-1 grid grid-cols-4 gap-2 lg:order-2"
-            >
-              {loading
-                ? Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} variant="compact" />)
-                : (sections?.trending.slice(0, 4) ?? []).map((product, i) => (
-                    <HomeProductCard
-                      key={product.id}
-                      product={product}
-                      variant="compact"
-                      index={i}
-                      onQuickView={setQuickViewProduct}
-                      wishlistIds={wishlistIds}
-                      onWishlistChange={setWishlistIds}
-                    />
-                  ))}
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="order-2 lg:order-1"
-            >
-              {isSearchMode || isFiltered ? (
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
-                      <Sparkles className="h-3 w-3" />
-                      {isSearchMode ? 'Search' : activeCategoryLabel}
-                    </p>
-                    <h1 className="truncate text-2xl font-light tracking-tight md:text-3xl">
-                      {isSearchMode ? (
-                        <span className="font-medium text-primary">&ldquo;{searchQuery}&rdquo;</span>
-                      ) : (
-                        categoryHeading
-                      )}
-                    </h1>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {isSearchMode
-                        ? [
-                            searchResultCounts.products > 0
-                              ? `${searchResultCounts.products} product${searchResultCounts.products === 1 ? '' : 's'}`
-                              : null,
-                            searchResultCounts.packages > 0
-                              ? `${searchResultCounts.packages} bundle${searchResultCounts.packages === 1 ? '' : 's'}`
-                              : null,
-                            searchResultCounts.services > 0
-                              ? `${searchResultCounts.services} service${searchResultCounts.services === 1 ? '' : 's'}`
-                              : null,
-                          ]
-                            .filter(Boolean)
-                            .join(' · ') || '0 items'
-                        : `${filteredProducts.length} items`}
-                    </p>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={clearFilters} className="shrink-0 gap-1.5">
-                    <X className="h-3.5 w-3.5" />
-                    Clear
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <h1 className="mb-3 text-2xl font-light tracking-tight md:text-3xl">
-                    Shop women&apos;s fashion &amp; beauty in Uganda
-                  </h1>
-                  <HeroMarketingSlot
-                    placement="shop-hero"
-                    fallbackPlacements={['home-hero']}
-                    compact
-                  />
-                </>
-              )}
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Sticky filter bar — mobile: categories only (one row); desktop: full controls */}
-      <div className="sticky top-[var(--mobile-header-offset,4rem)] z-40 border-b border-border/60 bg-background/90 backdrop-blur-md lg:top-16">
-        <div className="mx-auto max-w-7xl px-3 py-2 sm:px-6 sm:py-3 lg:px-8">
-          {/* Mobile: single-line category strip */}
-          <div className="grid grid-cols-6 gap-0.5 md:hidden">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setCategory(cat.id)}
-                className={cn(
-                  'min-w-0 rounded-full px-0.5 py-2 text-center text-[10px] font-medium leading-tight transition',
-                  category === cat.id
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'bg-secondary text-foreground hover:bg-secondary/80'
-                )}
+        <section className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-background" />
+          <div className="pointer-events-none absolute top-20 right-0 hidden h-96 w-96 rounded-full bg-accent/10 blur-3xl md:block" />
+          <div className="relative mx-auto max-w-[90rem] px-3 pt-6 pb-6 sm:px-4 md:pt-10 md:pb-8 lg:px-5">
+            <div className="grid items-start gap-4 lg:grid-cols-2 lg:gap-8">
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.08 }}
+                className="order-1 grid grid-cols-2 gap-2 sm:gap-2.5 lg:order-2"
               >
-                <span className="block truncate">{cat.shortLabel}</span>
-              </button>
-            ))}
-          </div>
+                {loading
+                  ? Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)
+                  : heroProducts.map((product, i) => (
+                      <HomeProductCard
+                        key={product.id}
+                        product={product}
+                        variant={i === 0 ? 'editorial' : 'compact'}
+                        index={i}
+                        priority={i < 2}
+                        badges={i === 0 ? ['trending'] : undefined}
+                        onQuickView={setQuickViewProduct}
+                        wishlistIds={wishlistIds}
+                        onWishlistChange={setWishlistIds}
+                      />
+                    ))}
+              </motion.div>
 
-          {/* Desktop: categories + price / sort / view */}
-          <div className="hidden flex-col gap-3 md:flex">
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => setCategory(cat.id)}
-                  className={cn(
-                    'shrink-0 rounded-full px-4 py-2 text-sm font-medium transition',
-                    category === cat.id
-                      ? 'bg-primary text-primary-foreground shadow-md'
-                      : 'bg-secondary text-foreground hover:bg-secondary/80'
-                  )}
-                >
-                  {cat.label}
-                </button>
-              ))}
+              <motion.div
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
+                className="order-2 lg:order-1"
+              >
+                {isSearchMode || isFiltered ? (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-accent">
+                        <Sparkles className="h-3 w-3" />
+                        {isSearchMode ? 'Search' : activeCategoryLabel}
+                      </p>
+                      <h1 className="truncate text-2xl font-light tracking-tight md:text-3xl">
+                        {isSearchMode ? (
+                          <span className="font-medium text-primary">&ldquo;{searchQuery}&rdquo;</span>
+                        ) : (
+                          categoryHeading
+                        )}
+                      </h1>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {isSearchMode
+                          ? [
+                              searchResultCounts.products > 0
+                                ? `${searchResultCounts.products} product${searchResultCounts.products === 1 ? '' : 's'}`
+                                : null,
+                              searchResultCounts.packages > 0
+                                ? `${searchResultCounts.packages} bundle${searchResultCounts.packages === 1 ? '' : 's'}`
+                                : null,
+                              searchResultCounts.services > 0
+                                ? `${searchResultCounts.services} service${searchResultCounts.services === 1 ? '' : 's'}`
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(' · ') || '0 items'
+                          : `${filteredProducts.length} items`}
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={clearFilters} className="shrink-0 gap-1.5">
+                      <X className="h-3.5 w-3.5" />
+                      Clear
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <HeroMarketingSlot
+                      placement="shop-hero"
+                      fallbackPlacements={['home-hero']}
+                      compact
+                    />
+                    <h1 className="mt-4 font-[family-name:var(--font-brand)] text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
+                      Shop women&apos;s fashion &amp; beauty in Uganda
+                    </h1>
+                    <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
+                      <Link href="/packages" className="font-medium text-primary hover:underline">
+                        Bundles
+                      </Link>
+                      <span aria-hidden>·</span>
+                      <Link href="/" className="hover:text-foreground">
+                        Home
+                      </Link>
+                    </div>
+                  </>
+                )}
+              </motion.div>
             </div>
+          </div>
+        </section>
 
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-2">
-                {PRICE_FILTERS.map((filter) => (
+        <ShopCategoryStrip category={category} onSelect={setCategory} showDesktop={false} />
+
+        {/* Desktop filter controls */}
+        <div className="sticky top-16 z-40 hidden border-b border-border/60 bg-background/90 backdrop-blur-md md:block">
+          <div className="mx-auto max-w-[90rem] px-3 py-3 sm:px-4 lg:px-5">
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
+                {SHOP_CATEGORY_TABS.map((cat) => (
                   <button
-                    key={filter.id}
+                    key={cat.id}
                     type="button"
-                    onClick={() => setPriceRange(filter.id)}
+                    onClick={() => setCategory(cat.id)}
                     className={cn(
-                      'rounded-lg border px-3 py-1.5 text-xs font-medium transition',
-                      priceRange === filter.id
-                        ? 'border-primary bg-primary/10 text-primary'
-                        : 'border-border hover:border-primary/50'
+                      'shrink-0 rounded-full px-4 py-2 text-sm font-medium transition',
+                      category === cat.id
+                        ? 'bg-primary text-primary-foreground shadow-md'
+                        : 'bg-secondary text-foreground hover:bg-secondary/80'
                     )}
                   >
-                    {filter.label}
+                    {cat.label}
                   </button>
                 ))}
               </div>
 
-              <div className="ml-auto flex items-center gap-2">
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                >
-                  {SORT_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  {PRICE_FILTERS.map((filter) => (
+                    <button
+                      key={filter.id}
+                      type="button"
+                      onClick={() => setPriceRange(filter.id)}
+                      className={cn(
+                        'rounded-lg border px-3 py-1.5 text-xs font-medium transition',
+                        priceRange === filter.id
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border hover:border-primary/50'
+                      )}
+                    >
+                      {filter.label}
+                    </button>
                   ))}
-                </select>
+                </div>
 
-                <div className="hidden overflow-hidden rounded-lg border border-border sm:flex">
-                  <button
-                    type="button"
-                    onClick={() => setViewMode('discover')}
-                    className={cn(
-                      'p-2',
-                      viewMode === 'discover'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'hover:bg-secondary'
-                    )}
-                    title="Discovery view"
+                <div className="ml-auto flex items-center gap-2">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
                   >
-                    <LayoutGrid className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setViewMode('grid')}
-                    className={cn(
-                      'p-2',
-                      viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'
-                    )}
-                    title="Grid view"
-                  >
-                    <Grid3X3 className="h-4 w-4" />
-                  </button>
+                    {SORT_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <div className="hidden overflow-hidden rounded-lg border border-border sm:flex">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('discover')}
+                      className={cn(
+                        'p-2',
+                        viewMode === 'discover'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'hover:bg-secondary'
+                      )}
+                      title="Discovery view"
+                    >
+                      <LayoutGrid className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode('grid')}
+                      className={cn(
+                        'p-2',
+                        viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary'
+                      )}
+                      title="Grid view"
+                    >
+                      <Grid3X3 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Content */}
-      {loading ? (
-        <div className="max-w-7xl mx-auto px-4 py-20 flex justify-center">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <ProductCardSkeleton key={i} />
-            ))}
-          </div>
-        </div>
-      ) : isSearchMode || viewMode === 'grid' ? (
-        <>
-          {!isSearchMode && category !== 'all' ? (
-            <PackageSpotlightSection
-              context="shop"
-              shopCategory={category}
-              className="border-b border-border/50 bg-primary/5"
-            />
-          ) : null}
-          <section className="py-7 md:py-10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="mb-4 flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                <span className="font-semibold text-foreground">
-                  {isSearchMode ? searchResultCounts.total : filteredProducts.length}
-                </span>{' '}
-                items
-              </p>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setViewMode('discover')}
-                className="gap-1.5"
-                aria-label="Discovery view"
-              >
-                <LayoutGrid className="h-4 w-4" />
-                <span className="hidden sm:inline">Discover</span>
-              </Button>
+        {loading ? (
+          <div className="mx-auto flex max-w-[90rem] justify-center px-3 py-20 sm:px-4 lg:px-5">
+            <div className="grid w-full grid-cols-2 gap-4 md:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <ProductCardSkeleton key={i} />
+              ))}
             </div>
-            {isSearchMode ? (
-              <CatalogSearchResults
-                hits={filteredSearchHits}
-                wishlistIds={wishlistIds}
-                onWishlistChange={setWishlistIds}
-                onQuickView={setQuickViewProduct}
-                emptyMessage={
-                  <div className="text-center py-16 col-span-full">
-                    <p className="text-muted-foreground mb-4">
-                      {`No products, bundles, or services found for "${searchQuery}"`}
-                    </p>
-                    <Button onClick={clearFilters}>Clear search</Button>
-                  </div>
-                }
-              />
-            ) : (
-              <AllProductsGrid
-                products={filteredProducts}
-                wishlistIds={wishlistIds}
-                onWishlistChange={setWishlistIds}
-                onQuickView={setQuickViewProduct}
-                emptyMessage={
-                  <div className="text-center py-16 col-span-full">
-                    <p className="text-muted-foreground mb-4">No products match your filters</p>
-                    <Button onClick={clearFilters}>Clear all filters</Button>
-                  </div>
-                }
-              />
-            )}
           </div>
-        </section>
-        </>
-      ) : sections ? (
-        <MerchandisingBlocks
-          products={displayProducts}
-          sections={sections}
-          loading={false}
-          wishlistIds={wishlistIds}
-          onWishlistChange={setWishlistIds}
-          onQuickView={setQuickViewProduct}
-          viewedIds={viewedIds}
-          showCategoryShowcases={!isFiltered}
-          afterFlashDeals={
-            <PackageSpotlightSection
-              context="shop"
-              shopCategory={category}
-              className="bg-gradient-to-r from-primary/5 via-background to-accent/5"
-            />
-          }
-        />
-      ) : (
-        <section className="py-20 text-center">
-          <p className="text-muted-foreground">No products available</p>
-        </section>
-      )}
+        ) : isSearchMode || viewMode === 'grid' ? (
+          <>
+            {!isSearchMode && category !== 'all' ? (
+              <PackageSpotlightSection
+                context="shop"
+                shopCategory={category}
+                className="border-b border-border/50 bg-primary/5"
+              />
+            ) : null}
+            <section className="py-7 md:py-10">
+              <div className="mx-auto max-w-[90rem] px-3 sm:px-4 lg:px-5">
+                <div className="mb-4 flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-semibold text-foreground">
+                      {isSearchMode ? searchResultCounts.total : filteredProducts.length}
+                    </span>{' '}
+                    items
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setViewMode('discover')}
+                    className="gap-1.5"
+                    aria-label="Discovery view"
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                    <span className="hidden sm:inline">Discover</span>
+                  </Button>
+                </div>
+                {isSearchMode ? (
+                  <CatalogSearchResults
+                    hits={filteredSearchHits}
+                    wishlistIds={wishlistIds}
+                    onWishlistChange={setWishlistIds}
+                    onQuickView={setQuickViewProduct}
+                    emptyMessage={
+                      <div className="col-span-full py-16 text-center">
+                        <p className="mb-4 text-muted-foreground">
+                          {`No products, bundles, or services found for "${searchQuery}"`}
+                        </p>
+                        <Button onClick={clearFilters}>Clear search</Button>
+                      </div>
+                    }
+                  />
+                ) : (
+                  <AllProductsGrid
+                    products={filteredProducts}
+                    wishlistIds={wishlistIds}
+                    onWishlistChange={setWishlistIds}
+                    onQuickView={setQuickViewProduct}
+                    emptyMessage={
+                      <div className="col-span-full py-16 text-center">
+                        <p className="mb-4 text-muted-foreground">No products match your filters</p>
+                        <Button onClick={clearFilters}>Clear all filters</Button>
+                      </div>
+                    }
+                  />
+                )}
+              </div>
+            </section>
+          </>
+        ) : sections ? (
+          <MerchandisingBlocks
+            products={displayProducts}
+            sections={sections}
+            loading={false}
+            wishlistIds={wishlistIds}
+            onWishlistChange={setWishlistIds}
+            onQuickView={setQuickViewProduct}
+            viewedIds={viewedIds}
+            showCategoryShowcases={!isFiltered}
+            afterFlashDeals={
+              <PackageSpotlightSection
+                context="shop"
+                shopCategory={category}
+                className="bg-gradient-to-r from-primary/5 via-background to-accent/5"
+              />
+            }
+          />
+        ) : (
+          <section className="py-20 text-center">
+            <p className="text-muted-foreground">No products available</p>
+          </section>
+        )}
 
-      {/* Bottom CTA */}
-      <section className="border-t border-border bg-secondary/30 py-8 md:py-10">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 sm:flex-row sm:px-6 lg:px-8">
-          <Link href="/packages" className="flex-1">
-            <Button size="lg" variant="default" className="w-full gap-2">
-              Bundles
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
-          <Link href="/wholesale" className="flex-1">
-            <Button size="lg" variant="outline" className="w-full gap-2">
-              Wholesale
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
-        </div>
-      </section>
-
-      <Footer />
-      <QuickViewModal
-        product={quickViewProduct}
-        onClose={() => setQuickViewProduct(null)}
-      />
-    </main>
+        <CatalogBottomCta />
+        <Footer />
+        <QuickViewModal product={quickViewProduct} onClose={() => setQuickViewProduct(null)} />
+      </main>
     </ShopFiltersProvider>
   );
 }

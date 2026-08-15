@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronRight, LogOut, Scissors, Truck, User } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -10,7 +10,8 @@ import { AccountAvatar } from '@/components/account/account-avatar';
 import { useAuth } from '@/lib/auth-context';
 import { getDisplayName } from '@/lib/user-display';
 import { cn } from '@/lib/utils';
-import { useHistoryOverlay } from '@/lib/hooks/use-history-overlay';
+import { useHistoryOverlay, navigateFromHistoryOverlay } from '@/lib/hooks/use-history-overlay';
+import { PROVIDER_HOME_HREF, SUPPLIER_HOME_HREF } from '@/lib/pwa/paths';
 
 export function HeaderAccountMenu() {
   const { user, profile, logout, isSupplier, isServiceProvider } = useAuth();
@@ -36,6 +37,15 @@ export function HeaderAccountMenu() {
   }, [clearCloseTimer]);
 
   const closeMenu = useCallback(() => setOpen(false), []);
+
+  const goTo = useCallback(
+    (href: string) => (event: MouseEvent<HTMLAnchorElement>) => {
+      event.preventDefault();
+      clearCloseTimer();
+      navigateFromHistoryOverlay(router, href, closeMenu);
+    },
+    [clearCloseTimer, closeMenu, router]
+  );
 
   useHistoryOverlay(open, closeMenu);
 
@@ -158,7 +168,7 @@ export function HeaderAccountMenu() {
                 <Link
                   href="/account"
                   role="menuitem"
-                  onClick={() => setOpen(false)}
+                  onClick={goTo('/account')}
                   className="group flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium tracking-wide text-foreground/90 transition-colors hover:bg-secondary hover:text-primary"
                 >
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
@@ -170,9 +180,9 @@ export function HeaderAccountMenu() {
 
                 {isSupplier && (
                   <Link
-                    href="/suppliers/orders"
+                    href={SUPPLIER_HOME_HREF}
                     role="menuitem"
-                    onClick={() => setOpen(false)}
+                    onClick={goTo(SUPPLIER_HOME_HREF)}
                     className="group flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium tracking-wide text-foreground/90 transition-colors hover:bg-secondary hover:text-primary"
                   >
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
@@ -185,9 +195,9 @@ export function HeaderAccountMenu() {
 
                 {isServiceProvider && (
                   <Link
-                    href="/services/dashboard/bookings"
+                    href={PROVIDER_HOME_HREF}
                     role="menuitem"
-                    onClick={() => setOpen(false)}
+                    onClick={goTo(PROVIDER_HOME_HREF)}
                     className="group flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm font-medium tracking-wide text-foreground/90 transition-colors hover:bg-secondary hover:text-primary"
                   >
                     <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
