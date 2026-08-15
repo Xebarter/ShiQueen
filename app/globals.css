@@ -201,11 +201,10 @@
   }
 
   .admin-app {
-    font-family: var(--font-figtree), 'Figtree', ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-montserrat), 'Montserrat', ui-sans-serif, system-ui, sans-serif;
   }
-  /* Public UI / partner PWAs use Montserrat; keep admin on Figtree */
   .admin-app :is(.font-sans, .font-heading, .font-brand) {
-    font-family: var(--font-figtree), 'Figtree', ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-montserrat), 'Montserrat', ui-sans-serif, system-ui, sans-serif;
   }
   .scrollbar-hide {
     -ms-overflow-style: none;

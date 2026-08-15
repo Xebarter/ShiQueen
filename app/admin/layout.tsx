@@ -6,7 +6,7 @@ import { AdminMobileHeader } from '@/components/admin/admin-mobile-header';
 import { AdminMobileMain } from '@/components/admin/admin-mobile-main';
 import { AdminPwaRuntime } from '@/components/pwa/admin-pwa-runtime';
 import { useAuth } from '@/lib/auth-context';
-import { figtree } from '@/lib/fonts';
+import { montserrat } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -30,7 +30,7 @@ export default function AdminLayout({
 
   if (loading) {
     return (
-      <div className={cn(figtree.className, 'admin-app flex min-h-[100dvh] items-center justify-center')}>
+      <div className={cn(montserrat.className, 'admin-app flex min-h-[100dvh] items-center justify-center')}>
         <div className="text-center">
           <Loader2 className="inline-block h-8 w-8 animate-spin text-primary" />
           <p className="mt-4 text-sm text-muted-foreground">Loading admin dashboard…</p>
@@ -45,7 +45,7 @@ export default function AdminLayout({
 
   return (
     <AdminShellProvider>
-      <div className={cn(figtree.className, 'admin-app flex min-h-[100dvh] flex-col bg-background')}>
+      <div className={cn(montserrat.className, 'admin-app flex min-h-[100dvh] flex-col bg-background')}>
         <AdminMobileHeader />
         <div className="flex min-h-0 flex-1 md:flex-row">
           <AdminSidebar />

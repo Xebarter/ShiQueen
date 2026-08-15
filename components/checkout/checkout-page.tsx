@@ -350,7 +350,8 @@ function OrderSummaryPanel({
       <div className="hidden px-5 pb-5 sm:block sm:px-6 sm:pb-6">
         {payMode === 'gift' ? (
           <p className="rounded-xl border border-accent/25 bg-accent/10 px-4 py-3 text-center text-sm text-muted-foreground">
-            Create and share the payment link in the form — no need to place the order yourself.
+            Use <span className="font-medium text-foreground">Share payment link</span> above —
+            no need to place the order yourself.
           </p>
         ) : (
           <>
@@ -477,7 +478,7 @@ export function CheckoutPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (payMode === 'gift') {
-      toast.error('Create and share a payment link below, or switch to “I’ll pay”.');
+      toast.error('Share a payment link below, or switch to “I’ll pay”.');
       return;
     }
     setLoading(true);
@@ -972,9 +973,18 @@ export function CheckoutPage() {
           </span>
         </div>
         {payMode === 'gift' ? (
-          <p className="rounded-xl border border-accent/25 bg-accent/10 px-3 py-2.5 text-center text-sm text-muted-foreground">
-            Scroll up to create &amp; share the payment link
-          </p>
+          <Button
+            type="button"
+            className="h-12 w-full gap-2 rounded-xl text-base font-semibold"
+            onClick={() => {
+              document.getElementById('share-gift-payment-link')?.click();
+              document
+                .getElementById('share-gift-payment-link')
+                ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }}
+          >
+            Share payment link
+          </Button>
         ) : (
           <Button
             type="submit"

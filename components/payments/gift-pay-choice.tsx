@@ -21,7 +21,7 @@ export function GiftPayChoice({
   selfLabel = "I'll pay",
   giftLabel = 'Someone else will pay',
   selfDescription = 'Pay now with mobile money or card',
-  giftDescription = 'Send a secure link so a friend or family member can pay',
+  giftDescription = 'Tap once to share a secure payment link',
   className,
 }: GiftPayChoiceProps) {
   return (

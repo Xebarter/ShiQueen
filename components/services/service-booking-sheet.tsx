@@ -82,7 +82,6 @@ export function ServiceBookingSheet({
     email: user?.email ?? '',
   });
   const [payMode, setPayMode] = useState<GiftPayMode>('self');
-  const [giftMessage, setGiftMessage] = useState('');
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
 
@@ -280,77 +279,75 @@ export function ServiceBookingSheet({
     }
   };
 
-  const handleCreateGiftLink = async () => {
+  const handleShareGiftLink = async () => {
     if (!validateSchedule() || !validateDetails()) return;
 
     setLoading(true);
     try {
-      const bookingId = generateBookingId();
-      const response = await fetch('/api/services/book/share', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          bookingId,
-          serviceId: listing.id,
-          providerId: provider.id,
-          serviceName: listing.name,
-          providerName: provider.businessName || provider.name,
-          customerName: form.fullName.trim(),
-          customerPhone: form.phone.trim(),
-          customerEmail: form.email.trim(),
-          date,
-          timeSlot,
-          locationType,
-          customerAddress: locationType === 'mobile' ? customerAddress.trim() : undefined,
-          notes: notes.trim() || undefined,
-          amount,
-          travelFee,
-          total,
-          durationMinutes: listing.durationMinutes,
-          galleryImage: resolveListingImage(listing) ?? undefined,
-          senderUserId: user?.uid ?? null,
-          senderMessage: giftMessage.trim() || undefined,
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error ?? 'Failed to create payment link.');
-      }
-
-      if (data.requiresClientStorage) {
-        await createServiceBooking(data.booking);
-        await createSharedBooking({
-          id: data.token as string,
-          bookingId: data.bookingId as string,
-          snapshot: data.sharedBooking.snapshot,
-          senderUserId: data.sharedBooking.senderUserId ?? null,
-          senderMessage: data.sharedBooking.senderMessage,
-          expiresAt: new Date(data.sharedBooking.expiresAt as string),
+      let url = shareUrl;
+      if (!url) {
+        const bookingId = generateBookingId();
+        const response = await fetch('/api/services/book/share', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bookingId,
+            serviceId: listing.id,
+            providerId: provider.id,
+            serviceName: listing.name,
+            providerName: provider.businessName || provider.name,
+            customerName: form.fullName.trim(),
+            customerPhone: form.phone.trim(),
+            customerEmail: form.email.trim(),
+            date,
+            timeSlot,
+            locationType,
+            customerAddress: locationType === 'mobile' ? customerAddress.trim() : undefined,
+            notes: notes.trim() || undefined,
+            amount,
+            travelFee,
+            total,
+            durationMinutes: listing.durationMinutes,
+            galleryImage: resolveListingImage(listing) ?? undefined,
+            senderUserId: user?.uid ?? null,
+          }),
         });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error ?? 'Failed to create payment link.');
+        }
+
+        if (data.requiresClientStorage) {
+          await createServiceBooking(data.booking);
+          await createSharedBooking({
+            id: data.token as string,
+            bookingId: data.bookingId as string,
+            snapshot: data.sharedBooking.snapshot,
+            senderUserId: data.sharedBooking.senderUserId ?? null,
+            senderMessage: data.sharedBooking.senderMessage,
+            expiresAt: new Date(data.sharedBooking.expiresAt as string),
+          });
+        }
+
+        await incrementServiceBookingCount(listing.id);
+        url = data.shareUrl as string;
+        setShareUrl(url);
+        setExpiresAt(data.expiresAt as string);
       }
 
-      await incrementServiceBookingCount(listing.id);
-      setShareUrl(data.shareUrl as string);
-      setExpiresAt(data.expiresAt as string);
-      toast.success('Payment link created');
+      const result = await shareOrCopy({
+        title: `Pay for my ShiQueen booking (${formatUGX(total)})`,
+        text: `Could you pay for my ${listing.name} booking on ShiQueen?`,
+        url,
+      });
+      if (result === 'copied') toast.success('Payment link copied to clipboard');
+      else if (result === 'shared') toast.success('Payment link shared');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to create payment link.');
+      toast.error(err instanceof Error ? err.message : 'Failed to share payment link.');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleShareGiftLink = async () => {
-    if (!shareUrl) return;
-    const result = await shareOrCopy({
-      title: `Pay for my ShiQueen booking (${formatUGX(total)})`,
-      text:
-        giftMessage.trim() ||
-        `Could you pay for my ${listing.name} booking on ShiQueen?`,
-      url: shareUrl,
-    });
-    if (result === 'copied') toast.success('Payment link copied to clipboard');
   };
 
   const handleCopyGiftLink = async () => {
@@ -676,16 +673,13 @@ export function ServiceBookingSheet({
                       amountLabel={listing.name}
                       total={total}
                       recipientName={form.fullName.trim() || 'you'}
-                      message={giftMessage}
-                      onMessageChange={setGiftMessage}
                       shareUrl={shareUrl}
                       expiresAt={expiresAt}
                       loading={loading}
-                      canCreate={!shareUrl}
-                      onCreateLink={handleCreateGiftLink}
+                      canShare={!loading}
                       onShareLink={handleShareGiftLink}
                       onCopyLink={handleCopyGiftLink}
-                      createLabel="Create booking payment link"
+                      shareLabel="Share payment link"
                     />
                   )}
                 </>

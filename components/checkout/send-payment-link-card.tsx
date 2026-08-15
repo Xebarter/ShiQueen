@@ -44,86 +44,84 @@ export function SendPaymentLinkCard({
   senderUserId,
   className,
 }: SendPaymentLinkCardProps) {
-  const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
 
-  const canCreate = isDeliveryComplete(deliveryDetails) && cartItems.length > 0 && !shareUrl;
+  const canShare = isDeliveryComplete(deliveryDetails) && cartItems.length > 0;
 
-  const handleCreateLink = async () => {
-    if (!isDeliveryComplete(deliveryDetails) || cartItems.length === 0) {
+  const createLink = async (): Promise<string> => {
+    const response = await fetch('/api/checkout/share', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        cartItems,
+        orderItems,
+        subtotal,
+        total,
+        orderType,
+        fullName: deliveryDetails.fullName,
+        email: deliveryDetails.email,
+        phone: deliveryDetails.phone,
+        address: deliveryDetails.address,
+        city: deliveryDetails.city,
+        senderUserId,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error ?? 'Failed to create payment link.');
+    }
+
+    if (data.requiresClientStorage) {
+      const { createSharedCheckout } = await import('@/lib/firebase/shared-checkouts');
+      await createSharedCheckout({
+        id: data.token as string,
+        cartItems: data.checkout.cartItems,
+        orderItems: data.checkout.orderItems,
+        subtotal: data.checkout.subtotal,
+        total: data.checkout.total,
+        orderType: data.checkout.orderType,
+        recipientName: data.checkout.recipientName,
+        shippingAddress: data.checkout.shippingAddress,
+        senderUserId: data.checkout.senderUserId ?? null,
+        senderMessage: data.checkout.senderMessage,
+        expiresAt: new Date(data.checkout.expiresAt as string),
+      });
+    }
+
+    const url = data.shareUrl as string;
+    setShareUrl(url);
+    setExpiresAt(data.expiresAt as string);
+    return url;
+  };
+
+  const handleShareLink = async () => {
+    if (!canShare) {
       toast.error('Please complete your delivery details first.');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await fetch('/api/checkout/share', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cartItems,
-          orderItems,
-          subtotal,
-          total,
-          orderType,
-          fullName: deliveryDetails.fullName,
-          email: deliveryDetails.email,
-          phone: deliveryDetails.phone,
-          address: deliveryDetails.address,
-          city: deliveryDetails.city,
-          senderUserId,
-          senderMessage: message,
-        }),
+      const url = shareUrl ?? (await createLink());
+      const result = await shareOrCopy({
+        title: `Pay for my ShiQueen order (${formatUGX(total)})`,
+        text: 'Could you pay for my ShiQueen order? Delivery details are already included.',
+        url,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error ?? 'Failed to create payment link.');
+      if (result === 'copied') {
+        toast.success('Payment link copied to clipboard');
+      } else if (result === 'shared') {
+        toast.success('Payment link shared');
       }
-
-      if (data.requiresClientStorage) {
-        const { createSharedCheckout } = await import('@/lib/firebase/shared-checkouts');
-        await createSharedCheckout({
-          id: data.token as string,
-          cartItems: data.checkout.cartItems,
-          orderItems: data.checkout.orderItems,
-          subtotal: data.checkout.subtotal,
-          total: data.checkout.total,
-          orderType: data.checkout.orderType,
-          recipientName: data.checkout.recipientName,
-          shippingAddress: data.checkout.shippingAddress,
-          senderUserId: data.checkout.senderUserId ?? null,
-          senderMessage: data.checkout.senderMessage,
-          expiresAt: new Date(data.checkout.expiresAt as string),
-        });
-      }
-
-      setShareUrl(data.shareUrl as string);
-      setExpiresAt(data.expiresAt as string);
-      toast.success('Payment link created');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to create payment link.');
+      toast.error(error instanceof Error ? error.message : 'Failed to share payment link.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleShareLink = async () => {
-    if (!shareUrl) return;
-
-    const result = await shareOrCopy({
-      title: `Pay for my ShiQueen order (${formatUGX(total)})`,
-      text:
-        message.trim() ||
-        'Could you pay for my ShiQueen order? Delivery details are already included.',
-      url: shareUrl,
-    });
-
-    if (result === 'copied') {
-      toast.success('Payment link copied to clipboard');
     }
   };
 
@@ -143,16 +141,13 @@ export function SendPaymentLinkCard({
       amountLabel="Order total"
       total={total}
       recipientName={deliveryDetails.fullName.trim() || 'you'}
-      message={message}
-      onMessageChange={setMessage}
       shareUrl={shareUrl}
       expiresAt={expiresAt}
       loading={loading}
-      canCreate={canCreate}
-      onCreateLink={handleCreateLink}
+      canShare={canShare}
       onShareLink={handleShareLink}
       onCopyLink={handleCopyLink}
-      createLabel="Create order payment link"
+      shareLabel="Share payment link"
       helperText={
         isDeliveryComplete(deliveryDetails)
           ? undefined
