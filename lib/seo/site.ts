@@ -206,6 +206,20 @@ export const PAGE_SEO = {
     path: '/contact',
     keywords: ['ShiQueen contact', 'ShiQueen Kampala', 'ladies shop Kampala', 'SheQueen contact'],
   }),
+  faq: pageMetadata({
+    title: `FAQ — Shopping, Delivery, Returns & Payments`,
+    description:
+      'Frequently asked questions about shopping on ShiQueen: orders, payments, delivery in Uganda, returns, refunds, beauty products, gifts, and customer support.',
+    path: '/faq',
+    keywords: [
+      'ShiQueen FAQ',
+      'SheQueen FAQ',
+      'ShiQueen delivery Uganda',
+      'ShiQueen returns',
+      'ShiQueen payment',
+      'ladies online shop FAQ Uganda',
+    ],
+  }),
   terms: pageMetadata({
     title: 'Terms of Service',
     description:
