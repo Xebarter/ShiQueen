@@ -6,12 +6,13 @@ import { getPackageCoverImages } from '@/lib/package-utils';
 import { getTrending } from '@/lib/home-merchandising';
 import {
   countCategoryServices,
+  getProviderById,
   resolveListingImage,
 } from '@/lib/services-utils';
 import { usePublicProducts, usePublicPackages } from '@/lib/hooks/use-public-catalog';
 import { useServices } from '@/lib/services-context';
 import type { Product } from '@/lib/types/database';
-import type { ServiceListing } from '@/lib/types/services';
+import type { ServiceListing, ServiceProvider } from '@/lib/types/services';
 
 export type MobileMenuCategory = {
   id: string;
@@ -39,10 +40,15 @@ function pickBestProduct(
 
 function pickBestListing(
   listings: ServiceListing[],
+  providers: ServiceProvider[],
   predicate: (listing: ServiceListing) => boolean
 ): ServiceListing | undefined {
+  const providerById = new Map(providers.map((p) => [p.id, p]));
   return listings
-    .filter((l) => predicate(l) && resolveListingImage(l))
+    .filter(
+      (l) =>
+        predicate(l) && resolveListingImage(l, providerById.get(l.providerId))
+    )
     .sort((a, b) => b.rating * b.reviewCount - a.rating * a.reviewCount)[0];
 }
 
@@ -58,7 +64,7 @@ const SHOP_CATEGORY_DEFS = [
 export function useMobileMenuCatalog() {
   const { products } = usePublicProducts();
   const { packages } = usePublicPackages();
-  const { activeListings, activeCategories } = useServices();
+  const { activeListings, activeCategories, activeProviders } = useServices();
 
   return useMemo(() => {
     const shopCategories: MobileMenuCategory[] = SHOP_CATEGORY_DEFS.map((cat) => {
@@ -83,9 +89,12 @@ export function useMobileMenuCatalog() {
       .map((cat) => {
         const listing = pickBestListing(
           activeListings,
+          activeProviders,
           (l) => l.categoryId === cat.id
         );
-        const image = listing ? resolveListingImage(listing) : null;
+        const image = listing
+          ? resolveListingImage(listing, getProviderById(activeProviders, listing.providerId))
+          : null;
 
         return {
           id: cat.id,
@@ -113,9 +122,12 @@ export function useMobileMenuCatalog() {
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
 
     const packageCovers = featuredPackage
-      ? getPackageCoverImages(featuredPackage, products, activeListings).filter(
-          isRemoteProductImage
-        )
+      ? getPackageCoverImages(
+          featuredPackage,
+          products,
+          activeListings,
+          activeProviders
+        ).filter(isRemoteProductImage)
       : [];
 
     const packagesDestination: MobileMenuDestination = {
@@ -125,15 +137,18 @@ export function useMobileMenuCatalog() {
       image: packageCovers[0] ?? null,
     };
 
-    const featuredListing = [...activeListings]
-      .filter((l) => resolveListingImage(l))
-      .sort((a, b) => b.rating * b.reviewCount - a.rating * a.reviewCount)[0];
+    const featuredListing = pickBestListing(activeListings, activeProviders, () => true);
 
     const servicesDestination: MobileMenuDestination = {
       href: '/services',
       label: 'Services',
       subtitle: 'Beauty, wellness & lifestyle',
-      image: featuredListing ? resolveListingImage(featuredListing) : null,
+      image: featuredListing
+        ? resolveListingImage(
+            featuredListing,
+            getProviderById(activeProviders, featuredListing.providerId)
+          )
+        : null,
     };
 
     const wholesaleProduct = pickBestProduct(products, (p) => p.isWholesaleEnabled);
@@ -153,5 +168,5 @@ export function useMobileMenuCatalog() {
       destinations: [shopDestination, packagesDestination, servicesDestination, wholesaleDestination],
       productCount: products.length,
     };
-  }, [products, packages, activeListings, activeCategories]);
+  }, [products, packages, activeListings, activeCategories, activeProviders]);
 }

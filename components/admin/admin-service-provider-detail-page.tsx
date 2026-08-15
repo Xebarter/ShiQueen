@@ -653,7 +653,7 @@ export function AdminServiceProviderDetailPage() {
                     </thead>
                     <tbody>
                       {filteredListings.map((service) => {
-                        const cover = resolveListingImage(service);
+                        const cover = resolveListingImage(service, provider);
                         return (
                           <tr
                             key={service.id}

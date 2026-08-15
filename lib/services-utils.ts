@@ -25,22 +25,30 @@ export function slugifyServiceName(name: string): string {
 
 export { buildTelLink, buildWhatsAppLink } from '@/lib/phone-utils';
 
-export function resolveListingImage(listing: ServiceListing): string | null {
+export function resolveListingImage(
+  listing: ServiceListing,
+  provider?: ServiceProvider | null
+): string | null {
   for (const src of listing.galleryImages) {
     if (isRemoteProductImage(src)) return src;
+  }
+  if (provider && isRemoteProductImage(provider.profileImage)) {
+    return provider.profileImage;
   }
   return null;
 }
 
 export function resolveCategoryCoverImage(
   categoryId: string,
-  listings: ServiceListing[]
+  listings: ServiceListing[],
+  providers: ServiceProvider[] = []
 ): string | null {
+  const providerById = new Map(providers.map((p) => [p.id, p]));
   const inCategory = listings.filter(
     (l) => l.categoryId === categoryId && l.isActive && !l.isArchived
   );
   for (const listing of inCategory) {
-    const img = resolveListingImage(listing);
+    const img = resolveListingImage(listing, providerById.get(listing.providerId));
     if (img) return img;
   }
   return null;

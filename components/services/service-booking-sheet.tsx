@@ -308,7 +308,7 @@ export function ServiceBookingSheet({
             travelFee,
             total,
             durationMinutes: listing.durationMinutes,
-            galleryImage: resolveListingImage(listing) ?? undefined,
+            galleryImage: resolveListingImage(listing, provider) ?? undefined,
             senderUserId: user?.uid ?? null,
           }),
         });

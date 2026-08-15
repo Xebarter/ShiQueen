@@ -1,19 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { Loader2 } from 'lucide-react';
+import { ImagePlus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { isRemoteProductImage } from '@/components/product-image';
 import { useServices } from '@/lib/services-context';
 import {
   createServiceListing,
   updateServiceListing,
   generateServiceListingId,
 } from '@/lib/firebase/service-listings';
-import { slugifyServiceName } from '@/lib/services-utils';
+import { uploadProviderLogo } from '@/lib/firebase/storage';
+import { getProviderById, slugifyServiceName } from '@/lib/services-utils';
 import { DEFAULT_SUPPLIER_ID } from '@/lib/types/suppliers';
 import type { ServiceListing } from '@/lib/types/services';
 
@@ -25,8 +28,14 @@ type ProviderListingFormProps = {
 
 export function ProviderListingForm({ mode, providerId, initial }: ProviderListingFormProps) {
   const router = useRouter();
-  const { categories, listings } = useServices();
+  const { categories, listings, providers } = useServices();
+  const provider = getProviderById(providers, providerId);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [galleryImage, setGalleryImage] = useState(
+    () => initial?.galleryImages.find(isRemoteProductImage) ?? ''
+  );
   const [form, setForm] = useState({
     name: initial?.name ?? '',
     description: initial?.description ?? '',
@@ -43,6 +52,29 @@ export function ProviderListingForm({ mode, providerId, initial }: ProviderListi
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const profileFallback =
+    provider && isRemoteProductImage(provider.profileImage) ? provider.profileImage : '';
+  const previewSrc = galleryImage || profileFallback;
+  const previewInitial =
+    form.name.trim().charAt(0).toUpperCase() ||
+    provider?.businessName?.trim().charAt(0).toUpperCase() ||
+    'S';
+
+  const handleImageUpload = async (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const url = await uploadProviderLogo(providerId, file);
+      setGalleryImage(url);
+      toast.success('Image uploaded');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not upload image');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.categoryId) {
@@ -52,6 +84,7 @@ export function ProviderListingForm({ mode, providerId, initial }: ProviderListi
     setSaving(true);
     try {
       const category = categories.find((c) => c.id === form.categoryId);
+      const galleryImages = galleryImage ? [galleryImage] : [];
       if (mode === 'create') {
         const slugBase = slugifyServiceName(form.name);
         const id = (() => {
@@ -73,7 +106,7 @@ export function ProviderListingForm({ mode, providerId, initial }: ProviderListi
           supplierId: DEFAULT_SUPPLIER_ID,
           durationMinutes: Number(form.durationMinutes) || 60,
           basePrice: Number(form.basePrice) || 0,
-          galleryImages: [],
+          galleryImages,
           isFeatured: false,
           isPopular: false,
           isActive: form.isActive,
@@ -99,6 +132,7 @@ export function ProviderListingForm({ mode, providerId, initial }: ProviderListi
           supportsMobile: form.supportsMobile,
           supportsInStudio: form.supportsInStudio,
           isActive: form.isActive,
+          galleryImages,
         });
         toast.success('Listing saved');
       }
@@ -115,6 +149,72 @@ export function ProviderListingForm({ mode, providerId, initial }: ProviderListi
       onSubmit={handleSubmit}
       className="max-w-xl space-y-4 rounded-xl border border-border/70 bg-card p-5 shadow-sm sm:p-6"
     >
+      <div className="space-y-2">
+        <Label>Image</Label>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          className="hidden"
+          onChange={(e) => {
+            void handleImageUpload(e.target.files);
+            e.target.value = '';
+          }}
+        />
+        <div className="flex items-center gap-4">
+          <div className="relative h-20 w-20 overflow-hidden rounded-2xl border border-border bg-muted">
+            {isRemoteProductImage(previewSrc) ? (
+              <Image
+                src={previewSrc}
+                alt={form.name || 'Listing'}
+                fill
+                className="object-cover"
+                sizes="80px"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-lg font-semibold text-muted-foreground">
+                {previewInitial}
+              </div>
+            )}
+          </div>
+          <div className="min-w-0">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={uploadingImage || saving}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {uploadingImage ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <ImagePlus className="mr-1.5 h-3.5 w-3.5" />
+                )}
+                {uploadingImage ? 'Uploading…' : galleryImage ? 'Change' : 'Upload'}
+              </Button>
+              {galleryImage ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={uploadingImage || saving}
+                  onClick={() => setGalleryImage('')}
+                >
+                  Remove
+                </Button>
+              ) : null}
+            </div>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              {galleryImage
+                ? 'JPEG, PNG, WebP, GIF'
+                : profileFallback
+                  ? 'Using profile photo until you upload one'
+                  : 'Optional · profile photo used if empty'}
+            </p>
+          </div>
+        </div>
+      </div>
       <div className="space-y-2">
         <Label htmlFor="name">Service name</Label>
         <Input
@@ -203,7 +303,7 @@ export function ProviderListingForm({ mode, providerId, initial }: ProviderListi
         />
         Active (visible when account is approved)
       </label>
-      <Button type="submit" disabled={saving}>
+      <Button type="submit" disabled={saving || uploadingImage}>
         {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
         {mode === 'create' ? 'Create listing' : 'Save listing'}
       </Button>

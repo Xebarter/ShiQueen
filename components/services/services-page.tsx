@@ -237,6 +237,7 @@ export function ServicesPage() {
                   key={category.id}
                   category={category}
                   listings={activeListings}
+                  providers={activeProviders}
                   compact
                 />
               ))}

@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
+  CalendarClock,
   Globe,
   Loader2,
+  MapPin,
+  Package,
   ShoppingCart,
   Target,
   Trash2,
-  TrendingDown,
-  TrendingUp,
   X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -16,12 +17,29 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { AdminPage, AdminPageHeader } from '@/components/admin/admin-page';
 import {
+  AnalyticsChartCard,
+  AnalyticsMetricCard,
+  RankedList,
+  RevenueTrendChart,
+  SharePieChart,
+  SimpleBarChart,
+  StatusFunnelBars,
+} from '@/components/analytics/charts';
+import {
+  computeBookingKeyMetrics,
+  computeBookingMonthlyTrend,
+  computeBookingStatusFunnel,
+  computeBookingsByWeekday,
   computeKeyMetrics,
+  computeListingPerformance,
+  computeLocationMix,
   computeMonthlyTrend,
+  computeOrderStatusFunnel,
+  computeOrderTypeBreakdown,
+  computePaymentMethodBreakdown,
   computeSalesByCategory,
   computeTopCountries,
-  formatPercentChange,
-  trendFromChange,
+  computeTopProducts,
 } from '@/lib/analytics/compute';
 import {
   AnalyticsGoals,
@@ -32,6 +50,7 @@ import {
 import { subscribeOrders, updateOrderStatus } from '@/lib/firebase/orders';
 import { subscribeUsers } from '@/lib/firebase/users';
 import { useProducts } from '@/lib/products-context';
+import { useServices } from '@/lib/services-context';
 import { Order, UserProfile } from '@/lib/types/database';
 import { formatUGX } from '@/lib/wholesale-data';
 import { cn } from '@/lib/utils';
@@ -44,52 +63,7 @@ const ORDER_STATUS: Order['status'][] = [
   'cancelled',
 ];
 
-function MetricCard({
-  title,
-  value,
-  change,
-  hint,
-}: {
-  title: string;
-  value: string;
-  change?: number;
-  hint?: string;
-}) {
-  const trend = change !== undefined ? trendFromChange(change) : 'flat';
-  const TrendIcon = trend === 'down' ? TrendingDown : TrendingUp;
-
-  return (
-    <div className="rounded-xl border border-border/70 bg-card p-4 shadow-sm shadow-primary/5">
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{title}</p>
-        {change !== undefined && (
-          <TrendIcon
-            className={cn(
-              'h-4 w-4 shrink-0',
-              trend === 'up' && 'text-emerald-600',
-              trend === 'down' && 'text-red-600',
-              trend === 'flat' && 'text-muted-foreground'
-            )}
-          />
-        )}
-      </div>
-      <p className="mt-1 text-2xl font-bold tabular-nums">{value}</p>
-      {change !== undefined && (
-        <p
-          className={cn(
-            'mt-1 text-xs',
-            trend === 'up' && 'text-emerald-600',
-            trend === 'down' && 'text-red-600',
-            trend === 'flat' && 'text-muted-foreground'
-          )}
-        >
-          {formatPercentChange(change)} vs last month
-        </p>
-      )}
-      {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
-    </div>
-  );
-}
+type TabId = 'commerce' | 'services';
 
 function GoalsFormPanel({
   goals,
@@ -151,7 +125,7 @@ function GoalsFormPanel({
           </Button>
         </div>
         <CardDescription>
-          Set monthly goals in Firestore to track progress against live data.
+          Set monthly commerce goals to track progress against live order data.
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-5">
@@ -283,12 +257,14 @@ function OrderStatusSelect({
 
 export function AdminAnalyticsPage() {
   const { products, loading: productsLoading } = useProducts();
+  const { bookings, listings, loading: servicesLoading } = useServices();
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [goals, setGoals] = useState<AnalyticsGoals>({});
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [usersLoading, setUsersLoading] = useState(true);
   const [showGoalsForm, setShowGoalsForm] = useState(false);
+  const [tab, setTab] = useState<TabId>('commerce');
 
   useEffect(() => {
     const unsubOrders = subscribeOrders(
@@ -334,14 +310,30 @@ export function AdminAnalyticsPage() {
     [orders, productsById]
   );
   const monthlyTrend = useMemo(() => computeMonthlyTrend(orders, users), [orders, users]);
-  const maxCountryOrders = topCountries[0]?.orders ?? 1;
+  const orderFunnel = useMemo(() => computeOrderStatusFunnel(orders), [orders]);
+  const topProducts = useMemo(
+    () => computeTopProducts(orders, productsById),
+    [orders, productsById]
+  );
+  const orderTypes = useMemo(() => computeOrderTypeBreakdown(orders), [orders]);
+  const paymentMethods = useMemo(() => computePaymentMethodBreakdown(orders), [orders]);
+
+  const bookingMetrics = useMemo(() => computeBookingKeyMetrics(bookings), [bookings]);
+  const bookingTrend = useMemo(() => computeBookingMonthlyTrend(bookings), [bookings]);
+  const bookingFunnel = useMemo(() => computeBookingStatusFunnel(bookings), [bookings]);
+  const listingPerf = useMemo(
+    () => computeListingPerformance(bookings, listings),
+    [bookings, listings]
+  );
+  const locationMix = useMemo(() => computeLocationMix(bookings), [bookings]);
+  const weekdayBookings = useMemo(() => computeBookingsByWeekday(bookings), [bookings]);
 
   const recentOrders = useMemo(
-    () => orders.filter((o) => o.status !== 'cancelled').slice(0, 5),
+    () => orders.filter((o) => o.status !== 'cancelled').slice(0, 6),
     [orders]
   );
 
-  const loading = ordersLoading || usersLoading || productsLoading;
+  const loading = ordersLoading || usersLoading || productsLoading || servicesLoading;
 
   const handleOrderStatusUpdate = async (orderId: string, status: Order['status']) => {
     try {
@@ -361,7 +353,7 @@ export function AdminAnalyticsPage() {
     <AdminPage>
       <AdminPageHeader
         title="Analytics"
-        description="Live performance metrics from Firestore orders and customers"
+        description="Live commerce and services performance from orders, bookings, and customers"
         action={
           <Button className="gap-2" onClick={() => setShowGoalsForm(true)}>
             <Target className="h-4 w-4" />
@@ -374,11 +366,35 @@ export function AdminAnalyticsPage() {
         <GoalsFormPanel goals={goals} onClose={() => setShowGoalsForm(false)} />
       )}
 
+      <div className="mb-6 flex flex-wrap gap-2">
+        {(
+          [
+            { id: 'commerce' as const, label: 'Commerce', icon: ShoppingCart },
+            { id: 'services' as const, label: 'Services', icon: CalendarClock },
+          ] as const
+        ).map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTab(id)}
+            className={cn(
+              'inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition',
+              tab === id
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground'
+            )}
+          >
+            <Icon className="h-4 w-4" />
+            {label}
+          </button>
+        ))}
+      </div>
+
       {loading ? (
         <div className="flex justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      ) : (
+      ) : tab === 'commerce' ? (
         <>
           {hasGoals && (
             <div className="mb-6 grid gap-3 sm:grid-cols-3">
@@ -402,179 +418,132 @@ export function AdminAnalyticsPage() {
           )}
 
           <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
-            <MetricCard
+            <AnalyticsMetricCard
               title="Monthly revenue"
               value={formatUGX(metrics.thisMonthRevenue)}
               change={metrics.revenueChange}
+              hint={`${formatUGX(metrics.allTimeRevenue)} all-time`}
             />
-            <MetricCard
+            <AnalyticsMetricCard
               title="Orders this month"
-              value={metrics.thisMonthOrderCount}
+              value={String(metrics.thisMonthOrderCount)}
               change={metrics.ordersChange}
+              hint={`${metrics.allTimeOrders} active orders total`}
             />
-            <MetricCard
+            <AnalyticsMetricCard
               title="Average order value"
               value={formatUGX(metrics.averageOrderValue)}
               change={metrics.aovChange}
             />
-            <MetricCard
+            <AnalyticsMetricCard
               title="Repeat customer rate"
               value={`${metrics.repeatCustomerRate.toFixed(1)}%`}
               hint={`${metrics.paymentSuccessRate.toFixed(1)}% paid successfully`}
             />
           </div>
 
-          <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <Card className="overflow-hidden border-border/70 shadow-sm">
-              <CardHeader className="border-b border-border/60 bg-muted/10">
-                <CardTitle className="flex items-center gap-2 text-lg font-light tracking-tight">
-                  <Globe className="h-5 w-5 text-primary" />
-                  Top markets
-                </CardTitle>
-                <CardDescription>Revenue and orders by shipping country</CardDescription>
-              </CardHeader>
-              <CardContent className="pt-5">
-                {topCountries.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No order data yet.</p>
-                ) : (
-                  <div className="space-y-4">
-                    {topCountries.map((item, index) => (
-                      <div
-                        key={item.country}
-                        className="border-b border-border/60 pb-4 last:border-0 last:pb-0"
-                      >
-                        <div className="mb-2 flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-medium">
-                              {index + 1}. {item.country}
-                            </p>
-                            <p className="text-xs text-muted-foreground">{item.orders} orders</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-semibold">{formatUGX(item.revenue)}</p>
-                            <p
-                              className={cn(
-                                'text-xs',
-                                item.growth >= 0 ? 'text-emerald-600' : 'text-red-600'
-                              )}
-                            >
-                              {formatPercentChange(item.growth)} vs last month
-                            </p>
-                          </div>
-                        </div>
-                        <div className="h-2 w-full rounded-full bg-muted">
-                          <div
-                            className="h-2 rounded-full bg-primary transition-all"
-                            style={{ width: `${(item.orders / maxCountryOrders) * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="overflow-hidden border-border/70 shadow-sm">
-              <CardHeader className="border-b border-border/60 bg-muted/10">
-                <CardTitle className="flex items-center gap-2 text-lg font-light tracking-tight">
-                  <ShoppingCart className="h-5 w-5 text-primary" />
-                  Sales by category
-                </CardTitle>
-                <CardDescription>Units sold grouped by product category</CardDescription>
-              </CardHeader>
-              <CardContent className="pt-5">
-                {salesByCategory.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No sales data yet.</p>
-                ) : (
-                  <div className="space-y-4">
-                    {salesByCategory.map((item) => (
-                      <div
-                        key={item.category}
-                        className="border-b border-border/60 pb-4 last:border-0 last:pb-0"
-                      >
-                        <div className="mb-2 flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-medium">{item.category}</p>
-                            <p className="text-xs text-muted-foreground">{item.units} units sold</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-semibold">{formatUGX(item.revenue)}</p>
-                            <p className="text-xs font-medium text-primary">{item.percentage}% of total</p>
-                          </div>
-                        </div>
-                        <div className="h-2 w-full rounded-full bg-muted">
-                          <div
-                            className="h-2 rounded-full bg-accent transition-all"
-                            style={{ width: `${item.percentage}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+          <div className="mb-6">
+            <AnalyticsChartCard
+              title="Revenue trend"
+              description="Monthly revenue and order volume over the last 6 months"
+            >
+              <RevenueTrendChart
+                data={monthlyTrend}
+                secondaryKey="orders"
+                secondaryLabel="Orders"
+              />
+            </AnalyticsChartCard>
           </div>
 
-          <Card className="mb-6 overflow-hidden border-border/70 shadow-sm">
-            <CardHeader className="border-b border-border/60 bg-muted/10">
-              <CardTitle className="text-lg font-light tracking-tight">Monthly trend</CardTitle>
-              <CardDescription>Revenue, orders, and new sign-ups over the last 6 months</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              {monthlyTrend.length === 0 ? (
-                <p className="px-6 py-12 text-center text-sm text-muted-foreground">
-                  Trend data will appear once you have orders or sign-ups.
-                </p>
+          <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <AnalyticsChartCard
+              title="Order pipeline"
+              description="Distribution of orders by fulfillment status"
+            >
+              <StatusFunnelBars items={orderFunnel} />
+            </AnalyticsChartCard>
+
+            <AnalyticsChartCard
+              title="Order mix"
+              description="Revenue share by order type"
+            >
+              <SharePieChart
+                data={orderTypes.map((t) => ({ name: t.label, value: t.revenue }))}
+              />
+            </AnalyticsChartCard>
+          </div>
+
+          <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <AnalyticsChartCard
+              title="Top markets"
+              description="Revenue by shipping country"
+              action={<Globe className="h-4 w-4 text-primary" />}
+            >
+              <SimpleBarChart
+                data={topCountries.map((c) => ({
+                  label: c.country,
+                  revenue: c.revenue,
+                }))}
+                dataKey="revenue"
+                valueFormatter={formatUGX}
+                horizontal
+                height={Math.max(220, topCountries.length * 36)}
+              />
+            </AnalyticsChartCard>
+
+            <AnalyticsChartCard
+              title="Sales by category"
+              description="Units and revenue grouped by product category"
+              action={<Package className="h-4 w-4 text-primary" />}
+            >
+              {salesByCategory.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No sales data yet.</p>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[640px] text-sm">
-                    <thead>
-                      <tr className="border-b border-border/60 bg-muted/30">
-                        <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          Month
-                        </th>
-                        <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          Revenue
-                        </th>
-                        <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          Orders
-                        </th>
-                        <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          New customers
-                        </th>
-                        <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          Avg order value
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {monthlyTrend.map((row) => (
-                        <tr
-                          key={row.key}
-                          className="border-b border-border/60 transition-colors last:border-0 hover:bg-muted/30"
-                        >
-                          <td className="px-5 py-3.5 font-medium">{row.label}</td>
-                          <td className="px-5 py-3.5 font-semibold">{formatUGX(row.revenue)}</td>
-                          <td className="px-5 py-3.5 tabular-nums">{row.orders}</td>
-                          <td className="px-5 py-3.5 tabular-nums">{row.customers}</td>
-                          <td className="px-5 py-3.5 text-muted-foreground">
-                            {formatUGX(row.averageOrderValue)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <RankedList
+                  items={salesByCategory.slice(0, 8).map((item) => ({
+                    id: item.category,
+                    title: item.category,
+                    subtitle: `${item.units} units · ${item.percentage}% of revenue`,
+                    value: formatUGX(item.revenue),
+                  }))}
+                />
               )}
-            </CardContent>
-          </Card>
+            </AnalyticsChartCard>
+          </div>
+
+          <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <AnalyticsChartCard
+              title="Top products"
+              description="Best sellers by attributed line revenue"
+            >
+              <RankedList
+                items={topProducts.map((p) => ({
+                  id: p.productId,
+                  title: p.name,
+                  subtitle: `${p.units} units · ${p.orders} orders`,
+                  value: formatUGX(p.revenue),
+                }))}
+                emptyMessage="Product sales will appear once orders include catalog items."
+              />
+            </AnalyticsChartCard>
+
+            <AnalyticsChartCard
+              title="Payment methods"
+              description="How customers are paying"
+            >
+              <SharePieChart
+                data={paymentMethods.map((m) => ({
+                  name: m.label,
+                  value: m.count,
+                }))}
+              />
+            </AnalyticsChartCard>
+          </div>
 
           <Card className="overflow-hidden border-border/70 shadow-sm">
             <CardHeader className="border-b border-border/60 bg-muted/10">
               <CardTitle className="text-lg font-light tracking-tight">Recent orders</CardTitle>
-              <CardDescription>Update order status to keep analytics accurate</CardDescription>
+              <CardDescription>Update status to keep the pipeline accurate</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               {recentOrders.length === 0 ? (
@@ -642,6 +611,101 @@ export function AdminAnalyticsPage() {
               )}
             </CardContent>
           </Card>
+        </>
+      ) : (
+        <>
+          <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
+            <AnalyticsMetricCard
+              title="Monthly earnings"
+              value={formatUGX(bookingMetrics.thisMonthEarnings)}
+              change={bookingMetrics.earningsChange}
+              hint={`${formatUGX(bookingMetrics.allTimeEarnings)} completed all-time`}
+            />
+            <AnalyticsMetricCard
+              title="Bookings this month"
+              value={String(bookingMetrics.thisMonthBookings)}
+              change={bookingMetrics.bookingsChange}
+              hint={`${bookingMetrics.thisWeekBookings} this week`}
+            />
+            <AnalyticsMetricCard
+              title="Avg booking value"
+              value={formatUGX(bookingMetrics.averageBookingValue)}
+              change={bookingMetrics.abvChange}
+            />
+            <AnalyticsMetricCard
+              title="Completion rate"
+              value={`${bookingMetrics.completionRate.toFixed(1)}%`}
+              hint={`${bookingMetrics.pendingCount} pending · ${bookingMetrics.paymentSuccessRate.toFixed(1)}% paid`}
+            />
+          </div>
+
+          <div className="mb-6">
+            <AnalyticsChartCard
+              title="Earnings trend"
+              description="Completed booking earnings and volume over the last 6 months"
+            >
+              <RevenueTrendChart
+                data={bookingTrend.map((r) => ({
+                  label: r.label,
+                  revenue: r.earnings,
+                  orders: r.bookings,
+                }))}
+                secondaryKey="orders"
+                secondaryLabel="Bookings"
+              />
+            </AnalyticsChartCard>
+          </div>
+
+          <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <AnalyticsChartCard
+              title="Booking pipeline"
+              description="Where appointments sit in the lifecycle"
+            >
+              <StatusFunnelBars items={bookingFunnel} />
+            </AnalyticsChartCard>
+
+            <AnalyticsChartCard
+              title="Studio vs mobile"
+              description="Booking mix by location type"
+              action={<MapPin className="h-4 w-4 text-primary" />}
+            >
+              <SharePieChart
+                data={locationMix.map((m) => ({ name: m.label, value: m.count }))}
+              />
+            </AnalyticsChartCard>
+          </div>
+
+          <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <AnalyticsChartCard
+              title="Busy days"
+              description="Bookings by scheduled weekday"
+            >
+              <SimpleBarChart
+                data={weekdayBookings.map((d) => ({
+                  label: d.day,
+                  bookings: d.bookings,
+                }))}
+                dataKey="bookings"
+                color="var(--chart-2)"
+              />
+            </AnalyticsChartCard>
+
+            <AnalyticsChartCard
+              title="Top listings"
+              description="Services ranked by completed earnings"
+            >
+              <RankedList
+                items={listingPerf.map((l) => ({
+                  id: l.listingId,
+                  title: l.name,
+                  subtitle: `${l.bookings} bookings · ${l.views} views · ${l.conversionRate.toFixed(1)}% conv.`,
+                  value: formatUGX(l.earnings),
+                  meta: l.rating ? `★ ${l.rating.toFixed(1)}` : undefined,
+                }))}
+                emptyMessage="Listing performance appears once bookings start."
+              />
+            </AnalyticsChartCard>
+          </div>
         </>
       )}
     </AdminPage>

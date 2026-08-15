@@ -1,6 +1,6 @@
 import type { CartItem } from '@/lib/cart-context';
 import type { OrderItem, Product } from '@/lib/types/database';
-import type { ServiceListing } from '@/lib/types/services';
+import type { ServiceListing, ServiceProvider } from '@/lib/types/services';
 import {
   Package,
   PackageItem,
@@ -58,14 +58,17 @@ export function getPackageItemRetailUnit(
 export function getPackageItemImage(
   item: PackageItem,
   products: Product[],
-  services: ServiceListing[] = []
+  services: ServiceListing[] = [],
+  providers: ServiceProvider[] = []
 ): string | undefined {
   if (isCustomPackageItem(item)) {
     return item.customImage;
   }
   if (isServicePackageItem(item)) {
     const service = services.find((s) => s.id === getPackageItemRefId(item));
-    return service ? resolveListingImage(service) ?? undefined : undefined;
+    if (!service) return undefined;
+    const provider = providers.find((p) => p.id === service.providerId);
+    return resolveListingImage(service, provider) ?? undefined;
   }
   return products.find((p) => p.id === item.productId)?.image;
 }
@@ -311,7 +314,8 @@ export function resolveCoverProductIds(
 export function getPackageCoverImages(
   pkg: Package,
   products: Product[],
-  services: ServiceListing[] = []
+  services: ServiceListing[] = [],
+  providers: ServiceProvider[] = []
 ): string[] {
   const mode = resolvePackageCoverMode(pkg);
 
@@ -321,6 +325,7 @@ export function getPackageCoverImages(
 
   const productMap = new Map(products.map((p) => [p.id, p]));
   const serviceMap = new Map(services.map((s) => [s.id, s]));
+  const providerById = new Map(providers.map((p) => [p.id, p]));
   const itemByRefId = new Map(
     pkg.items.map((item) => [getPackageItemRefId(item), item])
   );
@@ -336,9 +341,14 @@ export function getPackageCoverImages(
     if (images.length >= 4) break;
     const item = itemByRefId.get(refId);
     const image = item
-      ? getPackageItemImage(item, products, services)
+      ? getPackageItemImage(item, products, services, providers)
       : productMap.get(refId)?.image ||
-        (serviceMap.get(refId) ? resolveListingImage(serviceMap.get(refId)!) ?? undefined : undefined);
+        (() => {
+          const service = serviceMap.get(refId);
+          return service
+            ? resolveListingImage(service, providerById.get(service.providerId)) ?? undefined
+            : undefined;
+        })();
     if (image) images.push(image);
   }
 

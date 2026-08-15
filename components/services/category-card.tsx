@@ -4,19 +4,26 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight } from 'lucide-react';
 import { isRemoteProductImage } from '@/components/product-image';
-import type { ServiceCategory, ServiceListing } from '@/lib/types/services';
+import type { ServiceCategory, ServiceListing, ServiceProvider } from '@/lib/types/services';
 import { countCategoryServices, resolveCategoryCoverImage } from '@/lib/services-utils';
 import { cn } from '@/lib/utils';
 
 interface CategoryCardProps {
   category: ServiceCategory;
   listings: ServiceListing[];
+  providers?: ServiceProvider[];
   compact?: boolean;
   className?: string;
 }
 
-export function CategoryCard({ category, listings, compact, className }: CategoryCardProps) {
-  const cover = resolveCategoryCoverImage(category.id, listings);
+export function CategoryCard({
+  category,
+  listings,
+  providers = [],
+  compact,
+  className,
+}: CategoryCardProps) {
+  const cover = resolveCategoryCoverImage(category.id, listings, providers);
   const count = countCategoryServices(category.id, listings);
 
   return (

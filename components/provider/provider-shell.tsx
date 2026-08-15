@@ -7,7 +7,6 @@ import {
   CalendarClock,
   ClipboardList,
   Loader2,
-  Menu,
   Scissors,
   Settings,
   Sparkles,
@@ -37,13 +36,13 @@ export const PROVIDER_TABS: readonly PartnerTabItem[] = [
   { href: PROVIDER_HOME_HREF, label: 'Bookings', icon: ClipboardList },
   { href: '/services/dashboard/listings', label: 'Listings', icon: Scissors },
   { href: '/services/dashboard/profile', label: 'Profile', icon: UserRound },
-  { label: 'More', icon: Menu, action: 'more' },
+  { href: '/services/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 
 export const PROVIDER_PAGE_TITLES: readonly PartnerPageTitle[] = [
   { match: '/services/dashboard/listings', title: 'Listings' },
   { match: '/services/dashboard/bookings', title: 'Bookings' },
-  { match: '/services/dashboard/availability', title: 'Availability' },
+  { match: '/services/dashboard/availability', title: 'Hours' },
   { match: '/services/dashboard/reviews', title: 'Reviews' },
   { match: '/services/dashboard/profile', title: 'Profile' },
   { match: '/services/dashboard/settings', title: 'Settings' },

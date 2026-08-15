@@ -38,7 +38,7 @@ export function ServiceCard({
   className,
   index = 0,
 }: ServiceCardProps) {
-  const image = resolveListingImage(listing);
+  const image = resolveListingImage(listing, provider);
   const gradient = CATEGORY_GRADIENTS[listing.categoryId] ?? CATEGORY_GRADIENTS.default;
   const isCompact = variant === 'compact';
   const wa = provider?.whatsapp || provider?.phone;

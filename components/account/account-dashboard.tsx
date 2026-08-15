@@ -530,7 +530,7 @@ function PanelCard({
 export function AccountDashboard() {
   const { user, profile, logout, loading, isAdmin, isSupplier, isServiceProvider, refreshProfile } = useAuth();
   const { products, getProductById, loading: productsLoading } = useProducts();
-  const { activeListings } = useServices();
+  const { activeListings, activeProviders } = useServices();
   const { addItem } = useCart();
   const router = useRouter();
 
@@ -838,7 +838,11 @@ export function AccountDashboard() {
                               const listing = activeListings.find(
                                 (s) => s.id === (item.serviceId || item.productId)
                               );
-                              return listing ? resolveListingImage(listing) ?? undefined : undefined;
+                              if (!listing) return undefined;
+                              const provider = activeProviders.find(
+                                (p) => p.id === listing.providerId
+                              );
+                              return resolveListingImage(listing, provider) ?? undefined;
                             }
                             const product = getProductById(item.productId);
                             if (!product) return undefined;

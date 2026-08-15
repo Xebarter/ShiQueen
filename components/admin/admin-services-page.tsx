@@ -44,7 +44,6 @@ import {
 } from 'lucide-react';
 import type { ServiceBookingStatus } from '@/lib/types/services';
 import { AdminEntityThumb } from '@/components/admin/admin-entity-thumb';
-import { isRemoteProductImage } from '@/components/product-image';
 
 const TABS = [
   { id: 'overview', label: 'Overview', icon: BarChart3 },
@@ -309,11 +308,7 @@ export function AdminServicesPage() {
               <CardContent className="space-y-2 text-sm">
                 {stats.topServices.map((s) => {
                   const provider = providers.find((p) => p.id === s.providerId);
-                  const image =
-                    resolveListingImage(s) ||
-                    (isRemoteProductImage(provider?.profileImage)
-                      ? provider!.profileImage
-                      : null);
+                  const image = resolveListingImage(s, provider);
                   return (
                   <div key={s.id} className="flex items-center justify-between gap-3">
                     <span className="flex min-w-0 items-center gap-2.5">
@@ -544,11 +539,7 @@ export function AdminServicesPage() {
                 {listings.map((s) => {
                   const provider = providers.find((p) => p.id === s.providerId);
                   const supplier = getSupplierById(s.supplierId);
-                  const image =
-                    resolveListingImage(s) ||
-                    (isRemoteProductImage(provider?.profileImage)
-                      ? provider.profileImage
-                      : null);
+                  const image = resolveListingImage(s, provider);
                   return (
                   <tr key={s.id} className="border-t">
                     <td className="px-4 py-3">

@@ -26,9 +26,9 @@ import {
   resolvePackageSavings,
 } from '@/lib/package-utils';
 import { getPackageCategoryLabel } from '@/lib/package-catalog';
-import { resolveListingImage } from '@/lib/services-utils';
+import { getProviderById, resolveListingImage } from '@/lib/services-utils';
 import { formatUGX } from '@/lib/wholesale-data';
-import type { ServiceListing } from '@/lib/types/services';
+import type { ServiceListing, ServiceProvider } from '@/lib/types/services';
 import Image from 'next/image';
 import {
   SEARCH_HISTORY_UPDATED_EVENT,
@@ -77,6 +77,7 @@ function SearchResultRow({
   onSelect,
   products,
   services,
+  providers,
   retailPrices,
 }: {
   hit: CatalogSearchHit;
@@ -85,6 +86,7 @@ function SearchResultRow({
   onSelect: (hit: CatalogSearchHit) => void;
   products: ReturnType<typeof usePublicProducts>['products'];
   services: ServiceListing[];
+  providers: ServiceProvider[];
   retailPrices: Record<string, number>;
 }) {
   const handleSelect = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -140,7 +142,7 @@ function SearchResultRow({
 
   if (hit.type === 'service') {
     const { listing } = hit;
-    const image = resolveListingImage(listing);
+    const image = resolveListingImage(listing, getProviderById(providers, listing.providerId));
 
     return (
       <button
@@ -183,7 +185,7 @@ function SearchResultRow({
   }
 
   const { pkg } = hit;
-  const coverImages = getPackageCoverImages(pkg, products, services);
+  const coverImages = getPackageCoverImages(pkg, products, services, providers);
   const { packagePrice } = resolvePackageSavings(pkg, retailPrices);
 
   return (
@@ -231,7 +233,7 @@ export function SearchBar({ className }: { className?: string }) {
   const router = useRouter();
   const { products } = usePublicProducts();
   const { packages } = usePublicPackages();
-  const { activeListings } = useServices();
+  const { activeListings, activeProviders } = useServices();
   const { search, loading, catalogCount } = useCatalogSearch();
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -502,6 +504,7 @@ export function SearchBar({ className }: { className?: string }) {
                 onSelect={handleResultSelect}
                 products={products}
                 services={activeListings}
+                providers={activeProviders}
                 retailPrices={retailPrices}
               />
             ))}

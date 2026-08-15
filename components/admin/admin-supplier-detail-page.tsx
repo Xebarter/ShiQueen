@@ -706,7 +706,7 @@ export function AdminSupplierDetailPage() {
                   <tbody>
                     {filteredServices.map((service) => {
                       const provider = providers.find((p) => p.id === service.providerId);
-                      const cover = resolveListingImage(service);
+                      const cover = resolveListingImage(service, provider);
                       return (
                         <tr
                           key={service.id}

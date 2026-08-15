@@ -47,9 +47,13 @@ export function ServiceDetailPage({ slug }: ServiceDetailPageProps) {
     }
   }, [listing?.id]);
 
-  const heroImage = listing ? resolveListingImage(listing) : null;
+  const heroImage = listing ? resolveListingImage(listing, provider) : null;
   const gallery = listing
-    ? [...listing.galleryImages, ...(provider?.portfolioImages ?? [])].filter(isRemoteProductImage)
+    ? [
+        ...listing.galleryImages,
+        ...(heroImage && !listing.galleryImages.includes(heroImage) ? [heroImage] : []),
+        ...(provider?.portfolioImages ?? []),
+      ].filter(isRemoteProductImage)
     : [];
 
   if (loading) {
