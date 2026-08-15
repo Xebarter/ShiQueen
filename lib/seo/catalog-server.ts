@@ -1,217 +1,192 @@
-import { COLLECTIONS } from '@/lib/firebase/collections';
-import { isFirebaseAdminConfigured } from '@/lib/firebase/admin-config';
-import { getPublicFirestoreDocument } from '@/lib/firebase/public-document';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { isSupabaseAdminConfigured } from '@/lib/supabase/config';
+import { TABLES } from '@/lib/supabase/tables';
+import { toDate } from '@/lib/supabase/timestamp';
 import { isValidPackageCategory } from '@/lib/package-catalog';
 import type { Product } from '@/lib/types/database';
 import type { Package } from '@/lib/types/wholesale';
 import type { ServiceCategory, ServiceListing } from '@/lib/types/services';
-import type { DocumentData } from 'firebase-admin/firestore';
 
-function toDate(value: unknown): Date {
-  if (value && typeof value === 'object' && 'toDate' in value && typeof value.toDate === 'function') {
-    return (value as { toDate: () => Date }).toDate();
-  }
-  if (value instanceof Date) return value;
-  return new Date();
-}
-
-function mapProduct(id: string, data: DocumentData): Product {
+function mapProduct(row: Record<string, unknown>): Product {
   return {
-    id,
-    name: String(data.name ?? ''),
-    sku: String(data.sku ?? ''),
-    description: String(data.description ?? ''),
-    category: String(data.category ?? ''),
-    supplierId: String(data.supplierId ?? ''),
-    price: Number(data.price ?? 0),
-    originalPrice: data.originalPrice ? Number(data.originalPrice) : undefined,
-    stock: Number(data.stock ?? 0),
-    rating: Number(data.rating ?? 0),
-    reviews: Number(data.reviews ?? 0),
-    image: String(data.image ?? ''),
-    images: Array.isArray(data.images) ? (data.images as string[]) : [],
-    sizes: Array.isArray(data.sizes) ? (data.sizes as string[]) : [],
-    colors: Array.isArray(data.colors) ? (data.colors as string[]) : [],
-    details: Array.isArray(data.details) ? (data.details as string[]) : [],
-    isWholesaleEnabled: Boolean(data.isWholesaleEnabled ?? true),
-    minOrderQuantity: Number(data.minOrderQuantity ?? 10),
+    id: String(row.id),
+    name: String(row.name ?? ''),
+    sku: String(row.sku ?? ''),
+    description: String(row.description ?? ''),
+    category: String(row.category ?? ''),
+    supplierId: String(row.supplier_id ?? ''),
+    price: Number(row.price ?? 0),
+    originalPrice: row.original_price != null ? Number(row.original_price) : undefined,
+    stock: Number(row.stock ?? 0),
+    rating: Number(row.rating ?? 0),
+    reviews: Number(row.reviews ?? 0),
+    image: String(row.image ?? ''),
+    images: Array.isArray(row.images) ? (row.images as string[]) : [],
+    sizes: Array.isArray(row.sizes) ? (row.sizes as string[]) : [],
+    colors: Array.isArray(row.colors) ? (row.colors as string[]) : [],
+    details: Array.isArray(row.details) ? (row.details as string[]) : [],
+    isWholesaleEnabled: Boolean(row.is_wholesale_enabled ?? true),
+    minOrderQuantity: Number(row.min_order_quantity ?? 10),
     maxOrderQuantity:
-      data.maxOrderQuantity === null || data.maxOrderQuantity === undefined
+      row.max_order_quantity === null || row.max_order_quantity === undefined
         ? null
-        : Number(data.maxOrderQuantity),
-    status: (data.status as Product['status']) ?? 'Active',
-    createdAt: toDate(data.createdAt),
-    updatedAt: toDate(data.updatedAt),
+        : Number(row.max_order_quantity),
+    status: (row.status as Product['status']) ?? 'Active',
+    createdAt: toDate(row.created_at),
+    updatedAt: toDate(row.updated_at),
   };
 }
 
-function mapPackage(id: string, data: DocumentData): Package {
+function mapPackage(row: Record<string, unknown>): Package {
   return {
-    id,
-    name: String(data.name ?? ''),
-    description: String(data.description ?? ''),
-    supplierId: String(data.supplierId ?? ''),
-    items: Array.isArray(data.items) ? data.items : [],
-    rule: data.rule as Package['rule'],
-    pricingMode: data.pricingMode === 'auto' ? 'auto' : 'custom',
-    basePrice: Number(data.basePrice ?? 0),
-    discountedPrice: Number(data.discountedPrice ?? 0),
-    savingsPercentage: Number(data.savingsPercentage ?? 0),
+    id: String(row.id),
+    name: String(row.name ?? ''),
+    description: String(row.description ?? ''),
+    supplierId: String(row.supplier_id ?? ''),
+    items: Array.isArray(row.items) ? row.items : [],
+    rule: row.rule as Package['rule'],
+    pricingMode: row.pricing_mode === 'auto' ? 'auto' : 'custom',
+    basePrice: Number(row.base_price ?? 0),
+    discountedPrice: Number(row.discounted_price ?? 0),
+    savingsPercentage: Number(row.savings_percentage ?? 0),
     coverMode:
-      data.coverMode === 'products' ? 'products' : data.coverMode === 'upload' ? 'upload' : undefined,
-    image: data.image ? String(data.image) : undefined,
-    coverProductIds: Array.isArray(data.coverProductIds)
-      ? data.coverProductIds.map(String).slice(0, 4)
+      row.cover_mode === 'products' ? 'products' : row.cover_mode === 'upload' ? 'upload' : undefined,
+    image: row.image ? String(row.image) : undefined,
+    coverProductIds: Array.isArray(row.cover_product_ids)
+      ? row.cover_product_ids.map(String).slice(0, 4)
       : undefined,
     category:
-      typeof data.category === 'string' && isValidPackageCategory(data.category)
-        ? data.category
+      typeof row.category === 'string' && isValidPackageCategory(row.category)
+        ? row.category
         : undefined,
-    tagline: data.tagline ? String(data.tagline) : undefined,
-    highlights: Array.isArray(data.highlights) ? data.highlights.map(String).slice(0, 5) : undefined,
-    isSignature: data.isSignature === true ? true : undefined,
-    isActive: Boolean(data.isActive ?? true),
-    createdAt: toDate(data.createdAt),
-    updatedAt: toDate(data.updatedAt),
+    tagline: row.tagline ? String(row.tagline) : undefined,
+    highlights: Array.isArray(row.highlights) ? row.highlights.map(String).slice(0, 5) : undefined,
+    isSignature: row.is_signature === true ? true : undefined,
+    isActive: Boolean(row.is_active ?? true),
+    createdAt: toDate(row.created_at),
+    updatedAt: toDate(row.updated_at),
   };
 }
 
-function mapListing(id: string, data: DocumentData): ServiceListing {
+function mapListing(row: Record<string, unknown>): ServiceListing {
   return {
-    id,
-    slug: String(data.slug ?? id),
-    name: String(data.name ?? ''),
-    description: String(data.description ?? ''),
-    benefits: Array.isArray(data.benefits) ? (data.benefits as string[]) : [],
-    categoryId: String(data.categoryId ?? ''),
-    serviceType: String(data.serviceType ?? ''),
-    providerId: String(data.providerId ?? ''),
-    supplierId: String(data.supplierId ?? ''),
-    durationMinutes: Number(data.durationMinutes ?? 60),
-    basePrice: Number(data.basePrice ?? 0),
-    galleryImages: Array.isArray(data.galleryImages) ? (data.galleryImages as string[]) : [],
-    isFeatured: Boolean(data.isFeatured ?? false),
-    isPopular: Boolean(data.isPopular ?? false),
-    isActive: Boolean(data.isActive ?? true),
-    isArchived: Boolean(data.isArchived ?? false),
-    supportsMobile: Boolean(data.supportsMobile ?? false),
-    supportsInStudio: Boolean(data.supportsInStudio ?? true),
-    location: String(data.location ?? ''),
-    bookingCount: Number(data.bookingCount ?? 0),
-    viewCount: Number(data.viewCount ?? 0),
-    rating: Number(data.rating ?? 0),
-    reviewCount: Number(data.reviewCount ?? 0),
-    sortOrder: Number(data.sortOrder ?? 0),
-    createdAt: toDate(data.createdAt),
-    updatedAt: toDate(data.updatedAt),
+    id: String(row.id),
+    slug: String(row.slug ?? row.id),
+    name: String(row.name ?? ''),
+    description: String(row.description ?? ''),
+    benefits: Array.isArray(row.benefits) ? (row.benefits as string[]) : [],
+    categoryId: String(row.category_id ?? ''),
+    serviceType: String(row.service_type ?? ''),
+    providerId: String(row.provider_id ?? ''),
+    supplierId: String(row.supplier_id ?? ''),
+    durationMinutes: Number(row.duration_minutes ?? 60),
+    basePrice: Number(row.base_price ?? 0),
+    galleryImages: Array.isArray(row.gallery_images) ? (row.gallery_images as string[]) : [],
+    isFeatured: Boolean(row.is_featured ?? false),
+    isPopular: Boolean(row.is_popular ?? false),
+    isActive: Boolean(row.is_active ?? true),
+    isArchived: Boolean(row.is_archived ?? false),
+    supportsMobile: Boolean(row.supports_mobile ?? false),
+    supportsInStudio: Boolean(row.supports_in_studio ?? true),
+    location: String(row.location ?? ''),
+    bookingCount: Number(row.booking_count ?? 0),
+    viewCount: Number(row.view_count ?? 0),
+    rating: Number(row.rating ?? 0),
+    reviewCount: Number(row.review_count ?? 0),
+    sortOrder: Number(row.sort_order ?? 0),
+    createdAt: toDate(row.created_at),
+    updatedAt: toDate(row.updated_at),
   };
 }
 
-async function getDb() {
-  if (!isFirebaseAdminConfigured()) return null;
-  const { getAdminDb } = await import('@/lib/firebase/admin');
-  return getAdminDb();
+function getAdmin() {
+  if (!isSupabaseAdminConfigured()) return null;
+  return getSupabaseAdmin();
 }
 
 export async function getProductForSeo(id: string): Promise<Product | null> {
-  const db = await getDb();
-  if (db) {
-    const snap = await db.collection(COLLECTIONS.products).doc(id).get();
-    if (snap.exists) return mapProduct(snap.id, snap.data()!);
-  }
-
-  const publicDoc = await getPublicFirestoreDocument(COLLECTIONS.products, id);
-  if (!publicDoc) return null;
-  return mapProduct(id, publicDoc);
+  const admin = getAdmin();
+  if (!admin) return null;
+  const { data } = await admin.from(TABLES.products).select('*').eq('id', id).maybeSingle();
+  if (!data) return null;
+  return mapProduct(data as Record<string, unknown>);
 }
 
 export async function getPackageForSeo(id: string): Promise<Package | null> {
-  const db = await getDb();
-  if (db) {
-    const snap = await db.collection(COLLECTIONS.packages).doc(id).get();
-    if (snap.exists) return mapPackage(snap.id, snap.data()!);
-  }
-
-  const publicDoc = await getPublicFirestoreDocument(COLLECTIONS.packages, id);
-  if (!publicDoc) return null;
-  return mapPackage(id, publicDoc);
+  const admin = getAdmin();
+  if (!admin) return null;
+  const { data } = await admin.from(TABLES.packages).select('*').eq('id', id).maybeSingle();
+  if (!data) return null;
+  return mapPackage(data as Record<string, unknown>);
 }
 
 export async function getServiceListingBySlugForSeo(slug: string): Promise<ServiceListing | null> {
-  const db = await getDb();
-  if (!db) return null;
-  const snap = await db.collection(COLLECTIONS.services).where('slug', '==', slug).limit(1).get();
-  if (!snap.empty) {
-    const doc = snap.docs[0]!;
-    return mapListing(doc.id, doc.data());
-  }
-  const byId = await db.collection(COLLECTIONS.services).doc(slug).get();
-  if (!byId.exists) return null;
-  return mapListing(byId.id, byId.data()!);
+  const admin = getAdmin();
+  if (!admin) return null;
+
+  const { data: bySlug } = await admin.from(TABLES.services).select('*').eq('slug', slug).maybeSingle();
+  if (bySlug) return mapListing(bySlug as Record<string, unknown>);
+
+  const { data: byId } = await admin.from(TABLES.services).select('*').eq('id', slug).maybeSingle();
+  if (!byId) return null;
+  return mapListing(byId as Record<string, unknown>);
 }
 
 export async function getServiceCategoryForSeo(id: string): Promise<ServiceCategory | null> {
-  const db = await getDb();
-  if (!db) return null;
-  const snap = await db.collection(COLLECTIONS.serviceCategories).doc(id).get();
-  if (!snap.exists) return null;
-  const data = snap.data()!;
+  const admin = getAdmin();
+  if (!admin) return null;
+  const { data } = await admin.from(TABLES.serviceCategories).select('*').eq('id', id).maybeSingle();
+  if (!data) return null;
   return {
-    id: snap.id,
+    id: String(data.id),
     name: String(data.name ?? ''),
     description: String(data.description ?? ''),
-    serviceTypes: Array.isArray(data.serviceTypes) ? (data.serviceTypes as string[]) : [],
-    sortOrder: Number(data.sortOrder ?? 0),
-    isActive: Boolean(data.isActive ?? true),
-    createdAt: toDate(data.createdAt),
-    updatedAt: toDate(data.updatedAt),
+    serviceTypes: Array.isArray(data.service_types) ? (data.service_types as string[]) : [],
+    sortOrder: Number(data.sort_order ?? 0),
+    isActive: Boolean(data.is_active ?? true),
+    createdAt: toDate(data.created_at),
+    updatedAt: toDate(data.updated_at),
   };
 }
 
 export type SitemapEntry = { id: string; slug?: string; updatedAt: Date };
 
 export async function listProductsForSitemap(): Promise<SitemapEntry[]> {
-  const db = await getDb();
-  if (!db) return [];
-  const snap = await db.collection(COLLECTIONS.products).select('updatedAt', 'status').get();
-  return snap.docs
-    .filter((doc) => String(doc.data().status ?? 'Active') !== 'Out of Stock')
-    .map((doc) => ({ id: doc.id, updatedAt: toDate(doc.data().updatedAt) }));
+  const admin = getAdmin();
+  if (!admin) return [];
+  const { data } = await admin.from(TABLES.products).select('id, updated_at, status');
+  return (data ?? [])
+    .filter((row) => String(row.status ?? 'Active') !== 'Out of Stock')
+    .map((row) => ({ id: String(row.id), updatedAt: toDate(row.updated_at) }));
 }
 
 export async function listPackagesForSitemap(): Promise<SitemapEntry[]> {
-  const db = await getDb();
-  if (!db) return [];
-  const snap = await db.collection(COLLECTIONS.packages).select('updatedAt', 'isActive').get();
-  return snap.docs
-    .filter((doc) => doc.data().isActive !== false)
-    .map((doc) => ({ id: doc.id, updatedAt: toDate(doc.data().updatedAt) }));
+  const admin = getAdmin();
+  if (!admin) return [];
+  const { data } = await admin.from(TABLES.packages).select('id, updated_at, is_active');
+  return (data ?? [])
+    .filter((row) => row.is_active !== false)
+    .map((row) => ({ id: String(row.id), updatedAt: toDate(row.updated_at) }));
 }
 
 export async function listServicesForSitemap(): Promise<SitemapEntry[]> {
-  const db = await getDb();
-  if (!db) return [];
-  const snap = await db
-    .collection(COLLECTIONS.services)
-    .select('updatedAt', 'slug', 'isActive', 'isArchived')
-    .get();
-  return snap.docs
-    .filter((doc) => doc.data().isActive !== false && doc.data().isArchived !== true)
-    .map((doc) => ({
-      id: doc.id,
-      slug: String(doc.data().slug ?? doc.id),
-      updatedAt: toDate(doc.data().updatedAt),
+  const admin = getAdmin();
+  if (!admin) return [];
+  const { data } = await admin.from(TABLES.services).select('id, slug, updated_at, is_active, is_archived');
+  return (data ?? [])
+    .filter((row) => row.is_active !== false && row.is_archived !== true)
+    .map((row) => ({
+      id: String(row.id),
+      slug: String(row.slug ?? row.id),
+      updatedAt: toDate(row.updated_at),
     }));
 }
 
 export async function listServiceCategoriesForSitemap(): Promise<SitemapEntry[]> {
-  const db = await getDb();
-  if (!db) return [];
-  const snap = await db
-    .collection(COLLECTIONS.serviceCategories)
-    .select('updatedAt', 'isActive')
-    .get();
-  return snap.docs
-    .filter((doc) => doc.data().isActive !== false)
-    .map((doc) => ({ id: doc.id, updatedAt: toDate(doc.data().updatedAt) }));
+  const admin = getAdmin();
+  if (!admin) return [];
+  const { data } = await admin.from(TABLES.serviceCategories).select('id, updated_at, is_active');
+  return (data ?? [])
+    .filter((row) => row.is_active !== false)
+    .map((row) => ({ id: String(row.id), updatedAt: toDate(row.updated_at) }));
 }

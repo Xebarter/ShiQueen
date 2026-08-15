@@ -47,7 +47,7 @@ export async function registerPartnerPushToken(uid: string): Promise<string | nu
 
   try {
     const { getMessaging, getToken, isSupported } = await import('firebase/messaging');
-    const { getFirebaseApp } = await import('@/lib/firebase');
+    const { getFirebaseApp } = await import('@/lib/firebase/auth');
     const supported = await isSupported().catch(() => false);
     if (!supported) return null;
     const app = getFirebaseApp();

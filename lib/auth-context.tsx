@@ -1,13 +1,6 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { getFirebaseAuth, isFirebaseConfigured } from './firebase';
-import { ensureUserProfile, resolveUserRole } from './firebase/users';
-import { UserProfile } from './types/database';
-import {
-  isServiceProviderProfile,
-  isSupplierProfile,
-} from './auth-redirect';
 import {
   User,
   onAuthStateChanged,
@@ -23,6 +16,11 @@ import {
   sendEmailVerification,
   browserPopupRedirectResolver,
 } from 'firebase/auth';
+import { getFirebaseAuth, isFirebaseAuthConfigured } from '@/lib/firebase/auth';
+import { ensureUserProfile, resolveUserRole } from '@/lib/supabase/users';
+import { resetSupabaseClient } from '@/lib/supabase/client';
+import { UserProfile } from '@/lib/types/database';
+import { isServiceProviderProfile, isSupplierProfile } from '@/lib/auth-redirect';
 import { disableGoogleOneTapAutoSelect } from '@/lib/google-identity';
 
 function getAuthCode(error: unknown): string {
@@ -121,6 +119,15 @@ async function maybeSendVerification(user: User) {
   }
 }
 
+/** Force-refresh ID token so Supabase sees role: authenticated custom claim. */
+async function refreshFirebaseToken(user: User, force = false): Promise<void> {
+  try {
+    await user.getIdToken(force);
+  } catch {
+    // ignore
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -129,7 +136,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const auth = getFirebaseAuth();
     if (!auth) {
-      console.warn('Firebase Auth not initialized. Set NEXT_PUBLIC_FIREBASE_* environment variables.');
+      console.warn(
+        'Firebase Auth not initialized. Set NEXT_PUBLIC_FIREBASE_* environment variables.'
+      );
       setLoading(false);
       return;
     }
@@ -139,6 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void getRedirectResult(auth)
       .then(async (result) => {
         if (!mounted || !result?.user.email) return;
+        await refreshFirebaseToken(result.user, true);
         await ensureUserProfile(
           result.user.uid,
           result.user.email,
@@ -156,6 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(currentUser);
 
       if (currentUser?.email) {
+        await refreshFirebaseToken(currentUser, true);
         const userProfile = await loadUserProfile(currentUser);
         if (mounted) setProfile(userProfile);
       } else if (mounted) {
@@ -172,6 +183,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(currentUser);
 
       if (currentUser?.email) {
+        await refreshFirebaseToken(currentUser, false);
         const userProfile = await loadUserProfile(currentUser);
         if (mounted) setProfile(userProfile);
       } else if (mounted) {
@@ -190,7 +202,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     const auth = getFirebaseAuth();
     if (!auth) throw new Error('Firebase Auth not initialized');
-    await signInWithEmailAndPassword(auth, email, password);
+    const credential = await signInWithEmailAndPassword(auth, email, password);
+    await refreshFirebaseToken(credential.user, true);
   };
 
   const signInOrCreate = async (
@@ -206,7 +219,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const credential = await signInWithEmailAndPassword(auth, email, password);
+      await refreshFirebaseToken(credential.user, true);
       return { created: false };
     } catch (error) {
       if (!isMissingAccountError(error)) throw error;
@@ -214,6 +228,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const credential = await createUserWithEmailAndPassword(auth, email, password);
         await ensureUserProfile(credential.user.uid, email, credential.user.displayName ?? undefined);
+        await refreshFirebaseToken(credential.user, true);
         await maybeSendVerification(credential.user);
         return { created: true };
       } catch (createError) {
@@ -230,11 +245,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!auth) throw new Error('Firebase Auth not initialized');
     const credential = await createUserWithEmailAndPassword(auth, email, password);
     await ensureUserProfile(credential.user.uid, email);
+    await refreshFirebaseToken(credential.user, true);
     await maybeSendVerification(credential.user);
   };
 
   const signInWithGoogleCredential = async (idToken: string) => {
-    if (!isFirebaseConfigured()) {
+    if (!isFirebaseAuthConfigured()) {
       throw new Error('Firebase is not configured');
     }
 
@@ -251,11 +267,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         googleUser.email,
         googleUser.displayName ?? undefined
       );
+      await refreshFirebaseToken(googleUser, true);
     }
   };
 
   const signInWithGoogle = async () => {
-    if (!isFirebaseConfigured()) {
+    if (!isFirebaseAuthConfigured()) {
       throw new Error('Firebase is not configured');
     }
 
@@ -278,6 +295,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           googleUser.email,
           googleUser.displayName ?? undefined
         );
+        await refreshFirebaseToken(googleUser, true);
       }
     } catch (error) {
       if (isPopupFlowError(error)) {
@@ -315,6 +333,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     const reloaded = auth.currentUser ?? currentUser;
     setUser(reloaded);
+    await refreshFirebaseToken(reloaded, true);
     const userProfile = await loadUserProfile(reloaded);
     setProfile(userProfile);
   };
@@ -324,6 +343,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!auth) throw new Error('Firebase Auth not initialized');
     disableGoogleOneTapAutoSelect();
     await signOut(auth);
+    resetSupabaseClient();
     setProfile(null);
   };
 

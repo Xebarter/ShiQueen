@@ -11,7 +11,7 @@ import { PasswordField } from '@/components/auth/password-field';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { getFirebaseAuth } from '@/lib/firebase';
+import { getFirebaseAuth } from '@/lib/firebase/auth';
 import { linkSupplierRegistration } from '@/lib/firebase/suppliers';
 import { useAuth } from '@/lib/auth-context';
 import { getAuthErrorMessage } from '@/lib/auth-errors';

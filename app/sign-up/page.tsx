@@ -27,11 +27,11 @@ export default function SignUp() {
 
   const goAfterAuth = async () => {
     await refreshProfile();
-    const { getUserProfile } = await import('@/lib/firebase/users');
-    const { getFirebaseAuth } = await import('@/lib/firebase');
+    const { getUserProfile } = await import('@/lib/supabase/users');
+    const { getFirebaseAuth } = await import('@/lib/firebase/auth');
     const uid = getFirebaseAuth()?.currentUser?.uid;
-    const profile = uid ? await getUserProfile(uid) : null;
-    router.push(getPostAuthPath(profile));
+    const nextProfile = uid ? await getUserProfile(uid) : null;
+    router.push(getPostAuthPath(nextProfile));
   };
 
   const isBusy = loading || googleLoading;

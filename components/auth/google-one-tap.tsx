@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '@/lib/auth-context';
 import { getPostAuthPath } from '@/lib/auth-redirect';
 import { getAuthErrorMessage } from '@/lib/auth-errors';
-import { isFirebaseConfigured } from '@/lib/firebase';
+import { isFirebaseAuthConfigured } from '@/lib/firebase/auth';
 import {
   cancelGoogleOneTapPrompt,
   getGoogleClientId,
@@ -55,7 +55,7 @@ export function GoogleOneTap() {
 
   useEffect(() => {
     const clientId = getGoogleClientId();
-    if (!clientId || !isFirebaseConfigured() || initializedRef.current) return;
+    if (!clientId || !isFirebaseAuthConfigured() || initializedRef.current) return;
 
     let cancelled = false;
 
@@ -97,7 +97,7 @@ export function GoogleOneTap() {
       promptedRef.current ||
       isExcludedPath(pathname) ||
       !getGoogleClientId() ||
-      !isFirebaseConfigured()
+      !isFirebaseAuthConfigured()
     ) {
       return;
     }

@@ -48,8 +48,8 @@ function SupplierSignInForm() {
 
   const finish = async () => {
     await refreshProfile();
-    const { getUserProfile } = await import('@/lib/firebase/users');
-    const { getFirebaseAuth } = await import('@/lib/firebase');
+    const { getUserProfile } = await import('@/lib/supabase/users');
+    const { getFirebaseAuth } = await import('@/lib/firebase/auth');
     const uid = getFirebaseAuth()?.currentUser?.uid;
     const nextProfile = uid ? await getUserProfile(uid) : null;
     if (!isSupplierProfile(nextProfile)) {

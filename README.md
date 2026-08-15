@@ -46,7 +46,9 @@ A fully-featured, luxury-focused e-commerce platform built with Next.js 15, Reac
 - **Zod** - Schema validation
 
 ### Backend & Services
-- **Firebase** - Authentication, Firestore database, Cloud Storage
+- **Supabase** — PostgreSQL database, Storage, Realtime
+- **Firebase Auth** — Sign-in (email, Google, One Tap)
+- **Firebase Cloud Messaging (FCM)** — Partner push notifications
 - **React Hot Toast** - Toast notifications
 
 ### Development
@@ -86,7 +88,9 @@ A fully-featured, luxury-focused e-commerce platform built with Next.js 15, Reac
   auth-context.tsx     # Authentication state
 
 /lib
-  firebase.ts          # Firebase configuration
+  supabase/            # Supabase client, data access, server admin
+  fcm/                 # Firebase Cloud Messaging (push only)
+  firebase.ts          # FCM client shim
   auth-context.tsx     # Auth provider and hooks
   cart-context.tsx     # Cart provider and hooks
   utils.ts             # Utility functions
@@ -97,6 +101,8 @@ A fully-featured, luxury-focused e-commerce platform built with Next.js 15, Reac
 ### Prerequisites
 - Node.js 18+ 
 - pnpm (recommended) or npm/yarn
+- Supabase project ([supabase.com](https://supabase.com))
+- Firebase project (FCM push notifications only)
 
 ### Installation
 
@@ -111,26 +117,51 @@ cd shequeen
 pnpm install
 ```
 
-3. Set up Firebase (Optional):
-   - Create a Firebase project at [firebase.google.com](https://firebase.google.com)
-   - Get your Firebase configuration
-   - Add environment variables to `.env.local`:
+3. Set up Supabase (database + storage):
+   - Create a project at [supabase.com](https://supabase.com)
+   - Run SQL migrations in `supabase/migrations/` (001 then 002)
+   - **Authentication → Third-Party Auth → Firebase** — add your Firebase Project ID (`kupama` or yours)
+   - Copy project URL and keys to `.env.local`:
 
 ```env
-NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ```
 
-4. Run the development server:
+4. Set up Firebase Auth (sign-in + Google + FCM):
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY=...
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
+NEXT_PUBLIC_FIREBASE_APP_ID=...
+NEXT_PUBLIC_FIREBASE_VAPID_KEY=...
+FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account",...}
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=...
+```
+
+5. Set the Supabase `role: authenticated` claim on Firebase users (required once):
+```bash
+npm run migrate:firebase-claims
+```
+Then sign out and back in so tokens include the claim.
+
+6. Migrate Firestore data (one-time, if upgrading):
+```bash
+node scripts/migrate/auth-users.mjs
+node scripts/migrate/firestore-data.mjs
+node scripts/migrate/storage-files.mjs
+node scripts/migrate/validate.mjs
+```
+
+6. Run the development server:
 ```bash
 pnpm dev
 ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser
+7. Open [http://localhost:3000](http://localhost:3000) in your browser
 
 ## Design System
 
@@ -153,8 +184,8 @@ pnpm dev
 ## Key Features Documentation
 
 ### Authentication
-- Email/password authentication via Firebase
-- Persistent sessions using browser storage
+- Email/password and Google OAuth via **Firebase Auth** (already configured)
+- Supabase database access uses Firebase ID tokens (Third-Party Auth integration)
 - Auth context for managing user state across the app
 - Protected routes for account/dashboard pages
 

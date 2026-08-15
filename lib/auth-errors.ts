@@ -9,13 +9,12 @@ export function getAuthErrorMessage(error: unknown): string {
       return 'Please enter a valid email address.';
     case 'auth/user-disabled':
       return 'This account has been disabled. Contact support for help.';
-    case 'auth/user-not-found':
-    case 'auth/wrong-password':
-    case 'auth/invalid-credential':
+    case 'invalid_credentials':
+    case 'email_not_confirmed':
       return 'Incorrect email or password. Please try again.';
-    case 'auth/email-already-in-use':
+    case 'email_exists':
       return 'An account with this email already exists. Try signing in instead.';
-    case 'auth/weak-password':
+    case 'weak_password':
       return 'Password must be at least 6 characters.';
     case 'auth/popup-closed-by-user':
       return 'Google sign-in was cancelled.';
