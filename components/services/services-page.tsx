@@ -2,11 +2,10 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { BadgeCheck, MapPin, X } from 'lucide-react';
+import { ArrowRight, X } from 'lucide-react';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
-import { CategoryCard } from '@/components/services/category-card';
 import { ServiceBookingSheet } from '@/components/services/service-booking-sheet';
 import { ServicesHero } from '@/components/services/discovery/services-hero';
 import { ServicesSearchBar } from '@/components/services/discovery/services-search-bar';
@@ -14,14 +13,12 @@ import { ServicesCategoryNav } from '@/components/services/discovery/services-ca
 import { ServicesFilterPanel } from '@/components/services/discovery/services-filter-panel';
 import { ServicesResultsGrid } from '@/components/services/discovery/services-results-grid';
 import { ServicesFeaturedRow } from '@/components/services/discovery/services-featured-row';
-import { ServicesTrustStrip } from '@/components/services/discovery/services-trust-strip';
 import { useServices } from '@/lib/services-context';
 import { useServicesSearch } from '@/lib/hooks/use-services-search';
 import { useTrackSearchQuery } from '@/lib/hooks/use-track-search-query';
 import { useHistoryOverlay } from '@/lib/hooks/use-history-overlay';
 import {
   getFeaturedServices,
-  getNewProviders,
   getPopularServices,
   getProviderById,
 } from '@/lib/services-utils';
@@ -56,231 +53,100 @@ export function ServicesPage() {
     return featured;
   }, [activeListings]);
 
-  const newProviders = getNewProviders(activeProviders, 4);
-
-  const showCategoryGrid = !search.hasActiveFilters && !loading;
+  const heroListings = featuredListings.length > 0 ? featuredListings : activeListings;
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-muted/20 via-background to-background overflow-x-clip mobile-scroll-optimize">
+    <>
       <Header />
+      <main className="overflow-x-clip mobile-scroll-optimize">
+        <ServicesHero
+          listings={heroListings}
+          providers={activeProviders}
+          loading={loading}
+          onBook={setBookingListing}
+        />
 
-      <ServicesHero
-        totalServices={activeListings.length}
-        totalProviders={activeProviders.filter((p) => p.isActive).length}
-      />
+        <ServicesCategoryNav
+          categories={activeCategories}
+          selectedCategoryId={search.categoryId}
+          onSelectCategory={search.setCategoryId}
+        />
 
-      <ServicesSearchBar
-        query={search.query}
-        city={search.city}
-        totalServices={activeListings.length}
-        resultCount={search.results.length}
-        activeFilterCount={search.activeFilterCount}
-        onQueryChange={search.setQuery}
-        onCityChange={search.setCity}
-        onClearQuery={() => search.setQuery('')}
-        onOpenFilters={() => setFiltersOpen(true)}
-      />
+        <ServicesSearchBar
+          query={search.query}
+          activeFilterCount={search.activeFilterCount}
+          onQueryChange={search.setQuery}
+          onClearQuery={() => search.setQuery('')}
+          onOpenFilters={() => setFiltersOpen(true)}
+        />
 
-      <ServicesCategoryNav
-        categories={activeCategories}
-        selectedCategoryId={search.categoryId}
-        onSelectCategory={search.setCategoryId}
-      />
-
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-        <section
+        <div
           id="services-browse"
-          className="scroll-mt-36 rounded-3xl border border-border/50 bg-card/40 p-5 sm:p-6 lg:scroll-mt-32 lg:p-8"
+          className="mx-auto max-w-[90rem] scroll-mt-36 px-3 py-8 sm:px-4 sm:py-10 lg:scroll-mt-32 lg:px-5"
         >
-          <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-border/40 pb-5">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
-                Browse
-              </p>
-              <h2 className="mt-1 font-[family-name:var(--font-brand)] text-2xl font-medium tracking-tight sm:text-3xl">
-                {search.hasActiveFilters ? 'Results' : 'All services'}
-              </h2>
-              {search.categoryId && (
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {activeCategories.find((c) => c.id === search.categoryId)?.name}
-                  {' · '}
-                  <span className="font-medium text-foreground">{search.results.length} listed</span>
-                </p>
-              )}
-            </div>
-            {!loading && (
-              <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold tabular-nums text-primary">
-                {search.results.length} available
-              </span>
-            )}
-          </div>
+          {!search.hasActiveFilters && !loading && featuredListings.length > 0 ? (
+            <ServicesFeaturedRow
+              listings={featuredListings}
+              providers={activeProviders}
+              onBook={setBookingListing}
+            />
+          ) : null}
 
           <div className="flex gap-8 lg:items-start">
-            <aside className="hidden w-72 shrink-0 lg:block">
-              <div className="sticky top-28 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-md ring-1 ring-black/[0.03]">
-                <div className="border-b border-border/50 bg-muted/30 px-5 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                    Refine
-                  </p>
-                </div>
-                <div className="p-5">
-                  <ServicesFilterPanel
-                    categories={activeCategories}
-                    filters={search.filterState}
-                    onChange={search.patchFilters}
-                    onClearAll={search.clearAllFilters}
-                    activeFilterCount={search.activeFilterCount}
-                    showHeader={false}
-                  />
-                </div>
+            <aside className="hidden w-56 shrink-0 lg:block">
+              <div className="sticky top-28">
+                <ServicesFilterPanel
+                  categories={activeCategories}
+                  filters={search.filterState}
+                  onChange={search.patchFilters}
+                  onClearAll={search.clearAllFilters}
+                  activeFilterCount={search.activeFilterCount}
+                  showHeader={false}
+                />
               </div>
             </aside>
 
             <div className="min-w-0 flex-1">
+              {search.hasActiveFilters || search.query.trim() ? (
+                <p className="mb-4 text-sm text-muted-foreground tabular-nums">
+                  {search.results.length}
+                </p>
+              ) : (
+                <h2 className="mb-4 font-[family-name:var(--font-brand)] text-xl font-medium tracking-tight sm:text-2xl">
+                  All
+                </h2>
+              )}
               <ServicesResultsGrid
                 loading={loading}
                 listings={search.results}
                 providers={activeProviders}
-                categories={activeCategories}
                 onBook={setBookingListing}
                 onClearFilters={search.clearAllFilters}
+                className="sm:grid-cols-2 xl:grid-cols-3"
               />
             </div>
           </div>
-        </section>
+        </div>
 
-        {!loading && featuredListings.length > 0 && (
-          <ServicesFeaturedRow
-            listings={featuredListings}
-            providers={activeProviders}
-            onBook={setBookingListing}
-          />
-        )}
-
-        {!loading && newProviders.length > 0 && (
-          <section className="mb-12 mt-12">
-            <div className="mb-5 flex items-center gap-2">
-              <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
-              <h2 className="text-lg font-semibold tracking-tight sm:text-xl">New providers</h2>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {newProviders.map((provider) => {
-                const providerListings = activeListings.filter(
-                  (l) => l.providerId === provider.id && l.isActive && !l.isArchived
-                );
-                const preview = providerListings.slice(0, 2);
-                const initials = provider.businessName
-                  .split(' ')
-                  .slice(0, 2)
-                  .map((w) => w[0])
-                  .join('')
-                  .toUpperCase();
-                return (
-                  <div
-                    key={provider.id}
-                    className="group rounded-2xl border border-border/60 bg-card p-4 shadow-sm ring-1 ring-black/[0.02] transition hover:border-primary/30 hover:shadow-md"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 text-sm font-bold text-primary">
-                        {initials || '?'}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <p className="truncate font-semibold">{provider.businessName}</p>
-                          {provider.isVerified && (
-                            <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-primary" />
-                          )}
-                        </div>
-                        <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                          <MapPin className="h-3 w-3" />
-                          {provider.city}
-                        </p>
-                      </div>
-                    </div>
-                    <p className="mt-3 text-xs font-medium text-muted-foreground">
-                      {providerListings.length} service{providerListings.length === 1 ? '' : 's'}
-                    </p>
-                    {preview.length > 0 && (
-                      <div className="mt-3 space-y-1.5 border-t border-border/50 pt-3">
-                        {preview.map((listing) => (
-                          <Link
-                            key={listing.id}
-                            href={`/services/${listing.slug}`}
-                            className="block truncate text-sm text-primary transition group-hover:underline"
-                          >
-                            {listing.name}
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
-        {showCategoryGrid && (
-          <section className="border-t border-border/40 pt-12">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">
-              Categories
-            </p>
-            <h2 className="mt-1 font-[family-name:var(--font-brand)] text-2xl font-medium tracking-tight sm:text-3xl">
-              Browse by category
-            </h2>
-            <p className="mt-1 mb-8 text-sm text-muted-foreground">
-              Beauty, wellness &amp; lifestyle across Uganda
-            </p>
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {activeCategories.map((category) => (
-                <CategoryCard
-                  key={category.id}
-                  category={category}
-                  listings={activeListings}
-                  providers={activeProviders}
-                  compact
-                />
-              ))}
-            </div>
-          </section>
-        )}
-      </div>
-
-      <ServicesTrustStrip />
-
-      <section className="relative overflow-hidden border-t border-border/40 bg-primary py-16 text-primary-foreground sm:py-20">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-15 [background-image:radial-gradient(circle_at_20%_50%,white_1px,transparent_1px)] [background-size:24px_24px]"
-          aria-hidden
-        />
-        <div className="relative mx-auto max-w-3xl px-4 text-center">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] opacity-80">
-            Partners
-          </p>
-          <h2 className="mt-2 font-[family-name:var(--font-brand)] text-3xl font-medium tracking-tight sm:text-4xl">
-            Are you a service provider?
-          </h2>
-          <p className="mt-3 text-sm opacity-90 sm:text-base">
-            Create a provider account, get approved, and list services customers can book and pay for.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link href="/services/sign-up">
-              <Button
-                variant="secondary"
-                size="lg"
-                className="h-12 rounded-xl px-8 font-semibold shadow-lg"
-              >
-                List your services
+        <section className="border-t border-border bg-secondary/30 py-8 md:py-10">
+          <div className="mx-auto flex max-w-[90rem] flex-col gap-3 px-3 sm:flex-row sm:px-4 lg:px-5">
+            <Link href="/services/sign-up" className="flex-1">
+              <Button size="lg" className="w-full gap-2">
+                List services
+                <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
-            <Link href="/services/sign-in" className="text-sm font-medium underline-offset-4 hover:underline">
-              Already a provider? Sign in
+            <Link href="/shop" className="flex-1">
+              <Button size="lg" variant="outline" className="w-full gap-2">
+                Shop
+                <ArrowRight className="h-4 w-4" />
+              </Button>
             </Link>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <Footer />
+        <Footer />
+      </main>
 
       {filtersOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
@@ -316,7 +182,7 @@ export function ServicesPage() {
                 className="mt-6 h-12 w-full rounded-xl"
                 onClick={() => setFiltersOpen(false)}
               >
-                Show {search.results.length} result{search.results.length === 1 ? '' : 's'}
+                Done
               </Button>
             </div>
           </div>
@@ -331,6 +197,6 @@ export function ServicesPage() {
           provider={bookingProvider}
         />
       )}
-    </main>
+    </>
   );
 }

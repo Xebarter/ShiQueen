@@ -152,7 +152,10 @@ export async function createServiceBookingServer(
 
   void import('@/lib/fcm/partner-alerts-server').then(
     ({ notifyPartnerBooking, notifyAdminBooking }) => {
-      void notifyPartnerBooking(id);
+      // Providers only learn about bookings after successful payment.
+      if (booking.paymentStatus === 'paid') {
+        void notifyPartnerBooking(id);
+      }
       void notifyAdminBooking(id);
     }
   );
@@ -211,13 +214,34 @@ export async function updateServiceBookingPaymentServer(
     throw new Error('Server booking updates require SUPABASE_SERVICE_ROLE_KEY.');
   }
 
+  const existing = await getServiceBookingServer(bookingId);
+  const alreadyPaid = existing?.paymentStatus === 'paid';
+  const becomingPaid = updates.paymentStatus === 'paid' && !alreadyPaid;
+
+  // Paid bookings are final — do not downgrade payment or cancel via gateway callbacks.
+  const safeUpdates: BookingPaymentUpdateInput = { ...updates };
+  if (alreadyPaid) {
+    if (safeUpdates.paymentStatus && safeUpdates.paymentStatus !== 'paid') {
+      delete safeUpdates.paymentStatus;
+    }
+    if (safeUpdates.status === 'cancelled') {
+      delete safeUpdates.status;
+    }
+  }
+
   const supabase = getSupabaseAdmin();
   const { error } = await supabase
     .from(TABLES.serviceBookings)
-    .update(bookingPaymentUpdateToRow(updates))
+    .update(bookingPaymentUpdateToRow(safeUpdates))
     .eq('id', bookingId);
 
   if (error) throw error;
+
+  if (becomingPaid) {
+    void import('@/lib/fcm/partner-alerts-server').then(({ notifyPartnerBooking }) => {
+      void notifyPartnerBooking(bookingId);
+    });
+  }
 }
 
 export async function getBookedSlotsForProviderDateServer(

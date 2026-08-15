@@ -14,13 +14,21 @@ export async function requestPartnerNotificationPermission(): Promise<Notificati
   return Notification.requestPermission();
 }
 
-export async function showPartnerNotification(title: string, options: NotificationOptions & { url?: string }) {
+export async function showPartnerNotification(
+  title: string,
+  options: NotificationOptions & {
+    url?: string;
+    actions?: Array<{ action: string; title: string; icon?: string }>;
+  }
+) {
   if (typeof window === 'undefined' || !('Notification' in window)) return;
   if (Notification.permission !== 'granted') return;
 
   const { url, ...rest } = options;
   const registration = await registerPartnerServiceWorker();
-  const payload: NotificationOptions = {
+  const payload: NotificationOptions & {
+    actions?: Array<{ action: string; title: string; icon?: string }>;
+  } = {
     icon: '/web-app-manifest-192x192.png',
     badge: '/web-app-manifest-192x192.png',
     ...rest,

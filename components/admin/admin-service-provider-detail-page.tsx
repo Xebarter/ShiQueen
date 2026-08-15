@@ -766,12 +766,26 @@ export function AdminServiceProviderDetailPage() {
                                 updateServiceBookingStatus(
                                   booking.id,
                                   e.target.value as ServiceBookingStatus
-                                ).then(() => toast.success('Status updated'))
+                                )
+                                  .then(() => toast.success('Status updated'))
+                                  .catch((error) =>
+                                    toast.error(
+                                      error instanceof Error
+                                        ? error.message
+                                        : 'Could not update'
+                                    )
+                                  )
                               }
                               className="rounded-lg border px-2 py-1 text-xs"
                             >
                               {BOOKING_STATUSES.map((status) => (
-                                <option key={status} value={status}>
+                                <option
+                                  key={status}
+                                  value={status}
+                                  disabled={
+                                    status === 'cancelled' && booking.paymentStatus === 'paid'
+                                  }
+                                >
                                   {status.replace('_', ' ')}
                                 </option>
                               ))}

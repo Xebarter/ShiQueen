@@ -1,7 +1,7 @@
 'use client';
 
-import { cn } from '@/lib/utils';
 import type { ServiceCategory } from '@/lib/types/services';
+import { cn } from '@/lib/utils';
 
 const CATEGORY_SHORT: Record<string, string> = {
   'hair-services': 'Hair',
@@ -22,85 +22,83 @@ const CATEGORY_SHORT: Record<string, string> = {
   'luxury-services': 'Luxury',
 };
 
-const CATEGORY_EMOJI: Record<string, string> = {
-  'hair-services': '💇‍♀️',
-  'nail-services': '💅',
-  'makeup-services': '💄',
-  'eyelash-eyebrow-services': '👁️',
-  'spa-wellness': '🧘',
-  'skincare-services': '✨',
-  'waxing-hair-removal': '🌸',
-  'bridal-services': '👰',
-  'home-beauty-services': '🏠',
-  'fashion-styling': '👗',
-  'photography-services': '📸',
-  'fitness-wellness': '💪',
-  'motherhood-services': '🤱',
-  'event-services': '🎉',
-  'professional-lifestyle': '💼',
-  'luxury-services': '👑',
-};
-
 interface ServicesCategoryNavProps {
   categories: ServiceCategory[];
   selectedCategoryId: string;
   onSelectCategory: (categoryId: string) => void;
-  onBrowseClick?: () => void;
+  className?: string;
 }
 
 export function ServicesCategoryNav({
   categories,
   selectedCategoryId,
   onSelectCategory,
-  onBrowseClick,
+  className,
 }: ServicesCategoryNavProps) {
+  const tabs = [
+    { id: '', label: 'All', shortLabel: 'All' },
+    ...categories.map((cat) => ({
+      id: cat.id,
+      label: cat.name,
+      shortLabel: CATEGORY_SHORT[cat.id] ?? cat.name.split(' ')[0] ?? cat.name,
+    })),
+  ];
+
   const handleSelect = (id: string) => {
     onSelectCategory(id);
-    onBrowseClick?.();
     document.getElementById('services-browse')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const pillClass = (active: boolean) =>
-    cn(
-      'shrink-0 snap-start inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium transition-all',
-      active
-        ? 'bg-primary text-primary-foreground shadow-md shadow-primary/25 ring-2 ring-primary/20'
-        : 'border border-border/70 bg-card text-foreground shadow-sm hover:border-primary/40 hover:shadow-md'
-    );
-
   return (
-    <section className="border-b border-border/50 bg-gradient-to-b from-muted/40 to-muted/20 py-4">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="relative rounded-2xl border border-border/50 bg-card/80 p-2 shadow-sm backdrop-blur-sm">
-          <div
-            className="pointer-events-none absolute inset-y-2 left-2 z-10 w-10 rounded-l-xl bg-gradient-to-r from-card to-transparent"
-            aria-hidden
-          />
-          <div
-            className="pointer-events-none absolute inset-y-2 right-2 z-10 w-10 rounded-r-xl bg-gradient-to-l from-card to-transparent"
-            aria-hidden
-          />
-          <div className="flex gap-2 overflow-x-auto px-1 pb-0.5 scrollbar-hide snap-x snap-mandatory touch-pan-x">
-            <button type="button" onClick={() => handleSelect('')} className={pillClass(!selectedCategoryId)}>
-              <span aria-hidden>✨</span>
-              All
-            </button>
-            {categories.map((cat) => (
+    <div
+      className={cn(
+        'sticky top-[var(--mobile-header-offset,4rem)] z-40 border-b border-border/60 bg-background/90 backdrop-blur-md lg:top-16',
+        className
+      )}
+    >
+      <div className="mx-auto max-w-[90rem] px-3 py-2 sm:px-4 sm:py-3 lg:px-5">
+        <div className="flex gap-1 overflow-x-auto pb-0.5 scrollbar-hide -mx-1 px-1 md:hidden">
+          {tabs.map((tab) => {
+            const active = selectedCategoryId === tab.id;
+            return (
               <button
-                key={cat.id}
+                key={tab.id || 'all'}
                 type="button"
-                onClick={() => handleSelect(cat.id)}
-                className={pillClass(selectedCategoryId === cat.id)}
+                onClick={() => handleSelect(tab.id)}
+                className={cn(
+                  'shrink-0 rounded-full px-3 py-2 text-center text-[11px] font-medium leading-tight transition',
+                  active
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'bg-secondary text-foreground hover:bg-secondary/80'
+                )}
               >
-                <span aria-hidden className="text-base leading-none">
-                  {CATEGORY_EMOJI[cat.id] ?? '✨'}
-                </span>
-                {CATEGORY_SHORT[cat.id] ?? cat.name}
+                {tab.shortLabel}
               </button>
-            ))}
-          </div>
+            );
+          })}
+        </div>
+
+        <div className="hidden gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1 md:flex">
+          {tabs.map((tab) => {
+            const active = selectedCategoryId === tab.id;
+            return (
+              <button
+                key={tab.id || 'all'}
+                type="button"
+                onClick={() => handleSelect(tab.id)}
+                className={cn(
+                  'shrink-0 rounded-full px-4 py-2 text-sm font-medium transition',
+                  active
+                    ? 'bg-primary text-primary-foreground shadow-md'
+                    : 'bg-secondary text-foreground hover:bg-secondary/80'
+                )}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
       </div>
-    </section>
+    </div>
   );
 }

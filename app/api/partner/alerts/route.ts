@@ -16,6 +16,16 @@ export async function POST(request: NextRequest) {
     if (type === 'order') {
       await notifyPartnerOrder(id);
     } else {
+      const { getServiceBookingServer } = await import(
+        '@/lib/firebase/service-bookings-server'
+      );
+      const booking = await getServiceBookingServer(id);
+      if (booking?.paymentStatus !== 'paid') {
+        return NextResponse.json(
+          { error: 'Booking alerts are only sent after payment.' },
+          { status: 409 }
+        );
+      }
       await notifyPartnerBooking(id);
     }
 

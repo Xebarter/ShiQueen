@@ -124,6 +124,7 @@ export async function notifyPartnerBooking(bookingId: string): Promise<void> {
       .eq('id', bookingId)
       .maybeSingle();
     if (!data) return;
+    if (String(data.payment_status ?? '') !== 'paid') return;
 
     const providerId = String(data.provider_id ?? '');
     if (!providerId) return;

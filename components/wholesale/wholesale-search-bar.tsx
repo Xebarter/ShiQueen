@@ -24,6 +24,7 @@ type WholesaleSearchBarProps = {
   onClear: () => void;
   onSelectSuggestion: (id: string) => void;
   onViewAllResults?: () => void;
+  hideHelper?: boolean;
   className?: string;
 };
 
@@ -38,6 +39,7 @@ export const WholesaleSearchBar = forwardRef<HTMLInputElement, WholesaleSearchBa
       onClear,
       onSelectSuggestion,
       onViewAllResults,
+      hideHelper = false,
       className,
     },
     ref
@@ -50,11 +52,9 @@ export const WholesaleSearchBar = forwardRef<HTMLInputElement, WholesaleSearchBa
     const showPanel = open && hasQuery;
 
     const helperText = useMemo(() => {
-      if (!hasQuery) {
-        return `Search ${totalProducts} wholesale product${totalProducts === 1 ? '' : 's'}`;
-      }
-      if (resultCount === 0) return 'No products match — try another word or clear filters';
-      return `${resultCount} product${resultCount === 1 ? '' : 's'} updating as you type`;
+      if (!hasQuery) return `${totalProducts} products`;
+      if (resultCount === 0) return 'No matches';
+      return `${resultCount} results`;
     }, [hasQuery, resultCount, totalProducts]);
 
     useEffect(() => {
@@ -210,9 +210,15 @@ export const WholesaleSearchBar = forwardRef<HTMLInputElement, WholesaleSearchBa
           </div>
         )}
 
-        <p className="mt-2 px-0.5 text-xs text-muted-foreground" aria-live="polite">
-          {helperText}
-        </p>
+        {!hideHelper ? (
+          <p className="mt-2 px-0.5 text-xs text-muted-foreground" aria-live="polite">
+            {helperText}
+          </p>
+        ) : (
+          <span className="sr-only" aria-live="polite">
+            {helperText}
+          </span>
+        )}
       </div>
     );
   }

@@ -24,10 +24,42 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', () => {});
 
+async function postToClients(message) {
+  const windowClients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  for (const client of windowClients) {
+    client.postMessage(message);
+  }
+}
+
 self.addEventListener('notificationclick', (event) => {
+  const data = (event.notification && event.notification.data) || {};
+  const targetUrl = data.url || '/';
+  const type = data.type || '';
+  const isIncoming = type === 'order' || type === 'booking';
   event.notification.close();
-  const targetUrl = (event.notification.data && event.notification.data.url) || '/';
-  event.waitUntil(openOrFocus(targetUrl));
+
+  if (event.action === 'decline') {
+    event.waitUntil(
+      postToClients({ type: 'partner-incoming', action: 'decline' })
+    );
+    return;
+  }
+
+  const action = event.action === 'accept' || isIncoming ? 'accept' : 'silence';
+  event.waitUntil(
+    Promise.all([
+      postToClients({ type: 'partner-incoming', action, url: targetUrl }),
+      openOrFocus(targetUrl),
+    ])
+  );
+});
+
+self.addEventListener('notificationclose', (event) => {
+  const data = (event.notification && event.notification.data) || {};
+  const type = data.type || '';
+  if (type === 'order' || type === 'booking') {
+    event.waitUntil(postToClients({ type: 'partner-incoming', action: 'silence' }));
+  }
 });
 
 async function openOrFocus(url) {
@@ -57,15 +89,26 @@ if (FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.messagingSenderId && FIREBASE_CONF
       const title = (payload.notification && payload.notification.title) || payload.data?.title || 'ShiQueen';
       const body = (payload.notification && payload.notification.body) || payload.data?.body || 'You have a new update.';
       const url = payload.data?.url || '/';
-      const tag = payload.data?.tag || payload.data?.type || 'shequeen';
+      const type = payload.data?.type || '';
+      const tag = payload.data?.tag || type || 'shequeen';
+      const isIncoming = type === 'order' || type === 'booking';
       return self.registration.showNotification(title, {
         body,
         icon: '/web-app-manifest-192x192.png',
         badge: '/web-app-manifest-192x192.png',
         tag,
         renotify: true,
-        data: { url, type: payload.data?.type || '' },
-        vibrate: [180, 80, 180, 80, 240],
+        requireInteraction: isIncoming,
+        data: { url, type },
+        vibrate: isIncoming
+          ? [420, 160, 420, 900, 420, 160, 420, 900]
+          : [180, 80, 180, 80, 240],
+        actions: isIncoming
+          ? [
+              { action: 'accept', title: 'Accept' },
+              { action: 'decline', title: 'Decline' },
+            ]
+          : undefined,
       });
     });
   } catch (error) {

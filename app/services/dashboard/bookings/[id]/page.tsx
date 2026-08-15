@@ -91,7 +91,7 @@ export default function ProviderBookingDetailPage() {
     (async () => {
       const next = await getServiceBookingById(params.id);
       if (cancelled) return;
-      if (!next || next.providerId !== providerId) {
+      if (!next || next.providerId !== providerId || next.paymentStatus !== 'paid') {
         setBooking(null);
       } else {
         setBooking(next);
@@ -146,7 +146,10 @@ export default function ProviderBookingDetailPage() {
 
   const nextStatus = NEXT[booking.status];
   const mobile = booking.locationType === 'mobile';
-  const canCancel = booking.status !== 'cancelled' && booking.status !== 'completed';
+  const canCancel =
+    booking.status !== 'cancelled' &&
+    booking.status !== 'completed' &&
+    booking.paymentStatus !== 'paid';
 
   return (
     <ProviderShell>

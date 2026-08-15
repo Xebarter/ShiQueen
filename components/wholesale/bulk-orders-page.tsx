@@ -4,8 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
-import { Button } from '@/components/ui/button';
-import { WholesaleBenefitsBanner } from '@/components/wholesale/wholesale-benefits-banner';
+import { WholesaleHero } from '@/components/wholesale/wholesale-benefits-banner';
 import {
   WholesaleProductCard,
   WholesaleProductCardSkeleton,
@@ -23,7 +22,6 @@ import {
   filterWholesaleByCategory,
   getWholesaleUnitPrice,
   sortWholesaleProducts,
-  WHOLESALE_CATEGORIES,
   WHOLESALE_SORT_OPTIONS,
   WholesaleSortOption,
 } from '@/lib/wholesale-catalog';
@@ -33,11 +31,12 @@ import {
   validateWholesaleCartItems,
 } from '@/lib/wholesale-cart';
 import { Product } from '@/lib/types/database';
-import { SlidersHorizontal, ShoppingCart, X } from 'lucide-react';
+import { ShoppingCart, Search, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
 import { useTrackSearchQuery } from '@/lib/hooks/use-track-search-query';
 import { recordSearchHistory } from '@/lib/search-history';
+import { ShopCategoryStrip } from '@/components/shop/shop-category-strip';
 
 const SUMMARY_SECTION_ID = 'bulk-order-summary';
 const RESULTS_SECTION_ID = 'wholesale-results';
@@ -64,9 +63,9 @@ function BulkOrdersPageInner() {
   useTrackSearchQuery(searchTerm, 'wholesale');
   const [category, setCategory] = useState('all');
   const [sortBy, setSortBy] = useState<WholesaleSortOption>('newest');
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [showJumpSearch, setShowJumpSearch] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const hydratedQuery = useRef(false);
 
@@ -76,6 +75,11 @@ function BulkOrdersPageInner() {
   );
 
   const wholesaleProducts = useMemo(() => getWholesaleCatalogProducts(products), [products]);
+
+  const featuredProducts = useMemo(
+    () => sortWholesaleProducts(wholesaleProducts, 'popular').slice(0, 4),
+    [wholesaleProducts]
+  );
 
   const searchIndex = useMemo(
     () => createProductSearchIndex(wholesaleProducts),
@@ -231,6 +235,25 @@ function BulkOrdersPageInner() {
     el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
 
+  useEffect(() => {
+    const el = document.getElementById('wholesale-search');
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setShowJumpSearch(!entry.isIntersecting),
+      { rootMargin: '-72px 0px 0px 0px', threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const jumpToSearch = useCallback(() => {
+    document.getElementById('wholesale-search')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    });
+    window.setTimeout(() => searchInputRef.current?.focus(), 350);
+  }, []);
+
   const clearFilters = () => {
     setSearchTerm('');
     setCategory('all');
@@ -238,80 +261,43 @@ function BulkOrdersPageInner() {
   };
 
   return (
-    <main className="min-h-screen bg-background">
+    <>
       <Header />
+      <main className="min-h-screen overflow-x-clip bg-background mobile-scroll-optimize">
+        <WholesaleHero
+          catalogSize={wholesaleProducts.length}
+          featured={featuredProducts}
+          loading={loading && wholesaleProducts.length === 0}
+          onSelectProduct={handleSelectSuggestion}
+          search={
+            <WholesaleSearchBar
+              ref={searchInputRef}
+              search={searchTerm}
+              totalProducts={wholesaleProducts.length}
+              resultCount={filteredProducts.length}
+              suggestions={suggestions}
+              onSearchChange={setSearchTerm}
+              onClear={() => setSearchTerm('')}
+              onSelectSuggestion={handleSelectSuggestion}
+              onViewAllResults={scrollToResults}
+              hideHelper
+            />
+          }
+        />
 
-      <section className="pb-16">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="py-8 sm:py-10">
-            <WholesaleBenefitsBanner catalogSize={wholesaleProducts.length} />
-          </div>
+        <ShopCategoryStrip
+          category={category}
+          onSelect={setCategory}
+          className="border-border/50"
+        />
 
-          <div className="sticky top-16 z-30 -mx-4 border-b border-border/60 bg-background/95 px-4 py-4 backdrop-blur-md sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none">
-            <div className="flex flex-col gap-3">
-              <div className="flex items-start gap-2">
-                <WholesaleSearchBar
-                  ref={searchInputRef}
-                  search={searchTerm}
-                  totalProducts={wholesaleProducts.length}
-                  resultCount={filteredProducts.length}
-                  suggestions={suggestions}
-                  onSearchChange={setSearchTerm}
-                  onClear={() => setSearchTerm('')}
-                  onSelectSuggestion={handleSelectSuggestion}
-                  onViewAllResults={scrollToResults}
-                />
-                <Button
-                  variant="outline"
-                  className="mt-0 h-11 shrink-0 gap-2 rounded-xl lg:hidden"
-                  onClick={() => setFiltersOpen((o) => !o)}
-                >
-                  <SlidersHorizontal className="h-4 w-4" />
-                  Filters
-                </Button>
-              </div>
-
-              <div
-                className={cn(
-                  'flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between',
-                  !filtersOpen && 'hidden lg:flex'
-                )}
-              >
-                <div className="flex flex-wrap gap-2">
-                  {WHOLESALE_CATEGORIES.map((cat) => (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => setCategory(cat.id)}
-                      className={cn(
-                        'rounded-full px-3.5 py-1.5 text-xs font-medium transition sm:text-sm',
-                        category === cat.id
-                          ? 'bg-primary text-primary-foreground shadow-sm'
-                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                      )}
-                    >
-                      {cat.label}
-                    </button>
-                  ))}
-                </div>
-
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as WholesaleSortOption)}
-                  aria-label="Sort products"
-                  className="h-10 rounded-xl border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                >
-                  {WHOLESALE_SORT_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
+        <section className="pb-16">
+          <div className="mx-auto max-w-[90rem] px-3 sm:px-4 lg:px-5">
+            <div className="flex flex-wrap items-center justify-between gap-2 py-4">
               <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                <span>
-                  {filteredProducts.length} of {wholesaleProducts.length} products
+                <span className="tabular-nums">
+                  {filteredProducts.length}
+                  <span className="text-muted-foreground/70"> / {wholesaleProducts.length}</span>
                 </span>
                 {isFiltered && (
                   <button
@@ -320,55 +306,91 @@ function BulkOrdersPageInner() {
                     className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted/80"
                   >
                     <X className="h-3 w-3" />
-                    Clear filters
+                    Clear
                   </button>
                 )}
+                {searchTerm.trim() ? (
+                  <span className="truncate text-xs">“{searchTerm.trim()}”</span>
+                ) : null}
               </div>
-            </div>
-          </div>
-
-          <div
-            id={RESULTS_SECTION_ID}
-            className="grid scroll-mt-28 gap-8 py-8 lg:grid-cols-[1fr_380px] lg:gap-10 lg:py-10 lg:scroll-mt-24"
-          >
-            <div>
-              {loading ? (
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-2">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <WholesaleProductCardSkeleton key={i} />
-                  ))}
-                </div>
-              ) : filteredProducts.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-border/80 py-16 text-center">
-                  <p className="text-muted-foreground">No wholesale products match your filters.</p>
-                  {isFiltered && (
-                    <Button variant="outline" className="mt-4" onClick={clearFilters}>
-                      Clear filters
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  {filteredProducts.map((product) => (
-                    <div
-                      key={product.id}
-                      id={`wholesale-product-${product.id}`}
-                      className="rounded-2xl transition ring-offset-2 ring-offset-background"
-                    >
-                      <WholesaleProductCard
-                        product={product}
-                        cartItem={getWholesaleCartItem(product.id)}
-                        onAdd={handleAddProduct}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as WholesaleSortOption)}
+                aria-label="Sort products"
+                className="h-9 rounded-full border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                {WHOLESALE_SORT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <aside className="hidden lg:block lg:self-start lg:sticky lg:top-24">
+            <div
+              id={RESULTS_SECTION_ID}
+              className="grid scroll-mt-28 gap-6 lg:grid-cols-[1fr_340px] lg:gap-8 lg:scroll-mt-24"
+            >
+              <div>
+                {loading ? (
+                  <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 md:gap-3 xl:grid-cols-3">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <WholesaleProductCardSkeleton key={i} />
+                    ))}
+                  </div>
+                ) : filteredProducts.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-border/80 py-16 text-center">
+                    <p className="text-muted-foreground">No matches</p>
+                    {isFiltered && (
+                      <button
+                        type="button"
+                        onClick={clearFilters}
+                        className="mt-3 text-sm font-medium text-primary hover:underline"
+                      >
+                        Clear filters
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 md:gap-3">
+                    {filteredProducts.map((product) => (
+                      <div
+                        key={product.id}
+                        id={`wholesale-product-${product.id}`}
+                        className="rounded-2xl transition ring-offset-2 ring-offset-background"
+                      >
+                        <WholesaleProductCard
+                          product={product}
+                          cartItem={getWholesaleCartItem(product.id)}
+                          onAdd={handleAddProduct}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <aside className="hidden lg:block lg:self-start lg:sticky lg:top-28">
+                <BulkOrderSummary
+                  id={SUMMARY_SECTION_ID}
+                  items={items}
+                  subtotal={total}
+                  totalSavings={totalSavings}
+                  totalUnits={totalUnits}
+                  onCheckout={handleCheckout}
+                  onClear={() => {
+                    if (confirm('Clear your entire cart?')) clearCart();
+                  }}
+                  checkoutLoading={checkoutLoading}
+                />
+              </aside>
+            </div>
+
+            <div className="border-t border-border/60 pt-8 lg:hidden" id={SUMMARY_SECTION_ID}>
+              <div className="mb-4">
+                <h2 className="text-lg font-semibold tracking-tight">Your order</h2>
+              </div>
               <BulkOrderSummary
-                id={SUMMARY_SECTION_ID}
                 items={items}
                 subtotal={total}
                 totalSavings={totalSavings}
@@ -379,59 +401,58 @@ function BulkOrdersPageInner() {
                 }}
                 checkoutLoading={checkoutLoading}
               />
-            </aside>
-          </div>
-
-          <div className="border-t border-border/60 pt-8 lg:hidden" id={SUMMARY_SECTION_ID}>
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold tracking-tight">Your order</h2>
-              <p className="mt-0.5 text-sm text-muted-foreground">Review before checkout</p>
             </div>
-            <BulkOrderSummary
-              items={items}
-              subtotal={total}
-              totalSavings={totalSavings}
-              totalUnits={totalUnits}
-              onCheckout={handleCheckout}
-              onClear={() => {
-                if (confirm('Clear your entire cart?')) clearCart();
-              }}
-              checkoutLoading={checkoutLoading}
-            />
           </div>
-        </div>
-      </section>
+        </section>
 
-      {items.length > 0 ? (
-        <button
-          type="button"
-          onClick={() => setDrawerOpen(true)}
-          aria-label={`Open order with ${items.length} items`}
-          className="fixed bottom-6 right-4 z-40 flex h-12 items-center gap-2.5 rounded-full border border-border/80 bg-foreground px-4 text-background shadow-lg transition hover:bg-foreground/90 active:scale-[0.98] lg:bottom-8"
-        >
-          <ShoppingCart className="h-4 w-4" />
-          <span className="text-sm font-semibold tabular-nums">{itemCount}</span>
-        </button>
-      ) : null}
+        {showJumpSearch ? (
+          <button
+            type="button"
+            onClick={jumpToSearch}
+            aria-label="Search wholesale products"
+            className={cn(
+              'fixed bottom-6 left-4 z-40 inline-flex h-11 items-center gap-2 rounded-full border border-border/80',
+              'bg-card/95 px-3.5 text-sm font-semibold shadow-lg backdrop-blur-md transition hover:bg-card',
+              'active:scale-[0.98] lg:bottom-8 lg:left-6',
+              items.length > 0 && 'bottom-20 lg:bottom-8'
+            )}
+          >
+            <Search className="h-4 w-4 text-primary" />
+            Search
+          </button>
+        ) : null}
 
-      <BulkCartDrawer
-        open={drawerOpen}
-        items={items}
-        subtotal={total}
-        totalSavings={totalSavings}
-        totalUnits={totalUnits}
-        productsById={productsById}
-        checkoutLoading={checkoutLoading}
-        onClose={() => setDrawerOpen(false)}
-        onContinue={() => setDrawerOpen(false)}
-        onViewSummary={handleViewSummary}
-        onCheckout={handleCheckout}
-        onUpdateQuantity={handleCartItemUpdate}
-        onRemove={handleCartItemRemove}
-      />
+        {items.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(true)}
+            aria-label={`Open order with ${items.length} items`}
+            className="fixed bottom-6 right-4 z-40 flex h-12 items-center gap-2.5 rounded-full border border-border/80 bg-foreground px-4 text-background shadow-lg transition hover:bg-foreground/90 active:scale-[0.98] lg:bottom-8"
+          >
+            <ShoppingCart className="h-4 w-4" />
+            <span className="text-sm font-semibold tabular-nums">{itemCount}</span>
+          </button>
+        ) : null}
 
-      <Footer />
-    </main>
+        <BulkCartDrawer
+          open={drawerOpen}
+          items={items}
+          subtotal={total}
+          totalSavings={totalSavings}
+          totalUnits={totalUnits}
+          productsById={productsById}
+          checkoutLoading={checkoutLoading}
+          onClose={() => setDrawerOpen(false)}
+          onContinue={() => setDrawerOpen(false)}
+          onViewSummary={handleViewSummary}
+          onCheckout={handleCheckout}
+          onUpdateQuantity={handleCartItemUpdate}
+          onRemove={handleCartItemRemove}
+        />
+
+        <Footer />
+      </main>
+    </>
   );
 }
 
@@ -439,16 +460,18 @@ export function BulkOrdersPage() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen bg-background">
+        <>
           <Header />
-          <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <WholesaleProductCardSkeleton key={i} />
-              ))}
+          <main className="min-h-screen bg-background">
+            <div className="mx-auto max-w-[90rem] px-3 py-10 sm:px-4 lg:px-5">
+              <div className="grid grid-cols-2 gap-2.5 md:grid-cols-3 md:gap-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <WholesaleProductCardSkeleton key={i} />
+                ))}
+              </div>
             </div>
-          </div>
-        </main>
+          </main>
+        </>
       }
     >
       <BulkOrdersPageInner />

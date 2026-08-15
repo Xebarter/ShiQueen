@@ -710,14 +710,24 @@ export function AdminServicesPage() {
                       <select
                         value={b.status}
                         onChange={(e) =>
-                          updateServiceBookingStatus(b.id, e.target.value as ServiceBookingStatus).then(() =>
-                            toast.success('Status updated')
-                          )
+                          updateServiceBookingStatus(b.id, e.target.value as ServiceBookingStatus)
+                            .then(() => toast.success('Status updated'))
+                            .catch((error) =>
+                              toast.error(
+                                error instanceof Error ? error.message : 'Could not update'
+                              )
+                            )
                         }
                         className="rounded-lg border px-2 py-1 text-xs"
                       >
                         {BOOKING_STATUSES.map((s) => (
-                          <option key={s} value={s}>{s}</option>
+                          <option
+                            key={s}
+                            value={s}
+                            disabled={s === 'cancelled' && b.paymentStatus === 'paid'}
+                          >
+                            {s}
+                          </option>
                         ))}
                       </select>
                     </td>

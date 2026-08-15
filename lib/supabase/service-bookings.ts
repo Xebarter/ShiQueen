@@ -87,6 +87,7 @@ async function fetchServiceBookingsForProvider(providerId: string): Promise<Serv
     .from(TABLES.serviceBookings)
     .select('*')
     .eq('provider_id', providerId)
+    .eq('payment_status', 'paid')
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -158,7 +159,9 @@ export async function createServiceBooking(
 
   void import('@/lib/pwa/notify-client').then(
     ({ notifyPartnerClients, notifyAdminBookingClients }) => {
-      void notifyPartnerClients('booking', id);
+      if (booking.paymentStatus === 'paid') {
+        void notifyPartnerClients('booking', id);
+      }
       void notifyAdminBookingClients(id);
     }
   );
@@ -170,6 +173,13 @@ export async function updateServiceBookingStatus(
 ): Promise<void> {
   const supabase = getSupabaseClient();
   if (!supabase) throw new Error('Supabase not initialized');
+
+  if (status === 'cancelled') {
+    const existing = await getServiceBookingById(id);
+    if (existing?.paymentStatus === 'paid') {
+      throw new Error('Paid bookings cannot be cancelled');
+    }
+  }
 
   const { error } = await supabase
     .from(TABLES.serviceBookings)
