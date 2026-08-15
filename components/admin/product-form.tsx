@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { AdminPage } from '@/components/admin/admin-page';
@@ -18,6 +18,24 @@ import { SupplierSelect } from '@/components/admin/supplier-select';
 import { useSuppliers } from '@/lib/suppliers-context';
 
 const CATEGORIES = ['Clothing', 'Beauty', 'Wellness', 'Accessories', 'Home'];
+
+type PendingImage = {
+  id: string;
+  file: File;
+  previewUrl: string;
+};
+
+function createPendingImages(files: FileList | File[]): PendingImage[] {
+  return Array.from(files).map((file) => ({
+    id: `${file.name}-${file.size}-${file.lastModified}-${crypto.randomUUID()}`,
+    file,
+    previewUrl: URL.createObjectURL(file),
+  }));
+}
+
+function revokePendingImages(items: PendingImage[]) {
+  items.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+}
 
 type ProductFormProps = {
   mode: 'create' | 'edit';
@@ -115,12 +133,9 @@ export function ProductForm({
   const [imageUrls, setImageUrls] = useState<string[]>(() =>
     initialProduct ? productToImageUrls(initialProduct) : []
   );
-  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-
-  const pendingPreviews = useMemo(
-    () => pendingFiles.map((file) => URL.createObjectURL(file)),
-    [pendingFiles]
-  );
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
+  const pendingImagesRef = useRef(pendingImages);
+  pendingImagesRef.current = pendingImages;
 
   useEffect(() => {
     if (mode === 'create' && !formData.supplierId && resolvedSupplierId) {
@@ -140,9 +155,9 @@ export function ProductForm({
 
   useEffect(() => {
     return () => {
-      pendingPreviews.forEach((url) => URL.revokeObjectURL(url));
+      revokePendingImages(pendingImagesRef.current);
     };
-  }, [pendingPreviews]);
+  }, []);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -157,7 +172,7 @@ export function ProductForm({
 
   const handleFilesSelected = (files: FileList | null) => {
     if (!files?.length) return;
-    setPendingFiles((prev) => [...prev, ...Array.from(files)]);
+    setPendingImages((prev) => [...prev, ...createPendingImages(files)]);
   };
 
   const removeExistingImage = (index: number) => {
@@ -165,7 +180,11 @@ export function ProductForm({
   };
 
   const removePendingFile = (index: number) => {
-    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+    setPendingImages((prev) => {
+      const target = prev[index];
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const setPrimaryImage = (index: number) => {
@@ -203,7 +222,10 @@ export function ProductForm({
 
     setSaving(true);
     try {
-      const uploadedUrls = await uploadProductImages(productId, pendingFiles);
+      const uploadedUrls = await uploadProductImages(
+        productId,
+        pendingImages.map((item) => item.file)
+      );
       const allImages = [...imageUrls, ...uploadedUrls];
       const stock = parseInt(formData.stock, 10) || 0;
       const originalPrice = formData.originalPrice
@@ -245,7 +267,9 @@ export function ProductForm({
         toast.success('Product saved');
       }
 
-      setPendingFiles([]);
+      revokePendingImages(pendingImages);
+      setPendingImages([]);
+      setImageUrls(allImages);
       onSaved?.();
     } catch (error) {
       console.error(error);
@@ -302,14 +326,19 @@ export function ProductForm({
                 }}
               />
 
-              {imageUrls.length > 0 || pendingPreviews.length > 0 ? (
+              {imageUrls.length > 0 || pendingImages.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {imageUrls.map((url, index) => (
                     <div
                       key={`saved-${url}`}
                       className="relative aspect-square rounded-xl overflow-hidden border border-border bg-secondary"
                     >
-                      <Image src={url} alt="" fill className="object-cover" />
+                      {isRemoteProductImage(url) ? (
+                        <Image src={url} alt="" fill className="object-cover" sizes="200px" />
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                      )}
                       {index === 0 && (
                         <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
                           <Star className="w-3 h-3" />
@@ -339,12 +368,18 @@ export function ProductForm({
                     </div>
                   ))}
 
-                  {pendingPreviews.map((url, index) => (
+                  {pendingImages.map((item, index) => (
                     <div
-                      key={`pending-${url}`}
+                      key={item.id}
                       className="relative aspect-square rounded-xl overflow-hidden border border-dashed border-primary/40 bg-secondary"
                     >
-                      <Image src={url} alt="" fill className="object-cover opacity-90" />
+                      {/* Blob previews must use <img>; next/image cannot optimize blob: URLs */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={item.previewUrl}
+                        alt=""
+                        className="absolute inset-0 h-full w-full object-cover opacity-90"
+                      />
                       <span className="absolute top-2 left-2 rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-accent-foreground">
                         New
                       </span>
@@ -370,7 +405,7 @@ export function ProductForm({
                 </button>
               )}
 
-              {(imageUrls.length > 0 || pendingPreviews.length > 0) && (
+              {(imageUrls.length > 0 || pendingImages.length > 0) && (
                 <Button
                   type="button"
                   variant="outline"
@@ -559,13 +594,24 @@ export function ProductForm({
               <CardTitle>Preview</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="relative aspect-square rounded-xl overflow-hidden mb-4">
+              <div className="relative aspect-square rounded-xl overflow-hidden mb-4 bg-secondary">
                 {imageUrls.length > 0 && isRemoteProductImage(imageUrls[0]) ? (
-                  <Image src={imageUrls[0]} alt="" fill className="object-cover" />
-                ) : pendingPreviews[0] ? (
-                  <Image src={pendingPreviews[0]} alt="" fill className="object-cover" />
+                  <Image
+                    src={imageUrls[0]}
+                    alt=""
+                    fill
+                    className="object-cover"
+                    sizes="320px"
+                  />
+                ) : pendingImages[0] ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={pendingImages[0].previewUrl}
+                    alt=""
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center bg-secondary text-sm text-muted-foreground">
+                  <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
                     No image
                   </div>
                 )}
