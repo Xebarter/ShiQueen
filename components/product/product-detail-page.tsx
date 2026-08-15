@@ -18,6 +18,7 @@ import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
 import { Reviews } from '@/components/reviews';
+import { ProductReviewFormModal } from '@/components/product/product-review-form-modal';
 import { PricingTiers } from '@/components/pricing-tiers';
 import { ProductImage, isRemoteProductImage } from '@/components/product-image';
 import { ShareProductButton } from '@/components/shared/share-button';
@@ -96,6 +97,7 @@ export function ProductDetailPage() {
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedImage, setSelectedImage] = useState('');
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const { addItem } = useCart();
 
   useEffect(() => {
@@ -261,8 +263,8 @@ export function ProductDetailPage() {
                 {product.name}
               </h1>
 
-              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 sm:mt-4">
-                <div className="flex gap-0.5">
+              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 sm:mt-4">
+                <div className="flex gap-0.5" aria-hidden>
                   {[...Array(5)].map((_, i) => (
                     <Star
                       key={i}
@@ -275,8 +277,17 @@ export function ProductDetailPage() {
                     />
                   ))}
                 </div>
-                <span className="text-sm font-semibold">{product.rating}</span>
-                <span className="text-sm text-muted-foreground">({product.reviews} reviews)</span>
+                <span className="text-sm font-semibold tabular-nums">{product.rating}</span>
+                <span className="text-sm text-muted-foreground">
+                  ({product.reviews} review{product.reviews === 1 ? '' : 's'})
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setReviewOpen(true)}
+                  className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                >
+                  Rate this product
+                </button>
               </div>
 
               <div className="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-2 sm:mt-6">
@@ -438,7 +449,12 @@ export function ProductDetailPage() {
             </div>
           </div>
 
-          <Reviews />
+          <Reviews
+            productId={product.id}
+            productName={product.name}
+            fallbackRating={product.rating}
+            fallbackCount={product.reviews}
+          />
         </div>
       </section>
 
@@ -454,6 +470,13 @@ export function ProductDetailPage() {
           </Button>
         </div>
       </div>
+
+      <ProductReviewFormModal
+        open={reviewOpen}
+        onClose={() => setReviewOpen(false)}
+        productId={product.id}
+        productName={product.name}
+      />
 
       <Footer />
     </main>

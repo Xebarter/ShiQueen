@@ -121,6 +121,21 @@ export interface Order {
 
 export type { Package, BulkOrder, WholesaleAccount };
 
+export type ProductReview = {
+  id: string;
+  productId: string;
+  orderId?: string;
+  userId: string;
+  rating: number;
+  title: string;
+  comment: string;
+  customerName: string;
+  isVerified: boolean;
+  isVisible: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 export type MarketingAdPlacement = 'home-hero' | 'shop-hero';
 
 export interface MarketingAd {

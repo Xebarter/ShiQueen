@@ -1,180 +1,221 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Star, ThumbsUp } from 'lucide-react';
+import { Star, Loader2 } from 'lucide-react';
+import { useAuth } from '@/lib/auth-context';
+import { subscribeProductReviews } from '@/lib/firebase/product-reviews';
+import type { ProductReview } from '@/lib/types/database';
+import { ProductReviewFormModal } from '@/components/product/product-review-form-modal';
+import { cn } from '@/lib/utils';
 
-interface Review {
-  id: string;
-  author: string;
-  rating: number;
-  title: string;
-  content: string;
-  date: string;
-  helpful: number;
-  verified: boolean;
+type SortKey = 'recent' | 'highest' | 'lowest';
+
+function formatReviewDate(date: Date) {
+  return new Intl.DateTimeFormat('en-UG', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(date);
 }
 
-const mockReviews: Review[] = [
-  {
-    id: '1',
-    author: 'Sarah M.',
-    rating: 5,
-    title: 'Absolutely Luxurious!',
-    content:
-      'This sweater is even more beautiful in person. The quality is exceptional and it arrived quickly. Highly recommend!',
-    date: '2 weeks ago',
-    helpful: 24,
-    verified: true,
-  },
-  {
-    id: '2',
-    author: 'Emma T.',
-    rating: 4,
-    title: 'Great Quality, True to Size',
-    content:
-      'Love this piece. Very soft and fits perfectly. Only reason for 4 stars is that it pilled slightly after first wash.',
-    date: '1 month ago',
-    helpful: 18,
-    verified: true,
-  },
-  {
-    id: '3',
-    author: 'Jessica L.',
-    rating: 5,
-    title: 'Perfect for Fall',
-    content:
-      'Bought this for fall and it&apos;s been perfect. Great layering piece, looks expensive, and is so comfortable!',
-    date: '2 months ago',
-    helpful: 42,
-    verified: true,
-  },
-];
+function Stars({ rating, className }: { rating: number; className?: string }) {
+  return (
+    <div className={cn('flex gap-0.5', className)}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Star
+          key={i}
+          className={cn(
+            'h-4 w-4',
+            i <= Math.round(rating) ? 'fill-accent text-accent' : 'text-muted'
+          )}
+        />
+      ))}
+    </div>
+  );
+}
 
-export function Reviews() {
-  const [sortBy, setSortBy] = useState('helpful');
+export function Reviews({
+  productId,
+  productName,
+  fallbackRating = 0,
+  fallbackCount = 0,
+}: {
+  productId: string;
+  productName: string;
+  fallbackRating?: number;
+  fallbackCount?: number;
+}) {
+  const { user } = useAuth();
+  const [reviews, setReviews] = useState<ProductReview[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<SortKey>('recent');
+  const [formOpen, setFormOpen] = useState(false);
 
-  const averageRating = (
-    mockReviews.reduce((sum, review) => sum + review.rating, 0) / mockReviews.length
-  ).toFixed(1);
+  useEffect(() => {
+    const unsubscribe = subscribeProductReviews(
+      (next) => {
+        setReviews(next.filter((review) => review.productId === productId && review.isVisible));
+        setLoading(false);
+      },
+      () => setLoading(false)
+    );
+    return unsubscribe;
+  }, [productId]);
 
-  const ratingDistribution = [5, 4, 3, 2, 1].map((rating) => ({
-    rating,
-    count: mockReviews.filter((r) => r.rating === rating).length,
-    percentage:
-      (mockReviews.filter((r) => r.rating === rating).length / mockReviews.length) * 100,
-  }));
+  const sorted = useMemo(() => {
+    const list = [...reviews];
+    if (sortBy === 'highest') list.sort((a, b) => b.rating - a.rating || b.createdAt.getTime() - a.createdAt.getTime());
+    else if (sortBy === 'lowest') list.sort((a, b) => a.rating - b.rating || b.createdAt.getTime() - a.createdAt.getTime());
+    else list.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    return list;
+  }, [reviews, sortBy]);
+
+  const averageRating = useMemo(() => {
+    if (reviews.length === 0) return fallbackRating;
+    return reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
+  }, [reviews, fallbackRating]);
+
+  const reviewCount = reviews.length > 0 ? reviews.length : fallbackCount;
+
+  const ratingDistribution = [5, 4, 3, 2, 1].map((rating) => {
+    const count = reviews.filter((r) => r.rating === rating).length;
+    return {
+      rating,
+      count,
+      percentage: reviews.length > 0 ? (count / reviews.length) * 100 : 0,
+    };
+  });
+
+  const myReview = user ? reviews.find((review) => review.userId === user.uid) : undefined;
 
   return (
     <div className="border-t border-border py-8 sm:py-12">
-      <h2 className="mb-6 text-xl font-semibold sm:mb-8 sm:text-2xl">Customer reviews</h2>
+      <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
+        <h2 className="text-xl font-semibold sm:text-2xl">Customer reviews</h2>
+        <Button
+          type="button"
+          className="hidden sm:inline-flex"
+          onClick={() => setFormOpen(true)}
+        >
+          {myReview ? 'Edit your review' : 'Write a review'}
+        </Button>
+      </div>
 
-      <div className="mb-8 grid grid-cols-1 gap-8 lg:grid-cols-4 lg:mb-12">
-        {/* Rating Summary */}
+      <div className="mb-8 grid grid-cols-1 gap-8 lg:mb-12 lg:grid-cols-4">
         <div className="lg:col-span-1">
-          <div className="rounded-xl border border-border/60 bg-card p-5 sm:p-0 sm:border-0 sm:bg-transparent">
+          <div className="rounded-xl border border-border/60 bg-card p-5 sm:border-0 sm:bg-transparent sm:p-0">
             <div className="space-y-6">
               <div>
-                <div className="mb-2 text-4xl font-semibold">{averageRating}</div>
-                <div className="mb-2 flex gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`h-4 w-4 ${
-                        i < Math.round(parseFloat(averageRating))
-                          ? 'fill-accent text-accent'
-                          : 'text-muted'
-                      }`}
-                    />
-                  ))}
+                <div className="mb-2 text-4xl font-semibold tabular-nums">
+                  {reviewCount > 0 ? averageRating.toFixed(1) : '—'}
                 </div>
+                <Stars rating={averageRating} className="mb-2" />
                 <p className="text-sm text-muted-foreground">
-                  Based on {mockReviews.length} reviews
+                  {reviewCount > 0
+                    ? `Based on ${reviewCount} review${reviewCount === 1 ? '' : 's'}`
+                    : 'No reviews yet'}
                 </p>
               </div>
 
-              <Button className="hidden w-full sm:inline-flex">Write a review</Button>
-            </div>
-
-            {/* Rating Distribution */}
-            <div className="mt-6 space-y-3 sm:mt-8">
-              {ratingDistribution.map((dist) => (
-                <div key={dist.rating} className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{dist.rating} stars</span>
-                    <span className="text-muted-foreground">{dist.count}</span>
+              <div className="space-y-3">
+                {ratingDistribution.map((dist) => (
+                  <div key={dist.rating} className="space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{dist.rating} stars</span>
+                      <span className="tabular-nums text-muted-foreground">{dist.count}</span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-secondary">
+                      <div
+                        className="h-2 rounded-full bg-accent transition-[width]"
+                        style={{ width: `${dist.percentage}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-2 w-full rounded-full bg-secondary">
-                    <div
-                      className="h-2 rounded-full bg-accent"
-                      style={{ width: `${dist.percentage}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Reviews List */}
         <div className="lg:col-span-3">
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted-foreground">
-              Showing all {mockReviews.length} reviews
+              {loading
+                ? 'Loading reviews…'
+                : sorted.length > 0
+                  ? `Showing ${sorted.length} review${sorted.length === 1 ? '' : 's'}`
+                  : 'Be the first to review this product'}
             </p>
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
+              onChange={(e) => setSortBy(e.target.value as SortKey)}
               className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm sm:w-auto sm:py-1"
             >
-              <option value="helpful">Most helpful</option>
               <option value="recent">Most recent</option>
               <option value="highest">Highest rating</option>
               <option value="lowest">Lowest rating</option>
             </select>
           </div>
 
-          <div className="space-y-6">
-            {mockReviews.map((review) => (
-              <div key={review.id} className="border-b border-border pb-6">
-                <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0">
-                    <h3 className="font-semibold">{review.title}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      by {review.author} · {review.date}
-                    </p>
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-7 w-7 animate-spin text-primary" />
+            </div>
+          ) : sorted.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border/70 bg-muted/20 px-4 py-10 text-center">
+              <p className="text-sm text-muted-foreground">
+                No customer reviews yet. Share your experience after your order arrives.
+              </p>
+              <Button type="button" className="mt-4" onClick={() => setFormOpen(true)}>
+                Write a review
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {sorted.map((review) => (
+                <div key={review.id} className="border-b border-border pb-6 last:border-0">
+                  <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <h3 className="font-semibold">
+                        {review.title.trim() || `${review.rating}-star review`}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        by {review.customerName || 'Customer'} · {formatReviewDate(review.createdAt)}
+                      </p>
+                    </div>
+                    {review.isVerified ? (
+                      <span className="w-fit shrink-0 rounded bg-accent/10 px-2 py-1 text-xs text-accent">
+                        Verified purchase
+                      </span>
+                    ) : null}
                   </div>
-                  {review.verified && (
-                    <span className="w-fit shrink-0 rounded bg-accent/10 px-2 py-1 text-xs text-accent">
-                      Verified purchase
-                    </span>
-                  )}
+
+                  <Stars rating={review.rating} className="mb-3" />
+                  <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
+                    {review.comment}
+                  </p>
                 </div>
+              ))}
+            </div>
+          )}
 
-                <div className="mb-3 flex gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`h-4 w-4 ${
-                        i < review.rating ? 'fill-accent text-accent' : 'text-muted'
-                      }`}
-                    />
-                  ))}
-                </div>
-
-                <p className="mb-4 text-sm leading-relaxed text-muted-foreground">{review.content}</p>
-
-                <button className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground">
-                  <ThumbsUp className="h-4 w-4" />
-                  Helpful ({review.helpful})
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <Button className="mt-6 w-full sm:hidden">Write a review</Button>
+          <Button
+            type="button"
+            className="mt-6 w-full sm:hidden"
+            onClick={() => setFormOpen(true)}
+          >
+            {myReview ? 'Edit your review' : 'Write a review'}
+          </Button>
         </div>
       </div>
+
+      <ProductReviewFormModal
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        productId={productId}
+        productName={productName}
+      />
     </div>
   );
 }

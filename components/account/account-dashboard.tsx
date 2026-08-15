@@ -17,6 +17,7 @@ import {
   Shield,
   ShoppingBag,
   ShoppingCart,
+  Star,
   Truck,
   User,
 } from 'lucide-react';
@@ -35,13 +36,14 @@ import {
 import { Button, buttonVariants } from '@/components/ui/button';
 import { AccountAvatar } from '@/components/account/account-avatar';
 import { isRemoteProductImage, ProductImage } from '@/components/product-image';
+import { ProductReviewFormModal } from '@/components/product/product-review-form-modal';
 import { useAuth } from '@/lib/auth-context';
 import { useCart } from '@/lib/cart-context';
 import { useServices } from '@/lib/services-context';
 import { subscribeUserOrders } from '@/lib/firebase/orders';
 import { getStoredWishlist, removeFromStoredWishlist, getDiscountPercent } from '@/lib/home-merchandising';
 import { useProducts } from '@/lib/products-context';
-import { Order, Product } from '@/lib/types/database';
+import { Order, type OrderItem, Product } from '@/lib/types/database';
 import { formatUGX } from '@/lib/wholesale-data';
 import { getDisplayName } from '@/lib/user-display';
 import { resolveListingImage } from '@/lib/services-utils';
@@ -185,9 +187,11 @@ function StatCard({
 function OrderCard({
   order,
   resolveItemImage,
+  onReviewItem,
 }: {
   order: Order;
   resolveItemImage: (item: Order['items'][number]) => string | undefined;
+  onReviewItem?: (item: Order['items'][number]) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const itemPreview = order.items.slice(0, 3);
@@ -196,6 +200,10 @@ function OrderCard({
     .map((item) => resolveItemImage(item))
     .filter((src): src is string => Boolean(isRemoteProductImage(src)))
     .slice(0, 3);
+  const canReview = order.status === 'delivered';
+  const reviewableItems = order.items.filter(
+    (item) => item.itemType !== 'service' && Boolean(item.productId)
+  );
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm ring-1 ring-border/40 transition hover:border-primary/20 hover:shadow-md">
@@ -271,6 +279,12 @@ function OrderCard({
               </li>
             )}
           </ul>
+          {canReview && reviewableItems.length > 0 ? (
+            <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-primary">
+              <Star className="h-3.5 w-3.5 fill-accent text-accent" />
+              Expand to rate delivered items
+            </p>
+          ) : null}
         </div>
 
         <ChevronDown
@@ -291,30 +305,59 @@ function OrderCard({
               <ul className="mt-3 space-y-2.5">
                 {order.items.map((item, index) => {
                   const image = resolveItemImage(item);
+                  const showReview =
+                    canReview &&
+                    item.itemType !== 'service' &&
+                    Boolean(item.productId) &&
+                    Boolean(onReviewItem);
                   return (
                     <li
                       key={`${item.productId}-${index}`}
-                      className="flex items-center gap-3 rounded-xl border border-border/50 bg-background/70 p-2 pr-3"
+                      className="rounded-xl border border-border/50 bg-background/70 p-2 pr-3"
                     >
-                      <OrderItemThumb src={image} alt={item.name} size="lg" />
-                      <div className="min-w-0 flex-1">
-                        <p className="line-clamp-1 text-sm font-medium text-foreground">
-                          {item.name}
-                        </p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">
-                          {[item.size, item.color].filter(Boolean).join(' · ') ||
-                            (item.itemType === 'service' ? 'Service' : 'Product')}
-                          {' · '}
-                          <span className="tabular-nums">× {item.quantity}</span>
+                      <div className="flex items-center gap-3">
+                        <OrderItemThumb src={image} alt={item.name} size="lg" />
+                        <div className="min-w-0 flex-1">
+                          <p className="line-clamp-1 text-sm font-medium text-foreground">
+                            {item.name}
+                          </p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {[item.size, item.color].filter(Boolean).join(' · ') ||
+                              (item.itemType === 'service' ? 'Service' : 'Product')}
+                            {' · '}
+                            <span className="tabular-nums">× {item.quantity}</span>
+                          </p>
+                        </div>
+                        <p className="shrink-0 text-sm font-semibold tabular-nums">
+                          {formatUGX(item.price * item.quantity)}
                         </p>
                       </div>
-                      <p className="shrink-0 text-sm font-semibold tabular-nums">
-                        {formatUGX(item.price * item.quantity)}
-                      </p>
+                      {showReview ? (
+                        <div className="mt-2 flex justify-end border-t border-border/40 pt-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-9 gap-1.5"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onReviewItem?.(item);
+                            }}
+                          >
+                            <Star className="h-3.5 w-3.5 fill-accent text-accent" />
+                            Write a review
+                          </Button>
+                        </div>
+                      ) : null}
                     </li>
                   );
                 })}
               </ul>
+              {canReview && reviewableItems.length > 0 ? (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  This order was delivered — rate the products you received.
+                </p>
+              ) : null}
             </div>
 
             <div>
@@ -496,6 +539,11 @@ export function AccountDashboard() {
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [wishlistIds, setWishlistIds] = useState<string[]>([]);
   const [signingOut, setSigningOut] = useState(false);
+  const [reviewTarget, setReviewTarget] = useState<{
+    productId: string;
+    productName: string;
+    orderId: string;
+  } | null>(null);
 
   const displayName = getDisplayName(profile?.displayName ?? user?.displayName, user?.email);
   const memberSince = profile?.createdAt ?? (user?.metadata.creationTime ? new Date(user.metadata.creationTime) : null);
@@ -777,6 +825,13 @@ export function AccountDashboard() {
                         <OrderCard
                           key={order.id}
                           order={order}
+                          onReviewItem={(item: OrderItem) => {
+                            setReviewTarget({
+                              productId: item.productId,
+                              productName: item.name,
+                              orderId: order.id,
+                            });
+                          }}
                           resolveItemImage={(item) => {
                             if (isRemoteProductImage(item.image)) return item.image;
                             if (item.itemType === 'service' || item.serviceId) {
@@ -885,6 +940,14 @@ export function AccountDashboard() {
       </section>
 
       <Footer />
+
+      <ProductReviewFormModal
+        open={Boolean(reviewTarget)}
+        onClose={() => setReviewTarget(null)}
+        productId={reviewTarget?.productId ?? ''}
+        productName={reviewTarget?.productName ?? ''}
+        orderId={reviewTarget?.orderId}
+      />
     </main>
   );
 }
