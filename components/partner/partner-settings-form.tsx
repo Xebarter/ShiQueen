@@ -56,10 +56,10 @@ export function PartnerSettingsForm() {
   return (
     <div className="max-w-xl space-y-8">
       <section className="rounded-xl border border-border/70 bg-card p-5 shadow-sm sm:p-6">
-        <h2 className="text-base font-semibold">Sign-in method</h2>
+        <h2 className="text-base font-semibold">Sign-in</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          You signed in with {provider}.
-          {user && !user.emailVerified && provider === 'Email' ? ' Email is not verified yet.' : ''}
+          {provider}
+          {user && !user.emailVerified && provider === 'Email' ? ' · Unverified' : ''}
         </p>
         {user && !user.emailVerified && provider === 'Email' && (
           <Button
@@ -117,16 +117,13 @@ export function PartnerSettingsForm() {
         className="space-y-3 rounded-xl border border-border/70 bg-card p-5 shadow-sm sm:p-6"
       >
         <h2 className="text-base font-semibold">Notifications</h2>
-        <p className="text-sm text-muted-foreground">
-          Sound, vibration, and push alerts when new orders or bookings arrive.
-        </p>
         {(
           [
-            ['pushAlerts', 'New order & booking alerts'],
+            ['pushAlerts', 'New orders & bookings'],
             ['orderUpdates', 'Order updates'],
             ['promotions', 'Promotions'],
             ['serviceReminders', 'Service reminders'],
-            ['smsAlerts', 'SMS alerts'],
+            ['smsAlerts', 'SMS'],
           ] as const
         ).map(([key, label]) => (
           <label key={key} className="flex items-center gap-2 text-sm">
@@ -145,14 +142,10 @@ export function PartnerSettingsForm() {
 
       <section className="space-y-3 rounded-xl border border-border/70 bg-card p-5 shadow-sm sm:p-6">
         <h2 className="text-base font-semibold">Get the app</h2>
-        <p className="text-sm text-muted-foreground">
-          Tap below to add this dashboard to your device.
-        </p>
         <InstallAppButton className="w-full sm:w-auto" />
         {!getVapidKey() ? (
           <p className="text-xs text-muted-foreground">
-            Background push needs a VAPID key. Foreground sound and vibration still work while the
-            app is open.
+            Push needs a VAPID key. Sound still works in-app.
           </p>
         ) : null}
       </section>

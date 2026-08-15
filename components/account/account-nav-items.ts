@@ -1,4 +1,5 @@
 import {
+  Clock,
   Heart,
   Home,
   LayoutDashboard,
@@ -7,7 +8,7 @@ import {
   ShoppingBag,
 } from 'lucide-react';
 
-export type AccountSection = 'overview' | 'orders' | 'wishlist' | 'settings';
+export type AccountSection = 'overview' | 'orders' | 'wishlist' | 'search' | 'settings';
 
 export const ACCOUNT_SECTIONS: {
   id: AccountSection;
@@ -34,6 +35,12 @@ export const ACCOUNT_SECTIONS: {
     icon: Heart,
   },
   {
+    id: 'search',
+    label: 'Search history',
+    description: 'Queries you have searched on ShiQueen',
+    icon: Clock,
+  },
+  {
     id: 'settings',
     label: 'Settings',
     description: 'Profile, address & security',
@@ -58,7 +65,14 @@ export const ACCOUNT_FOOTER_LINKS = [ACCOUNT_BACK_LINK, ACCOUNT_LOGOUT_LINK] as 
 
 export function parseAccountSectionHash(hash: string): AccountSection {
   const value = hash.replace('#', '');
-  if (value === 'orders' || value === 'wishlist' || value === 'settings') return value;
+  if (
+    value === 'orders' ||
+    value === 'wishlist' ||
+    value === 'search' ||
+    value === 'settings'
+  ) {
+    return value;
+  }
   return 'overview';
 }
 

@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import {
   WholesaleProductCard,
   WholesaleProductCardSkeleton,
 } from '@/components/wholesale/wholesale-product-card';
+import { WholesaleSearchBar } from '@/components/wholesale/wholesale-search-bar';
 import { BulkCartDrawer } from '@/components/wholesale/bulk-cart-drawer';
 import { BulkOrderSummary } from '@/components/wholesale/bulk-order-summary';
 import { useProducts } from '@/lib/products-context';
@@ -20,6 +21,7 @@ import { createProductSearchIndex } from '@/lib/product-search';
 import {
   getWholesaleCatalogProducts,
   filterWholesaleByCategory,
+  getWholesaleUnitPrice,
   sortWholesaleProducts,
   WHOLESALE_CATEGORIES,
   WHOLESALE_SORT_OPTIONS,
@@ -31,14 +33,17 @@ import {
   validateWholesaleCartItems,
 } from '@/lib/wholesale-cart';
 import { Product } from '@/lib/types/database';
-import { Search, SlidersHorizontal, ShoppingCart, X } from 'lucide-react';
+import { SlidersHorizontal, ShoppingCart, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
+import { useTrackSearchQuery } from '@/lib/hooks/use-track-search-query';
 
 const SUMMARY_SECTION_ID = 'bulk-order-summary';
+const RESULTS_SECTION_ID = 'wholesale-results';
 
-export function BulkOrdersPage() {
+function BulkOrdersPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { products, loading } = useProducts();
   const {
     items,
@@ -55,11 +60,14 @@ export function BulkOrdersPage() {
   const { user } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState('');
+  useTrackSearchQuery(searchTerm, 'wholesale');
   const [category, setCategory] = useState('all');
   const [sortBy, setSortBy] = useState<WholesaleSortOption>('newest');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const hydratedQuery = useRef(false);
 
   const productsById = useMemo(
     () => new Map(products.map((p) => [p.id, p])),
@@ -73,6 +81,28 @@ export function BulkOrdersPage() {
     [wholesaleProducts]
   );
 
+  useEffect(() => {
+    if (hydratedQuery.current) return;
+    hydratedQuery.current = true;
+    const q = searchParams.get('q');
+    if (q) setSearchTerm(q);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      const next = searchTerm.trim();
+      if (next) params.set('q', next);
+      else params.delete('q');
+      const qs = params.toString();
+      const href = qs ? `/wholesale?${qs}` : '/wholesale';
+      if (`${window.location.pathname}${window.location.search}` !== href) {
+        router.replace(href, { scroll: false });
+      }
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [searchTerm, router, searchParams]);
+
   const filteredProducts = useMemo(() => {
     let result = wholesaleProducts;
 
@@ -84,9 +114,41 @@ export function BulkOrdersPage() {
     return sortWholesaleProducts(result, sortBy);
   }, [wholesaleProducts, searchTerm, searchIndex, category, sortBy]);
 
+  const suggestions = useMemo(() => {
+    if (!searchTerm.trim()) return [];
+    return searchIndex.search(searchTerm.trim(), 6).map((hit) => ({
+      id: hit.product.id,
+      name: hit.product.name,
+      category: hit.product.category,
+      price: getWholesaleUnitPrice(hit.product, hit.product.minOrderQuantity),
+      image: hit.product.image || hit.product.images[0],
+    }));
+  }, [searchIndex, searchTerm]);
+
   const isFiltered = searchTerm.trim() !== '' || category !== 'all';
   const totalSavings = useMemo(() => getWholesaleSavings(items), [items]);
   const totalUnits = itemCount;
+
+  const scrollToResults = useCallback(() => {
+    document.getElementById(RESULTS_SECTION_ID)?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  }, []);
+
+  const handleSelectSuggestion = useCallback(
+    (id: string) => {
+      const el = document.getElementById(`wholesale-product-${id}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('ring-2', 'ring-primary');
+        window.setTimeout(() => el.classList.remove('ring-2', 'ring-primary'), 1600);
+        return;
+      }
+      scrollToResults();
+    },
+    [scrollToResults]
+  );
 
   const handleAddProduct = useCallback(
     (product: Product, quantity: number) => {
@@ -185,20 +247,21 @@ export function BulkOrdersPage() {
 
           <div className="sticky top-16 z-30 -mx-4 border-b border-border/60 bg-background/95 px-4 py-4 backdrop-blur-md sm:-mx-6 sm:px-6 lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none">
             <div className="flex flex-col gap-3">
-              <div className="flex gap-2">
-                <div className="relative min-w-0 flex-1">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <input
-                    type="search"
-                    placeholder="Search wholesale products…"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="h-11 w-full rounded-xl border border-border bg-background py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
+              <div className="flex items-start gap-2">
+                <WholesaleSearchBar
+                  ref={searchInputRef}
+                  search={searchTerm}
+                  totalProducts={wholesaleProducts.length}
+                  resultCount={filteredProducts.length}
+                  suggestions={suggestions}
+                  onSearchChange={setSearchTerm}
+                  onClear={() => setSearchTerm('')}
+                  onSelectSuggestion={handleSelectSuggestion}
+                  onViewAllResults={scrollToResults}
+                />
                 <Button
                   variant="outline"
-                  className="h-11 shrink-0 gap-2 rounded-xl lg:hidden"
+                  className="mt-0 h-11 shrink-0 gap-2 rounded-xl lg:hidden"
                   onClick={() => setFiltersOpen((o) => !o)}
                 >
                   <SlidersHorizontal className="h-4 w-4" />
@@ -262,7 +325,10 @@ export function BulkOrdersPage() {
             </div>
           </div>
 
-          <div className="grid gap-8 py-8 lg:grid-cols-[1fr_380px] lg:gap-10 lg:py-10">
+          <div
+            id={RESULTS_SECTION_ID}
+            className="grid scroll-mt-28 gap-8 py-8 lg:grid-cols-[1fr_380px] lg:gap-10 lg:py-10 lg:scroll-mt-24"
+          >
             <div>
               {loading ? (
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-2">
@@ -280,41 +346,44 @@ export function BulkOrdersPage() {
                   )}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {filteredProducts.map((product) => (
-                    <WholesaleProductCard
+                    <div
                       key={product.id}
-                      product={product}
-                      cartItem={getWholesaleCartItem(product.id)}
-                      onAdd={handleAddProduct}
-                    />
+                      id={`wholesale-product-${product.id}`}
+                      className="rounded-2xl transition ring-offset-2 ring-offset-background"
+                    >
+                      <WholesaleProductCard
+                        product={product}
+                        cartItem={getWholesaleCartItem(product.id)}
+                        onAdd={handleAddProduct}
+                      />
+                    </div>
                   ))}
                 </div>
               )}
             </div>
 
-            <aside className="hidden lg:block lg:self-start">
+            <aside className="hidden lg:block lg:self-start lg:sticky lg:top-24">
               <BulkOrderSummary
-                  id={SUMMARY_SECTION_ID}
-                  items={items}
-                  subtotal={total}
-                  totalSavings={totalSavings}
-                  totalUnits={totalUnits}
-                  onCheckout={handleCheckout}
-                  onClear={() => {
-                    if (confirm('Clear your entire cart?')) clearCart();
-                  }}
-                  checkoutLoading={checkoutLoading}
-                />
+                id={SUMMARY_SECTION_ID}
+                items={items}
+                subtotal={total}
+                totalSavings={totalSavings}
+                totalUnits={totalUnits}
+                onCheckout={handleCheckout}
+                onClear={() => {
+                  if (confirm('Clear your entire cart?')) clearCart();
+                }}
+                checkoutLoading={checkoutLoading}
+              />
             </aside>
           </div>
 
           <div className="border-t border-border/60 pt-8 lg:hidden" id={SUMMARY_SECTION_ID}>
-            <div className="mb-5">
-              <h2 className="text-2xl font-light tracking-tight">Your order</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Review line items and checkout when you are ready
-              </p>
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold tracking-tight">Your order</h2>
+              <p className="mt-0.5 text-sm text-muted-foreground">Review before checkout</p>
             </div>
             <BulkOrderSummary
               items={items}
@@ -326,25 +395,22 @@ export function BulkOrdersPage() {
                 if (confirm('Clear your entire cart?')) clearCart();
               }}
               checkoutLoading={checkoutLoading}
-              className="shadow-md shadow-primary/10"
             />
           </div>
         </div>
       </section>
 
-      {items.length > 0 && (
+      {items.length > 0 ? (
         <button
           type="button"
           onClick={() => setDrawerOpen(true)}
-          aria-label={`Open cart with ${items.length} items`}
-          className="fixed bottom-6 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition hover:scale-105 active:scale-95 lg:bottom-8"
+          aria-label={`Open order with ${items.length} items`}
+          className="fixed bottom-6 right-4 z-40 flex h-12 items-center gap-2.5 rounded-full border border-border/80 bg-foreground px-4 text-background shadow-lg transition hover:bg-foreground/90 active:scale-[0.98] lg:bottom-8"
         >
-          <ShoppingCart className="h-6 w-6" />
-          <span className="absolute -right-1 -top-1 flex h-6 min-w-6 items-center justify-center rounded-full bg-accent px-1.5 text-xs font-bold text-accent-foreground">
-            {itemCount > 99 ? '99+' : itemCount}
-          </span>
+          <ShoppingCart className="h-4 w-4" />
+          <span className="text-sm font-semibold tabular-nums">{itemCount}</span>
         </button>
-      )}
+      ) : null}
 
       <BulkCartDrawer
         open={drawerOpen}
@@ -364,5 +430,26 @@ export function BulkOrdersPage() {
 
       <Footer />
     </main>
+  );
+}
+
+export function BulkOrdersPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-background">
+          <Header />
+          <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <WholesaleProductCardSkeleton key={i} />
+              ))}
+            </div>
+          </div>
+        </main>
+      }
+    >
+      <BulkOrdersPageInner />
+    </Suspense>
   );
 }

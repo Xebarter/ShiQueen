@@ -8,11 +8,7 @@ export default function ProviderSettingsPage() {
   return (
     <ProviderShell>
       <PartnerPage>
-        <PartnerPageHeader
-          eyebrow="Account"
-          title="Settings"
-          description="Account security and notification preferences."
-        />
+        <PartnerPageHeader title="Settings" />
         <PartnerSettingsForm />
       </PartnerPage>
     </ProviderShell>

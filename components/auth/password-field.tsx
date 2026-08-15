@@ -39,7 +39,7 @@ export function PasswordField({
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={cn('h-11 rounded-md pr-11 text-base md:text-sm', className)}
+        className={cn('h-11 rounded-xl pr-11 text-base md:text-sm', className)}
         required={required}
         disabled={disabled}
         autoFocus={autoFocus}

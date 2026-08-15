@@ -47,6 +47,7 @@ import {
   getStoredViewedPackageIds,
   trackPackageView,
 } from '@/lib/package-merchandising';
+import { useTrackSearchQuery } from '@/lib/hooks/use-track-search-query';
 import {
   filterPackagesByCollection,
   getPackageCollection,
@@ -75,6 +76,7 @@ export function PackagesPage() {
   );
 
   const [search, setSearch] = useState('');
+  useTrackSearchQuery(search, 'packages');
   const [sort, setSort] = useState<SortOption>('savings');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const [collectionId, setCollectionId] = useState<string | null>(null);

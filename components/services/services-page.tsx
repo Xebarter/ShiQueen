@@ -17,6 +17,7 @@ import { ServicesFeaturedRow } from '@/components/services/discovery/services-fe
 import { ServicesTrustStrip } from '@/components/services/discovery/services-trust-strip';
 import { useServices } from '@/lib/services-context';
 import { useServicesSearch } from '@/lib/hooks/use-services-search';
+import { useTrackSearchQuery } from '@/lib/hooks/use-track-search-query';
 import { useHistoryOverlay } from '@/lib/hooks/use-history-overlay';
 import {
   getFeaturedServices,
@@ -29,6 +30,7 @@ import type { ServiceListing } from '@/lib/types/services';
 export function ServicesPage() {
   const { activeCategories, activeListings, activeProviders, loading } = useServices();
   const search = useServicesSearch();
+  useTrackSearchQuery(search.query, 'services');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [bookingListing, setBookingListing] = useState<ServiceListing | null>(null);
 

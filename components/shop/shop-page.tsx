@@ -36,6 +36,7 @@ import { CatalogBottomCta } from '@/components/shop/catalog-bottom-cta';
 import { cn } from '@/lib/utils';
 import { shopCategorySeo } from '@/lib/seo/site';
 import { isShopSeoCategory, shopCategoryPath } from '@/lib/seo/shop-categories';
+import { useTrackSearchQuery } from '@/lib/hooks/use-track-search-query';
 
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest' },
@@ -57,6 +58,7 @@ export function ShopPage({ initialCategory = 'all' }: { initialCategory?: string
   const { products, loading } = usePublicProducts();
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get('q')?.trim() ?? '';
+  useTrackSearchQuery(searchQuery, 'shop');
 
   const categoryFromUrl = useMemo(() => {
     const match = pathname.match(/^\/shop\/([^/]+)/);

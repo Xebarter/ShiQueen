@@ -32,8 +32,8 @@ export function BulkQuantityStepper({
   return (
     <div
       className={cn(
-        'inline-flex items-center rounded-xl border border-border/80 bg-background shadow-sm',
-        disabled && 'opacity-50 pointer-events-none',
+        'inline-flex items-center overflow-hidden rounded-lg border border-border/80 bg-background',
+        disabled && 'pointer-events-none opacity-50',
         className
       )}
     >
@@ -42,9 +42,9 @@ export function BulkQuantityStepper({
         onClick={() => onChange(Math.max(min, quantity - 1))}
         disabled={disabled || quantity <= min}
         aria-label="Decrease quantity"
-        className="flex h-11 w-11 items-center justify-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95 disabled:opacity-40"
+        className="flex h-10 w-10 items-center justify-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
       >
-        <Minus className="h-4 w-4" />
+        <Minus className="h-3.5 w-3.5" />
       </button>
       <input
         type="number"
@@ -54,16 +54,16 @@ export function BulkQuantityStepper({
         onChange={(e) => handleInput(e.target.value)}
         disabled={disabled}
         aria-label="Quantity"
-        className="h-11 w-14 border-x border-border/80 bg-transparent text-center text-base font-semibold tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
+        className="h-10 w-12 border-x border-border/80 bg-transparent text-center text-sm font-semibold tabular-nums focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary/25"
       />
       <button
         type="button"
         onClick={() => onChange(Math.min(max, quantity + 1))}
         disabled={disabled || quantity >= max}
         aria-label="Increase quantity"
-        className="flex h-11 w-11 items-center justify-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-95 disabled:opacity-40"
+        className="flex h-10 w-10 items-center justify-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
       >
-        <Plus className="h-4 w-4" />
+        <Plus className="h-3.5 w-3.5" />
       </button>
     </div>
   );

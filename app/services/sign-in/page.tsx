@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { AuthShell } from '@/components/auth/auth-shell';
+import { AuthDivider, AuthShell } from '@/components/auth/auth-shell';
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
 import { PasswordField } from '@/components/auth/password-field';
 import { Button } from '@/components/ui/button';
@@ -68,7 +68,22 @@ function ProviderSignInForm() {
   const busy = loading || googleLoading;
 
   return (
-    <AuthShell heading="Provider sign in" subheading="Access your services dashboard">
+    <AuthShell
+      eyebrow="Services partner"
+      heading="Welcome back"
+      subheading="Sign in to manage bookings, listings, and your services dashboard."
+      footer={
+        <p className="text-center text-sm text-muted-foreground">
+          New provider?{' '}
+          <Link
+            href="/services/sign-up"
+            className="font-semibold text-primary underline-offset-4 hover:underline"
+          >
+            Apply here
+          </Link>
+        </p>
+      }
+    >
       <div className="space-y-5">
         <GoogleSignInButton
           loading={googleLoading}
@@ -86,35 +101,41 @@ function ProviderSignInForm() {
             }
           }}
         />
-        <div className="relative py-1">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-border" />
-          </div>
-          <div className="relative flex justify-center">
-            <span className="bg-card px-3 text-xs text-muted-foreground">or</span>
-          </div>
-        </div>
+        <AuthDivider />
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="email" className="text-sm font-medium">
+              Email
+            </Label>
             <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className="h-11 rounded-xl"
               required
               disabled={busy}
               autoComplete="email"
+              placeholder="you@studio.com"
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="password" className="text-sm font-medium">
+              Password
+            </Label>
             <PasswordField id="password" value={password} onChange={setPassword} disabled={busy} />
-            <Link href="/forgot-password" className="text-xs font-medium text-primary hover:underline">
+            <Link
+              href="/forgot-password"
+              className="text-xs font-medium text-primary underline-offset-4 hover:underline"
+            >
               Forgot password?
             </Link>
           </div>
-          <Button type="submit" className="w-full" disabled={busy}>
+          <Button
+            type="submit"
+            className="h-11 w-full rounded-xl text-sm font-semibold shadow-md shadow-primary/15"
+            disabled={busy}
+          >
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -126,12 +147,6 @@ function ProviderSignInForm() {
           </Button>
         </form>
       </div>
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        New provider?{' '}
-        <Link href="/services/sign-up" className="font-medium text-primary hover:underline">
-          Apply here
-        </Link>
-      </p>
     </AuthShell>
   );
 }

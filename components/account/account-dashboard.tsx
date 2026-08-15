@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronRight,
+  Clock,
   Crown,
   Heart,
   Loader2,
@@ -25,6 +26,7 @@ import { Footer } from '@/components/footer';
 import { AccountMobileNav } from '@/components/account/account-mobile-nav';
 import { AccountSidebar } from '@/components/account/account-sidebar';
 import { AccountSettings } from '@/components/account/account-settings';
+import { AccountSearchHistory } from '@/components/account/account-search-history';
 import {
   getAccountSectionMeta,
   parseAccountSectionHash,
@@ -555,6 +557,7 @@ export function AccountDashboard() {
     { label: 'Browse shop', href: '/shop', icon: ShoppingBag },
     { label: 'Packages', href: '/packages', icon: Crown },
     { label: 'Wholesale', href: '/wholesale', icon: Truck },
+    { label: 'Search history', href: '/account#search', icon: Clock },
     ...(isAdmin ? [{ label: 'Admin dashboard', href: '/admin', icon: Shield }] : []),
     ...(isSupplier ? [{ label: 'Supplier dashboard', href: '/suppliers/orders', icon: Truck }] : []),
     ...(isServiceProvider
@@ -806,6 +809,8 @@ export function AccountDashboard() {
                   )}
                 </div>
               )}
+
+              {activeSection === 'search' && <AccountSearchHistory />}
 
               {activeSection === 'settings' && user && (
                 <AccountSettings

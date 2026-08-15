@@ -55,14 +55,14 @@ function FieldHint({ children }: { children: React.ReactNode }) {
 
 function completenessItems(form: ProfileForm) {
   return [
-    { id: 'logo', label: 'Business logo', done: Boolean(form.logo.trim()) },
-    { id: 'company', label: 'Company name', done: Boolean(form.companyName.trim()) },
-    { id: 'contact', label: 'Contact person', done: Boolean(form.contactName.trim()) },
-    { id: 'phone', label: 'Phone number', done: Boolean(form.phone.trim()) },
+    { id: 'logo', label: 'Logo', done: Boolean(form.logo.trim()) },
+    { id: 'company', label: 'Company', done: Boolean(form.companyName.trim()) },
+    { id: 'contact', label: 'Contact', done: Boolean(form.contactName.trim()) },
+    { id: 'phone', label: 'Phone', done: Boolean(form.phone.trim()) },
     { id: 'city', label: 'City', done: Boolean(form.city.trim()) },
-    { id: 'address', label: 'Street address', done: Boolean(form.address.trim()) },
-    { id: 'categories', label: 'Catalog types', done: form.categories.length > 0 },
-    { id: 'about', label: 'About your business', done: Boolean(form.notes.trim()) },
+    { id: 'address', label: 'Address', done: Boolean(form.address.trim()) },
+    { id: 'categories', label: 'Catalog', done: form.categories.length > 0 },
+    { id: 'about', label: 'About', done: Boolean(form.notes.trim()) },
   ];
 }
 
@@ -216,13 +216,11 @@ export default function SupplierProfilePage() {
     <SupplierShell>
       <PartnerPage>
         <PartnerPageHeader
-          eyebrow="Account"
-          title="Business profile"
-          description="How ShiQueen and your buyers recognize your brand."
+          title="Profile"
           action={
             <Button type="submit" form="supplier-profile-form" disabled={saving || uploadingLogo} className="gap-1.5">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Save profile
+              Save
             </Button>
           }
         />
@@ -232,15 +230,12 @@ export default function SupplierProfilePage() {
             <div className="flex min-w-0 items-start gap-4">
               <LogoMark className="h-20 w-20 sm:h-24 sm:w-24" sizes="96px" />
               <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                  Supplier identity
-                </p>
-                <h2 className="mt-1 truncate text-2xl font-bold tracking-tight">
+                <h2 className="truncate text-2xl font-bold tracking-tight">
                   {form.companyName || 'Your company'}
                 </h2>
                 <p className="mt-1 truncate text-sm text-muted-foreground">
                   {[form.contactName, form.city || supplier.city].filter(Boolean).join(' · ') ||
-                    'Add your contact and city'}
+                    'Add contact & city'}
                 </p>
                 <div className="mt-3 flex flex-wrap items-center gap-1.5">
                   <span
@@ -259,14 +254,14 @@ export default function SupplierProfilePage() {
                         : 'bg-slate-500/15 text-slate-700 ring-slate-500/25'
                     )}
                   >
-                    {supplier.isActive ? 'Storefront on' : 'Storefront paused'}
+                    {supplier.isActive ? 'Active' : 'Paused'}
                   </span>
                 </div>
               </div>
             </div>
             <div className="shrink-0 rounded-xl border border-border/60 bg-background/70 px-4 py-3 backdrop-blur-sm">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Profile completeness
+                Complete
               </p>
               <p className="mt-1 text-2xl font-bold tabular-nums">{completePct}%</p>
               <div className="mt-2 h-1.5 w-36 overflow-hidden rounded-full bg-muted">
@@ -276,7 +271,7 @@ export default function SupplierProfilePage() {
                 />
               </div>
               <p className="mt-1.5 text-xs text-muted-foreground">
-                {completeCount} of {checklist.length} details
+                {completeCount}/{checklist.length}
               </p>
             </div>
           </div>
@@ -293,10 +288,7 @@ export default function SupplierProfilePage() {
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   <ImagePlus className="h-4 w-4" />
                 </span>
-                <div>
-                  <h3 className="text-sm font-semibold">Brand mark</h3>
-                  <p className="text-xs text-muted-foreground">Used in the supplier portal and admin directory.</p>
-                </div>
+                <h3 className="text-sm font-semibold">Logo</h3>
               </div>
               <input
                 ref={fileInputRef}
@@ -324,7 +316,7 @@ export default function SupplierProfilePage() {
                       ) : (
                         <ImagePlus className="mr-1.5 h-3.5 w-3.5" />
                       )}
-                      {uploadingLogo ? 'Uploading…' : form.logo ? 'Change logo' : 'Upload logo'}
+                      {uploadingLogo ? 'Uploading…' : form.logo ? 'Change' : 'Upload'}
                     </Button>
                     {form.logo ? (
                       <Button
@@ -338,7 +330,7 @@ export default function SupplierProfilePage() {
                       </Button>
                     ) : null}
                   </div>
-                  <FieldHint>JPEG, PNG, WebP, or GIF · up to 5MB. Square crops look best.</FieldHint>
+                  <FieldHint>JPEG, PNG, WebP, GIF</FieldHint>
                 </div>
               </div>
             </PartnerCard>
@@ -348,10 +340,7 @@ export default function SupplierProfilePage() {
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   <Building2 className="h-4 w-4" />
                 </span>
-                <div>
-                  <h3 className="text-sm font-semibold">Company</h3>
-                  <p className="text-xs text-muted-foreground">Legal and trading name as it should appear.</p>
-                </div>
+                <h3 className="text-sm font-semibold">Company</h3>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2 sm:col-span-2">
@@ -361,32 +350,31 @@ export default function SupplierProfilePage() {
                     value={form.companyName}
                     onChange={(e) => setForm((f) => ({ ...f, companyName: e.target.value }))}
                     className="h-11"
-                    placeholder="e.g. Pearl Beauty Supply"
+                    placeholder="Company name"
                     required
                   />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="contactName">Primary contact</Label>
+                  <Label htmlFor="contactName">Contact</Label>
                   <Input
                     id="contactName"
                     value={form.contactName}
                     onChange={(e) => setForm((f) => ({ ...f, contactName: e.target.value }))}
                     className="h-11"
-                    placeholder="Who ShiQueen should reach"
+                    placeholder="Contact name"
                     required
                   />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="notes">About your business</Label>
+                  <Label htmlFor="notes">About</Label>
                   <textarea
                     id="notes"
                     value={form.notes}
                     onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
-                    rows={4}
-                    placeholder="Lead times, specialties, what you supply…"
+                    rows={3}
+                    placeholder="Optional notes"
                     className="w-full rounded-lg border border-input bg-transparent px-3 py-2.5 text-sm leading-relaxed outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                   />
-                  <FieldHint>Shared with ShiQueen when reviewing your account and catalog.</FieldHint>
                 </div>
               </div>
             </PartnerCard>
@@ -396,14 +384,11 @@ export default function SupplierProfilePage() {
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   <Phone className="h-4 w-4" />
                 </span>
-                <div>
-                  <h3 className="text-sm font-semibold">Contact</h3>
-                  <p className="text-xs text-muted-foreground">How orders and account updates reach you.</p>
-                </div>
+                <h3 className="text-sm font-semibold">Contact</h3>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="email">Account email</Label>
+                  <Label htmlFor="email">Email</Label>
                   <div className="relative">
                     <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -413,7 +398,6 @@ export default function SupplierProfilePage() {
                       className="h-11 bg-muted/40 pl-9 text-muted-foreground"
                     />
                   </div>
-                  <FieldHint>Tied to your sign-in. Change it from Settings if needed.</FieldHint>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone</Label>
@@ -422,7 +406,7 @@ export default function SupplierProfilePage() {
                     value={form.phone}
                     onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                     className="h-11"
-                    placeholder="+256 7…"
+                    placeholder="+256…"
                     required
                   />
                 </div>
@@ -433,7 +417,7 @@ export default function SupplierProfilePage() {
                     value={form.whatsapp}
                     onChange={(e) => setForm((f) => ({ ...f, whatsapp: e.target.value }))}
                     className="h-11"
-                    placeholder="Defaults to phone"
+                    placeholder="Same as phone"
                   />
                 </div>
               </div>
@@ -444,10 +428,7 @@ export default function SupplierProfilePage() {
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   <MapPin className="h-4 w-4" />
                 </span>
-                <div>
-                  <h3 className="text-sm font-semibold">Location & catalog</h3>
-                  <p className="text-xs text-muted-foreground">Where you operate and what you list.</p>
-                </div>
+                <h3 className="text-sm font-semibold">Location</h3>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -462,17 +443,17 @@ export default function SupplierProfilePage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="address">Street address</Label>
+                  <Label htmlFor="address">Address</Label>
                   <Input
                     id="address"
                     value={form.address}
                     onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
                     className="h-11"
-                    placeholder="Shop, warehouse, or office"
+                    placeholder="Street / shop"
                   />
                 </div>
                 <div className="space-y-2 sm:col-span-2">
-                  <Label>What you supply</Label>
+                  <Label>Catalog</Label>
                   <div className="grid grid-cols-2 gap-2">
                     {LISTING_CATEGORIES.map((cat) => {
                       const active = form.categories.includes(cat.id);
@@ -496,9 +477,6 @@ export default function SupplierProfilePage() {
                           )}
                         >
                           {cat.label}
-                          <span className="mt-0.5 block text-[11px] font-normal text-muted-foreground">
-                            {cat.id === 'products' ? 'Individual SKUs on the shop' : 'Curated sets and bundles'}
-                          </span>
                         </button>
                       );
                     })}
@@ -510,7 +488,7 @@ export default function SupplierProfilePage() {
             <div className="flex justify-end lg:hidden">
               <Button type="submit" disabled={saving || uploadingLogo} className="gap-1.5">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                Save profile
+                Save
               </Button>
             </div>
           </div>
@@ -518,7 +496,7 @@ export default function SupplierProfilePage() {
           <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
             <PartnerCard className="p-5">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Directory preview
+                Preview
               </p>
               <div className="mt-3 rounded-xl border border-border/70 bg-gradient-to-br from-primary/[0.05] via-background to-accent/[0.08] p-4">
                 <div className="flex items-start gap-3">
@@ -528,7 +506,7 @@ export default function SupplierProfilePage() {
                       {form.companyName || 'Your company'}
                     </p>
                     <p className="mt-0.5 truncate text-sm text-muted-foreground">
-                      {form.contactName || 'Primary contact'}
+                      {form.contactName || 'Contact'}
                     </p>
                     {(form.city || form.address) && (
                       <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -565,12 +543,12 @@ export default function SupplierProfilePage() {
                   <dd className="font-medium">{statusMeta.label}</dd>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <dt className="text-muted-foreground">Member since</dt>
+                  <dt className="text-muted-foreground">Joined</dt>
                   <dd className="font-medium">{joinedLabel}</dd>
                 </div>
                 <div className="flex items-center justify-between gap-3">
-                  <dt className="text-muted-foreground">Storefront</dt>
-                  <dd className="font-medium">{supplier.isActive ? 'Visible' : 'Hidden'}</dd>
+                  <dt className="text-muted-foreground">Visible</dt>
+                  <dd className="font-medium">{supplier.isActive ? 'Yes' : 'No'}</dd>
                 </div>
               </dl>
               {supplier.rejectionReason ? (

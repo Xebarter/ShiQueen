@@ -30,30 +30,13 @@ import { resolveListingImage } from '@/lib/services-utils';
 import { formatUGX } from '@/lib/wholesale-data';
 import type { ServiceListing } from '@/lib/types/services';
 import Image from 'next/image';
+import {
+  readRecentSearchQueries,
+  recordSearchHistory,
+} from '@/lib/search-history';
 
-const RECENT_SEARCHES_KEY = 'shequeen-recent-searches';
-const MAX_RECENT = 5;
 const RESULT_LIMIT = 8;
-
-function readRecentSearches(): string[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const stored = JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY) || '[]');
-    return Array.isArray(stored) ? stored.filter((item) => typeof item === 'string').slice(0, MAX_RECENT) : [];
-  } catch {
-    return [];
-  }
-}
-
-function storeRecentSearch(query: string) {
-  const trimmed = query.trim();
-  if (!trimmed || typeof window === 'undefined') return;
-  const next = [trimmed, ...readRecentSearches().filter((item) => item !== trimmed)].slice(
-    0,
-    MAX_RECENT
-  );
-  localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
-}
+const RECENT_PREVIEW = 5;
 
 function HighlightMatch({ text, query }: { text: string; query: string }) {
   const trimmed = query.trim();
@@ -304,7 +287,7 @@ export function SearchBar({ className }: { className?: string }) {
 
   useEffect(() => {
     setMounted(true);
-    setRecentSearches(readRecentSearches());
+    setRecentSearches(readRecentSearchQueries(RECENT_PREVIEW));
   }, []);
 
   useLayoutEffect(() => {
@@ -351,8 +334,8 @@ export function SearchBar({ className }: { className?: string }) {
     (value: string) => {
       const trimmed = value.trim();
       if (!trimmed) return;
-      storeRecentSearch(trimmed);
-      setRecentSearches(readRecentSearches());
+      recordSearchHistory(trimmed, 'catalog');
+      setRecentSearches(readRecentSearchQueries(RECENT_PREVIEW));
       setQuery('');
       setIsOpen(false);
       router.push(`/shop?q=${encodeURIComponent(trimmed)}`);
@@ -370,8 +353,8 @@ export function SearchBar({ className }: { className?: string }) {
   const handleRecentSelect = useCallback((value: string) => {
     const trimmed = value.trim();
     if (!trimmed) return;
-    storeRecentSearch(trimmed);
-    setRecentSearches(readRecentSearches());
+    recordSearchHistory(trimmed, 'catalog');
+    setRecentSearches(readRecentSearchQueries(RECENT_PREVIEW));
     setQuery(trimmed);
     setActiveIndex(-1);
     setIsOpen(true);
@@ -381,8 +364,8 @@ export function SearchBar({ className }: { className?: string }) {
   const handleResultSelect = useCallback(
     (hit: CatalogSearchHit) => {
       const href = getHitHref(hit);
-      if (trimmedQuery) storeRecentSearch(trimmedQuery);
-      setRecentSearches(readRecentSearches());
+      if (trimmedQuery) recordSearchHistory(trimmedQuery, 'catalog');
+      setRecentSearches(readRecentSearchQueries(RECENT_PREVIEW));
       setQuery('');
       setIsOpen(false);
       setActiveIndex(-1);
@@ -393,8 +376,8 @@ export function SearchBar({ className }: { className?: string }) {
 
   const handleViewAllSelect = useCallback(() => {
     if (!trimmedQuery) return;
-    storeRecentSearch(trimmedQuery);
-    setRecentSearches(readRecentSearches());
+    recordSearchHistory(trimmedQuery, 'catalog');
+    setRecentSearches(readRecentSearchQueries(RECENT_PREVIEW));
     setQuery('');
     setIsOpen(false);
     router.push(`/shop?q=${encodeURIComponent(trimmedQuery)}`);
@@ -446,9 +429,22 @@ export function SearchBar({ className }: { className?: string }) {
     >
       {!trimmedQuery && recentSearches.length > 0 && (
         <div className="border-b border-border/60 p-3">
-          <p className="px-2 py-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-            Recent
-          </p>
+          <div className="mb-1 flex items-center justify-between gap-2 px-2">
+            <p className="py-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              Recent
+            </p>
+            <button
+              type="button"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                setIsOpen(false);
+                router.push('/account#search');
+              }}
+              className="text-[11px] font-medium text-primary hover:underline"
+            >
+              View all
+            </button>
+          </div>
           {recentSearches.map((item) => (
             <button
               key={item}

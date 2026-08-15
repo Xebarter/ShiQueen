@@ -1,5 +1,8 @@
 import { Product } from '@/lib/types/database';
-import { getProductWholesaleUnitPrice, getTieredPrice } from '@/lib/wholesale-data';
+import {
+  createDefaultPricingTiers,
+  getProductWholesaleUnitPrice,
+} from '@/lib/wholesale-data';
 import { filterByCategory } from '@/lib/hooks/use-product-merchandising';
 
 export type WholesaleSortOption =

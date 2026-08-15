@@ -52,25 +52,25 @@ const SETTINGS_TABS: {
   {
     id: 'profile',
     label: 'Profile',
-    description: 'Name & contact',
+    description: 'Name & phone',
     icon: UserRound,
   },
   {
     id: 'address',
     label: 'Address',
-    description: 'Delivery details',
+    description: 'Delivery',
     icon: MapPin,
   },
   {
     id: 'preferences',
-    label: 'Preferences',
+    label: 'Alerts',
     description: 'Notifications',
     icon: Bell,
   },
   {
     id: 'security',
     label: 'Security',
-    description: 'Password & access',
+    description: 'Password',
     icon: Shield,
   },
 ];
@@ -353,7 +353,7 @@ export function AccountSettings({
               <AccountAvatar email={user.email} variant="email-letter" size="lg" />
               <div className="min-w-0">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
-                  Account settings
+                  Settings
                 </p>
                 <h2 className="mt-1 truncate text-xl font-semibold tracking-tight sm:text-2xl">
                   {displayName}
@@ -362,11 +362,11 @@ export function AccountSettings({
                 <div className="mt-3 flex flex-wrap gap-2">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-background/80 px-2.5 py-1 text-[11px] font-medium ring-1 ring-border/60">
                     <Shield className="h-3 w-3 text-primary" />
-                    {signInMethod} sign-in
+                    {signInMethod}
                   </span>
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-background/80 px-2.5 py-1 text-[11px] font-medium ring-1 ring-border/60">
                     <Sparkles className="h-3 w-3 text-accent" />
-                    Member since {formatMemberSince(memberSince)}
+                    Since {formatMemberSince(memberSince)}
                   </span>
                   {isAdmin ? (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary ring-1 ring-primary/20">
@@ -381,7 +381,7 @@ export function AccountSettings({
             <div className="w-full rounded-2xl border border-border/50 bg-background/80 p-4 backdrop-blur sm:max-w-[220px]">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                  Profile strength
+                  Complete
                 </p>
                 <p className="text-sm font-semibold tabular-nums">{completion.percent}%</p>
               </div>
@@ -392,7 +392,7 @@ export function AccountSettings({
                 />
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                {completion.done}/{completion.total} essentials complete
+                {completion.done}/{completion.total}
               </p>
             </div>
           </div>
@@ -437,27 +437,24 @@ export function AccountSettings({
       {tab === 'profile' && (
         <form onSubmit={handleSaveProfile}>
           <SettingsPanel
-            title="Personal details"
-            description="How we address you across ShiQueen — checkout, bookings, and support."
+            title="Details"
             footer={
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs text-muted-foreground">
-                  Email is managed by your sign-in provider and cannot be changed here.
-                </p>
+                <p className="text-xs text-muted-foreground">Email can’t be changed here.</p>
                 <Button type="submit" disabled={savingProfile} className="gap-2 rounded-xl">
                   {savingProfile ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <Save className="h-4 w-4" />
                   )}
-                  Save profile
+                  Save
                 </Button>
               </div>
             }
           >
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="settings-name">Display name</Label>
+                <Label htmlFor="settings-name">Name</Label>
                 <Input
                   id="settings-name"
                   value={name}
@@ -497,8 +494,7 @@ export function AccountSettings({
       {tab === 'address' && (
         <form onSubmit={handleSaveAddress}>
           <SettingsPanel
-            title="Default delivery address"
-            description="Saved for faster checkout. You can still edit addresses when placing an order."
+            title="Address"
             footer={
               <div className="flex justify-end">
                 <Button type="submit" disabled={savingAddress} className="gap-2 rounded-xl">
@@ -507,14 +503,14 @@ export function AccountSettings({
                   ) : (
                     <Save className="h-4 w-4" />
                   )}
-                  Save address
+                  Save
                 </Button>
               </div>
             }
           >
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="addr-name">Full name</Label>
+                <Label htmlFor="addr-name">Name</Label>
                 <Input
                   id="addr-name"
                   value={address.fullName}
@@ -534,12 +530,12 @@ export function AccountSettings({
                 />
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="addr-street">Street address</Label>
+                <Label htmlFor="addr-street">Street</Label>
                 <Input
                   id="addr-street"
                   value={address.address}
                   onChange={(e) => setAddress((prev) => ({ ...prev, address: e.target.value }))}
-                  placeholder="Road, building, landmark"
+                  placeholder="Street, building"
                   className={fieldClassName()}
                   required
                 />
@@ -555,22 +551,22 @@ export function AccountSettings({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="addr-district">District / area</Label>
+                <Label htmlFor="addr-district">Area</Label>
                 <Input
                   id="addr-district"
                   value={address.district ?? ''}
                   onChange={(e) => setAddress((prev) => ({ ...prev, district: e.target.value }))}
-                  placeholder="e.g. Nakawa, Kololo"
+                  placeholder="e.g. Nakawa"
                   className={fieldClassName()}
                 />
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="addr-notes">Delivery notes</Label>
+                <Label htmlFor="addr-notes">Notes</Label>
                 <Input
                   id="addr-notes"
                   value={address.notes ?? ''}
                   onChange={(e) => setAddress((prev) => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Gate code, preferred time, etc."
+                  placeholder="Optional"
                   className={fieldClassName()}
                 />
               </div>
@@ -581,8 +577,7 @@ export function AccountSettings({
 
       {tab === 'preferences' && (
         <SettingsPanel
-          title="Notifications & communication"
-          description="Choose how ShiQueen keeps you informed. You can change these anytime."
+          title="Alerts"
           footer={
             <div className="flex justify-end">
               <Button
@@ -596,22 +591,22 @@ export function AccountSettings({
                 ) : (
                   <Check className="h-4 w-4" />
                 )}
-                Save preferences
+                Save
               </Button>
             </div>
           }
         >
           <div className="space-y-3">
             <PreferenceToggle
-              label="Order updates"
-              description="Shipping, delivery confirmation, and order status emails."
+              label="Orders"
+              description="Status and delivery updates"
               checked={preferences.orderUpdates}
               onChange={(orderUpdates) => setPreferences((prev) => ({ ...prev, orderUpdates }))}
               disabled={savingPreferences}
             />
             <PreferenceToggle
-              label="Service reminders"
-              description="Booking confirmations and reminders for beauty & lifestyle services."
+              label="Services"
+              description="Booking confirmations"
               checked={preferences.serviceReminders}
               onChange={(serviceReminders) =>
                 setPreferences((prev) => ({ ...prev, serviceReminders }))
@@ -619,15 +614,15 @@ export function AccountSettings({
               disabled={savingPreferences}
             />
             <PreferenceToggle
-              label="Promotions & new arrivals"
-              description="Curated offers, bundles, and seasonal drops from ShiQueen."
+              label="Promotions"
+              description="Offers and new arrivals"
               checked={preferences.promotions}
               onChange={(promotions) => setPreferences((prev) => ({ ...prev, promotions }))}
               disabled={savingPreferences}
             />
             <PreferenceToggle
-              label="SMS alerts"
-              description="Urgent delivery updates by text when phone number is on file."
+              label="SMS"
+              description="Urgent delivery texts"
               checked={preferences.smsAlerts}
               onChange={(smsAlerts) => setPreferences((prev) => ({ ...prev, smsAlerts }))}
               disabled={savingPreferences}
@@ -641,8 +636,7 @@ export function AccountSettings({
           {isEmailAccount ? (
             <form onSubmit={handleChangePassword}>
               <SettingsPanel
-                title="Change password"
-                description="Use a strong password you don’t reuse on other sites."
+                title="Password"
                 footer={
                   <div className="flex justify-end">
                     <Button type="submit" disabled={savingPassword} className="gap-2 rounded-xl">
@@ -651,14 +645,14 @@ export function AccountSettings({
                       ) : (
                         <KeyRound className="h-4 w-4" />
                       )}
-                      Update password
+                      Update
                     </Button>
                   </div>
                 }
               >
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="current-password">Current password</Label>
+                    <Label htmlFor="current-password">Current</Label>
                     <Input
                       id="current-password"
                       type="password"
@@ -670,7 +664,7 @@ export function AccountSettings({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="new-password">New password</Label>
+                    <Label htmlFor="new-password">New</Label>
                     <Input
                       id="new-password"
                       type="password"
@@ -683,7 +677,7 @@ export function AccountSettings({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="confirm-password">Confirm new password</Label>
+                    <Label htmlFor="confirm-password">Confirm</Label>
                     <Input
                       id="confirm-password"
                       type="password"
@@ -699,25 +693,22 @@ export function AccountSettings({
               </SettingsPanel>
             </form>
           ) : (
-            <SettingsPanel
-              title="Password"
-              description="Your account is secured through Google sign-in."
-            >
+            <SettingsPanel title="Password">
               <div className="flex items-start gap-3 rounded-xl border border-border/60 bg-muted/20 px-4 py-3.5">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                   <Shield className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Managed by Google</p>
+                  <p className="text-sm font-medium">Google sign-in</p>
                   <p className="mt-0.5 text-sm text-muted-foreground">
-                    Update your Google password in your Google Account if you need to change it.
+                    Change password in your Google Account.
                   </p>
                 </div>
               </div>
             </SettingsPanel>
           )}
 
-          <SettingsPanel title="Session" description="Sign out of ShiQueen on this device.">
+          <SettingsPanel title="Session">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
@@ -726,7 +717,7 @@ export function AccountSettings({
                 <div>
                   <p className="font-medium">Sign out</p>
                   <p className="mt-0.5 text-sm text-muted-foreground">
-                    Your cart and wishlist stay on this device until you clear them.
+                    Cart & wishlist stay on this device.
                   </p>
                 </div>
               </div>
@@ -747,7 +738,7 @@ export function AccountSettings({
             </div>
           </SettingsPanel>
 
-          <SettingsPanel title="Need help?" description="We’re here for account and order support.">
+          <SettingsPanel title="Help">
             <div className="grid gap-3 sm:grid-cols-2">
               <a
                 href={CONTACT_PHONE_HREF}
@@ -767,7 +758,7 @@ export function AccountSettings({
                 <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                   WhatsApp
                 </p>
-                <p className="mt-1 text-sm font-medium">Message support</p>
+                <p className="mt-1 text-sm font-medium">Chat</p>
               </a>
               {isAdmin ? (
                 <Link

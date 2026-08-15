@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { AuthShell } from '@/components/auth/auth-shell';
+import { AuthDivider, AuthSectionLabel, AuthShell } from '@/components/auth/auth-shell';
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
 import { PasswordField } from '@/components/auth/password-field';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,8 @@ import { cn } from '@/lib/utils';
 const SIGNUP_CATEGORIES = SUPPLIER_CATEGORY_OPTIONS.filter(
   (c) => c.id === 'products' || c.id === 'packages'
 );
+
+const fieldClass = 'h-11 rounded-xl text-base md:text-sm';
 
 export default function SupplierSignUpPage() {
   const router = useRouter();
@@ -155,89 +157,134 @@ export default function SupplierSignUpPage() {
 
   return (
     <AuthShell
-      heading="Supplier sign up"
-      subheading="Apply to list products and packages on ShiQueen"
+      size="wide"
+      eyebrow="Supplier partner"
+      heading="Join the atelier"
+      subheading="Apply to list products and curated packages on ShiQueen. Approval usually takes 1–2 business days."
+      footer={
+        <div className="space-y-2 text-center text-sm text-muted-foreground">
+          <p>
+            Already a supplier?{' '}
+            <Link
+              href="/suppliers/sign-in"
+              className="font-semibold text-primary underline-offset-4 hover:underline"
+            >
+              Sign in
+            </Link>
+          </p>
+          <p>
+            <Link href="/suppliers" className="transition hover:text-foreground">
+              ← Back to supplier info
+            </Link>
+          </p>
+        </div>
+      }
     >
-      <div className="space-y-5">
+      <div className="space-y-6">
         {!user && (
-          <>
+          <div className="space-y-4">
             <GoogleSignInButton
               loading={googleLoading}
               disabled={busy}
               onClick={handleGoogle}
               label="Continue with Google"
             />
-            <div className="relative py-1">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center">
-                <span className="bg-card px-3 text-xs text-muted-foreground">or</span>
-              </div>
-            </div>
-          </>
+            <AuthDivider />
+          </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="companyName">Company name</Label>
-            <Input
-              id="companyName"
-              value={form.companyName}
-              onChange={(e) => setField('companyName', e.target.value)}
-              required
-              disabled={busy}
-            />
+        {user ? (
+          <div className="rounded-xl border border-primary/15 bg-primary/[0.04] px-4 py-3">
+            <p className="text-xs font-medium text-muted-foreground">Signed in as</p>
+            <p className="mt-0.5 truncate text-sm font-semibold text-foreground">{user.email}</p>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="contactName">Contact name</Label>
-            <Input
-              id="contactName"
-              value={form.contactName}
-              onChange={(e) => setField('contactName', e.target.value)}
-              required
-              disabled={busy}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={form.email}
-              onChange={(e) => setField('email', e.target.value)}
-              required
-              disabled={busy || Boolean(user)}
-              autoComplete="email"
-            />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
+        ) : null}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-4">
+            <AuthSectionLabel>Business</AuthSectionLabel>
+            <div className="space-y-1.5">
+              <Label htmlFor="companyName" className="text-sm font-medium">
+                Company name
+              </Label>
               <Input
-                id="phone"
-                value={form.phone}
-                onChange={(e) => setField('phone', e.target.value)}
+                id="companyName"
+                value={form.companyName}
+                onChange={(e) => setField('companyName', e.target.value)}
+                className={fieldClass}
+                placeholder="Your brand or company"
                 required
                 disabled={busy}
-                placeholder="+256…"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="city">City</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="contactName" className="text-sm font-medium">
+                Contact name
+              </Label>
               <Input
-                id="city"
-                value={form.city}
-                onChange={(e) => setField('city', e.target.value)}
+                id="contactName"
+                value={form.contactName}
+                onChange={(e) => setField('contactName', e.target.value)}
+                className={fieldClass}
+                placeholder="Primary contact"
                 required
                 disabled={busy}
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>What will you list?</Label>
-            <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-4">
+            <AuthSectionLabel>Contact</AuthSectionLabel>
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-sm font-medium">
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                value={form.email}
+                onChange={(e) => setField('email', e.target.value)}
+                className={fieldClass}
+                placeholder="you@business.com"
+                required
+                disabled={busy || Boolean(user)}
+                autoComplete="email"
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="phone" className="text-sm font-medium">
+                  Phone
+                </Label>
+                <Input
+                  id="phone"
+                  value={form.phone}
+                  onChange={(e) => setField('phone', e.target.value)}
+                  className={fieldClass}
+                  required
+                  disabled={busy}
+                  placeholder="+256…"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="city" className="text-sm font-medium">
+                  City
+                </Label>
+                <Input
+                  id="city"
+                  value={form.city}
+                  onChange={(e) => setField('city', e.target.value)}
+                  className={fieldClass}
+                  required
+                  disabled={busy}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <AuthSectionLabel>What will you list?</AuthSectionLabel>
+            <div className="grid grid-cols-2 gap-2.5">
               {SIGNUP_CATEGORIES.map((cat) => {
                 const active = form.categories.includes(cat.id);
                 return (
@@ -247,12 +294,17 @@ export default function SupplierSignUpPage() {
                     disabled={busy}
                     onClick={() => toggleCategory(cat.id)}
                     className={cn(
-                      'rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition',
+                      'relative rounded-xl border px-3.5 py-3.5 text-left text-sm font-semibold transition',
                       active
-                        ? 'border-primary/40 bg-primary/5 text-primary'
-                        : 'border-border bg-background text-muted-foreground hover:border-border/80'
+                        ? 'border-primary/35 bg-primary/[0.06] text-primary shadow-sm'
+                        : 'border-border/80 bg-background text-muted-foreground hover:border-border hover:text-foreground'
                     )}
                   >
+                    {active ? (
+                      <span className="absolute right-2.5 top-2.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                        <Check className="h-3 w-3" strokeWidth={3} />
+                      </span>
+                    ) : null}
                     {cat.label}
                   </button>
                 );
@@ -261,9 +313,12 @@ export default function SupplierSignUpPage() {
           </div>
 
           {!user && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+            <div className="space-y-4">
+              <AuthSectionLabel>Account security</AuthSectionLabel>
+              <div className="space-y-1.5">
+                <Label htmlFor="password" className="text-sm font-medium">
+                  Password
+                </Label>
                 <PasswordField
                   id="password"
                   value={form.password}
@@ -272,8 +327,10 @@ export default function SupplierSignUpPage() {
                   disabled={busy}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm password</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="confirmPassword" className="text-sm font-medium">
+                  Confirm password
+                </Label>
                 <PasswordField
                   id="confirmPassword"
                   value={form.confirmPassword}
@@ -283,10 +340,14 @@ export default function SupplierSignUpPage() {
                   disabled={busy}
                 />
               </div>
-            </>
+            </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={busy}>
+          <Button
+            type="submit"
+            className="h-11 w-full rounded-xl text-sm font-semibold shadow-md shadow-primary/15"
+            disabled={busy}
+          >
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -298,18 +359,6 @@ export default function SupplierSignUpPage() {
           </Button>
         </form>
       </div>
-
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        Already a supplier?{' '}
-        <Link href="/suppliers/sign-in" className="font-medium text-primary hover:underline">
-          Sign in
-        </Link>
-      </p>
-      <p className="mt-2 text-center text-sm text-muted-foreground">
-        <Link href="/suppliers" className="hover:text-foreground">
-          ← Back to supplier info
-        </Link>
-      </p>
     </AuthShell>
   );
 }

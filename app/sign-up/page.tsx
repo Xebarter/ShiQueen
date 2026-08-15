@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth-context';
 import { getPostAuthPath } from '@/lib/auth-redirect';
 import { getAuthErrorMessage } from '@/lib/auth-errors';
-import { AuthShell } from '@/components/auth/auth-shell';
+import { AuthDivider, AuthShell } from '@/components/auth/auth-shell';
 import { AuthGuestOnly } from '@/components/auth/auth-guest-only';
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
 import { PasswordField } from '@/components/auth/password-field';
@@ -77,87 +77,103 @@ export default function SignUp() {
   };
 
   return (
-    <AuthShell heading="Create your account" subheading="to get started with ShiQueen">
+    <AuthShell
+      heading="Create your account"
+      subheading="Shop fashion, packages, and book trusted services — all in one place."
+      footer={
+        <p className="text-center text-sm text-muted-foreground">
+          Already have an account?{' '}
+          <Link href="/sign-in" className="font-semibold text-primary underline-offset-4 hover:underline">
+            Sign in
+          </Link>
+        </p>
+      }
+    >
       <AuthGuestOnly>
-      <div className="space-y-5">
-        <GoogleSignInButton
-          loading={googleLoading}
-          disabled={isBusy}
-          onClick={handleGoogleSignIn}
-          label="Sign up with Google"
-        />
+        <div className="space-y-5">
+          <GoogleSignInButton
+            loading={googleLoading}
+            disabled={isBusy}
+            onClick={handleGoogleSignIn}
+            label="Continue with Google"
+          />
 
-        <div className="relative py-1">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-border" />
-          </div>
-          <div className="relative flex justify-center">
-            <span className="bg-card px-3 text-xs text-muted-foreground">or</span>
-          </div>
-        </div>
+          <AuthDivider />
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="email" className="text-sm font-normal text-foreground">
-              Email
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="h-11 rounded-md text-base md:text-sm"
-              required
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-sm font-medium text-foreground">
+                Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                placeholder="you@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-11 rounded-xl text-base md:text-sm"
+                required
+                disabled={isBusy}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-sm font-medium text-foreground">
+                Password
+              </Label>
+              <PasswordField
+                id="password"
+                value={password}
+                onChange={setPassword}
+                autoComplete="new-password"
+                disabled={isBusy}
+              />
+              <p className="text-xs text-muted-foreground">At least 6 characters</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">
+                Confirm password
+              </Label>
+              <PasswordField
+                id="confirmPassword"
+                value={confirmPassword}
+                onChange={setConfirmPassword}
+                placeholder="Confirm password"
+                autoComplete="new-password"
+                disabled={isBusy}
+              />
+            </div>
+
+            <Button
+              type="submit"
+              className="mt-1 h-11 w-full rounded-xl text-sm font-semibold shadow-md shadow-primary/15"
               disabled={isBusy}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="password" className="text-sm font-normal text-foreground">
-              Password
-            </Label>
-            <PasswordField
-              id="password"
-              value={password}
-              onChange={setPassword}
-              autoComplete="new-password"
-              disabled={isBusy}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="confirmPassword" className="text-sm font-normal text-foreground">
-              Confirm password
-            </Label>
-            <PasswordField
-              id="confirmPassword"
-              value={confirmPassword}
-              onChange={setConfirmPassword}
-              placeholder="Confirm password"
-              autoComplete="new-password"
-              disabled={isBusy}
-            />
-          </div>
-
-          <div className="flex flex-col-reverse items-stretch justify-between gap-3 pt-3 sm:flex-row sm:items-center">
-            <Link href="/sign-in" className="text-sm font-medium text-primary hover:underline">
-              Sign in instead
-            </Link>
-            <Button type="submit" className="h-10 min-w-[88px] px-6" disabled={isBusy}>
+            >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating
+                  Creating account…
                 </>
               ) : (
                 'Create account'
               )}
             </Button>
-          </div>
-        </form>
-      </div>
+
+            <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+              By continuing you agree to our{' '}
+              <Link href="/terms" className="underline-offset-2 hover:underline">
+                Terms
+              </Link>{' '}
+              and{' '}
+              <Link href="/privacy" className="underline-offset-2 hover:underline">
+                Privacy Policy
+              </Link>
+              .
+            </p>
+          </form>
+        </div>
       </AuthGuestOnly>
     </AuthShell>
   );

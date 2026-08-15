@@ -131,14 +131,10 @@ export default function ProviderProfilePage() {
   return (
     <ProviderShell>
       <PartnerPage>
-        <PartnerPageHeader
-          eyebrow="Account"
-          title="Business profile"
-          description="How you appear on the services marketplace."
-        />
+        <PartnerPageHeader title="Profile" />
       <form onSubmit={handleSubmit} className="max-w-xl space-y-4 rounded-xl border border-border/70 bg-card p-5 shadow-sm sm:p-6">
         <div className="space-y-2">
-          <Label>Business logo</Label>
+          <Label>Logo</Label>
           <input
             ref={fileInputRef}
             type="file"
@@ -179,7 +175,7 @@ export default function ProviderProfilePage() {
                   ) : (
                     <ImagePlus className="mr-1.5 h-3.5 w-3.5" />
                   )}
-                  {uploadingLogo ? 'Uploading…' : form.profileImage ? 'Change logo' : 'Upload logo'}
+                  {uploadingLogo ? 'Uploading…' : form.profileImage ? 'Change' : 'Upload'}
                 </Button>
                 {form.profileImage ? (
                   <Button
@@ -193,18 +189,16 @@ export default function ProviderProfilePage() {
                   </Button>
                 ) : null}
               </div>
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                JPEG, PNG, WebP, or GIF · up to 5MB
-              </p>
+              <p className="mt-1.5 text-xs text-muted-foreground">JPEG, PNG, WebP, GIF</p>
             </div>
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="name">Your name</Label>
+          <Label htmlFor="name">Name</Label>
           <Input id="name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="businessName">Business name</Label>
+          <Label htmlFor="businessName">Business</Label>
           <Input
             id="businessName"
             value={form.businessName}
@@ -223,7 +217,7 @@ export default function ProviderProfilePage() {
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="address">Studio address</Label>
+          <Label htmlFor="address">Address</Label>
           <Input id="address" value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
         </div>
         <div className="space-y-2">
@@ -232,7 +226,7 @@ export default function ProviderProfilePage() {
             id="bio"
             value={form.bio}
             onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
-            rows={4}
+            rows={3}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           />
         </div>
@@ -270,19 +264,20 @@ export default function ProviderProfilePage() {
             checked={form.mobileServiceEnabled}
             onChange={(e) => setForm((f) => ({ ...f, mobileServiceEnabled: e.target.checked }))}
           />
-          Mobile / home visits
+          Mobile visits
         </label>
         <div className="space-y-2">
-          <Label htmlFor="serviceAreas">Service areas (comma separated)</Label>
+          <Label htmlFor="serviceAreas">Service areas</Label>
           <Input
             id="serviceAreas"
             value={form.serviceAreas}
             onChange={(e) => setForm((f) => ({ ...f, serviceAreas: e.target.value }))}
+            placeholder="Comma-separated"
           />
         </div>
         <Button type="submit" disabled={saving || uploadingLogo}>
           {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          Save profile
+          Save
         </Button>
       </form>
       </PartnerPage>

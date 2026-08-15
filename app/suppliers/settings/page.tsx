@@ -8,10 +8,7 @@ export default function SupplierSettingsPage() {
   return (
     <SupplierShell>
       <PartnerPage>
-        <PartnerPageHeader
-          title="Settings"
-          description="Account security and notification preferences."
-        />
+        <PartnerPageHeader title="Settings" />
         <PartnerSettingsForm />
       </PartnerPage>
     </SupplierShell>
