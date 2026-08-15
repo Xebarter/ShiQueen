@@ -4,8 +4,13 @@ import { isSupabaseAdminConfigured } from '@/lib/supabase/config';
 import { TABLES } from '@/lib/supabase/tables';
 import {
   ADMIN_MESSAGES_HREF,
+  ADMIN_ORDERS_HREF,
+  ADMIN_REVIEWS_HREF,
+  ADMIN_SERVICE_BOOKINGS_HREF,
   ADMIN_SERVICE_PROVIDERS_HREF,
   ADMIN_SUPPLIERS_HREF,
+  ADMIN_WHOLESALE_HREF,
+  ADMIN_WHOLESALE_ORDERS_HREF,
   PROVIDER_HOME_HREF,
   SUPPLIER_HOME_HREF,
 } from '@/lib/pwa/paths';
@@ -16,7 +21,17 @@ type AlertPayload = {
   title: string;
   body: string;
   url: string;
-  type: 'order' | 'booking' | 'supplier_approval' | 'provider_approval' | 'contact_message';
+  type:
+    | 'order'
+    | 'booking'
+    | 'bulk_order'
+    | 'wholesale_account'
+    | 'supplier_approval'
+    | 'provider_approval'
+    | 'contact_message'
+    | 'flagged_review'
+    | 'admin_order'
+    | 'admin_booking';
   tag?: string;
 };
 
@@ -170,14 +185,144 @@ export async function notifyAdminContactMessage(id: string): Promise<void> {
     const tokens = await tokensForAdmins();
     const name = String(data.name || 'Someone');
     const subject = String(data.subject || 'New contact message');
+    const topic = String(data.topic || '');
+    const isAdRequest = topic === 'advertise';
     await sendToTokens(tokens, {
       type: 'contact_message',
-      title: 'New contact message',
+      title: isAdRequest ? 'New advertising request' : 'New contact message',
       body: `${name}: ${subject}`,
       url: `${ADMIN_MESSAGES_HREF}?id=${encodeURIComponent(id)}`,
       tag: `contact-${id}`,
     });
   } catch (error) {
     console.warn('[ShiQueen] Admin contact message alert failed:', error);
+  }
+}
+
+export async function notifyAdminFlaggedReview(id: string): Promise<void> {
+  if (!isSupabaseAdminConfigured() || !id) return;
+  try {
+    const admin = getSupabaseAdmin();
+    const { data } = await admin
+      .from(TABLES.productReviews)
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (!data) return;
+    if (String(data.flag_status ?? '') !== 'pending') return;
+
+    const tokens = await tokensForAdmins();
+    const customer = String(data.customer_name || 'A customer');
+    const reason = String(data.flag_reason || 'review');
+    const title = String(data.title || '').trim();
+    const comment = String(data.comment || '').trim();
+    const snippet = title || comment.slice(0, 80) || 'A product review';
+    await sendToTokens(tokens, {
+      type: 'flagged_review',
+      title: 'Product review flagged',
+      body: `${customer}: ${snippet}${reason ? ` · ${reason.replace(/_/g, ' ')}` : ''}`,
+      url: ADMIN_REVIEWS_HREF,
+      tag: `review-flag-${id}`,
+    });
+  } catch (error) {
+    console.warn('[ShiQueen] Admin flagged review alert failed:', error);
+  }
+}
+
+export async function notifyAdminOrder(orderId: string): Promise<void> {
+  if (!isSupabaseAdminConfigured() || !orderId) return;
+  try {
+    const admin = getSupabaseAdmin();
+    const { data } = await admin.from(TABLES.orders).select('*').eq('id', orderId).maybeSingle();
+    if (!data) return;
+
+    const tokens = await tokensForAdmins();
+    const customer = String(data.customer_name || 'A customer');
+    const total = Number(data.total ?? 0);
+    const orderType = String(data.order_type || 'retail');
+    await sendToTokens(tokens, {
+      type: 'admin_order',
+      title: 'New ShiQueen order',
+      body: `${customer} placed a ${orderType} order${total > 0 ? ` · UGX ${total.toLocaleString('en-UG')}` : ''}`,
+      url: ADMIN_ORDERS_HREF,
+      tag: `admin-order-${orderId}`,
+    });
+  } catch (error) {
+    console.warn('[ShiQueen] Admin order alert failed:', error);
+  }
+}
+
+export async function notifyAdminBooking(bookingId: string): Promise<void> {
+  if (!isSupabaseAdminConfigured() || !bookingId) return;
+  try {
+    const admin = getSupabaseAdmin();
+    const { data } = await admin
+      .from(TABLES.serviceBookings)
+      .select('*')
+      .eq('id', bookingId)
+      .maybeSingle();
+    if (!data) return;
+
+    const tokens = await tokensForAdmins();
+    const customer = String(data.customer_name || 'A customer');
+    const serviceName = String(data.service_name || 'a service');
+    await sendToTokens(tokens, {
+      type: 'admin_booking',
+      title: 'New service booking',
+      body: `${customer} booked ${serviceName}`,
+      url: ADMIN_SERVICE_BOOKINGS_HREF,
+      tag: `admin-booking-${bookingId}`,
+    });
+  } catch (error) {
+    console.warn('[ShiQueen] Admin booking alert failed:', error);
+  }
+}
+
+export async function notifyAdminBulkOrder(orderId: string): Promise<void> {
+  if (!isSupabaseAdminConfigured() || !orderId) return;
+  try {
+    const admin = getSupabaseAdmin();
+    const { data } = await admin.from(TABLES.bulkOrders).select('*').eq('id', orderId).maybeSingle();
+    if (!data) return;
+    if (String(data.status ?? '') !== 'pending') return;
+
+    const tokens = await tokensForAdmins();
+    const total = Number(data.total_amount ?? 0);
+    const itemCount = Array.isArray(data.items) ? data.items.length : 0;
+    await sendToTokens(tokens, {
+      type: 'bulk_order',
+      title: 'New wholesale order',
+      body: `Bulk order with ${itemCount} line${itemCount === 1 ? '' : 's'}${total > 0 ? ` · UGX ${total.toLocaleString('en-UG')}` : ''}`,
+      url: ADMIN_WHOLESALE_ORDERS_HREF,
+      tag: `bulk-order-${orderId}`,
+    });
+  } catch (error) {
+    console.warn('[ShiQueen] Admin bulk order alert failed:', error);
+  }
+}
+
+export async function notifyAdminWholesaleAccount(accountId: string): Promise<void> {
+  if (!isSupabaseAdminConfigured() || !accountId) return;
+  try {
+    const admin = getSupabaseAdmin();
+    const { data } = await admin
+      .from(TABLES.wholesaleAccounts)
+      .select('*')
+      .eq('id', accountId)
+      .maybeSingle();
+    if (!data) return;
+    if (String(data.status ?? '') !== 'pending') return;
+
+    const tokens = await tokensForAdmins();
+    const business = String(data.company_name || 'A business');
+    await sendToTokens(tokens, {
+      type: 'wholesale_account',
+      title: 'New wholesale application',
+      body: `${business} applied for a wholesale account`,
+      url: ADMIN_WHOLESALE_HREF,
+      tag: `wholesale-account-${accountId}`,
+    });
+  } catch (error) {
+    console.warn('[ShiQueen] Admin wholesale account alert failed:', error);
   }
 }

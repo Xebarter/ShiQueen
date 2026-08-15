@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   notifyAdminApprovalRequest,
+  notifyAdminBooking,
+  notifyAdminBulkOrder,
   notifyAdminContactMessage,
+  notifyAdminFlaggedReview,
+  notifyAdminOrder,
+  notifyAdminWholesaleAccount,
 } from '@/lib/firebase/partner-alerts-server';
 
 export async function POST(request: NextRequest) {
@@ -20,6 +25,31 @@ export async function POST(request: NextRequest) {
 
     if (type === 'contact') {
       await notifyAdminContactMessage(id);
+      return NextResponse.json({ ok: true });
+    }
+
+    if (type === 'flagged_review') {
+      await notifyAdminFlaggedReview(id);
+      return NextResponse.json({ ok: true });
+    }
+
+    if (type === 'order') {
+      await notifyAdminOrder(id);
+      return NextResponse.json({ ok: true });
+    }
+
+    if (type === 'booking') {
+      await notifyAdminBooking(id);
+      return NextResponse.json({ ok: true });
+    }
+
+    if (type === 'bulk_order') {
+      await notifyAdminBulkOrder(id);
+      return NextResponse.json({ ok: true });
+    }
+
+    if (type === 'wholesale_account') {
+      await notifyAdminWholesaleAccount(id);
       return NextResponse.json({ ok: true });
     }
 

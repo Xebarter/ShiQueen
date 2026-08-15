@@ -156,8 +156,11 @@ export async function createServiceBooking(
   const { error } = await supabase.from(TABLES.serviceBookings).insert(bookingToRow({ ...rest, id }));
   if (error) throw error;
 
-  void import('@/lib/pwa/notify-client').then(({ notifyPartnerClients }) =>
-    notifyPartnerClients('booking', id)
+  void import('@/lib/pwa/notify-client').then(
+    ({ notifyPartnerClients, notifyAdminBookingClients }) => {
+      void notifyPartnerClients('booking', id);
+      void notifyAdminBookingClients(id);
+    }
   );
 }
 

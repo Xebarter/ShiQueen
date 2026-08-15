@@ -602,7 +602,7 @@ function PartnerDashboardChromeInner(props: PartnerDashboardChromeProps) {
           <div
             ref={paneRef}
             className={cn(
-              'partner-tab-pane min-h-full bg-background will-change-transform',
+              'partner-tab-pane min-h-full bg-background',
               slideIn === 'next' && 'partner-tab-enter-next',
               slideIn === 'prev' && 'partner-tab-enter-prev'
             )}

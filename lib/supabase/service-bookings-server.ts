@@ -150,8 +150,11 @@ export async function createServiceBookingServer(
 
   if (error) throw error;
 
-  void import('@/lib/fcm/partner-alerts-server').then(({ notifyPartnerBooking }) =>
-    notifyPartnerBooking(id)
+  void import('@/lib/fcm/partner-alerts-server').then(
+    ({ notifyPartnerBooking, notifyAdminBooking }) => {
+      void notifyPartnerBooking(id);
+      void notifyAdminBooking(id);
+    }
   );
 
   return id;

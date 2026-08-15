@@ -10,14 +10,15 @@ import {
 } from '@/components/partner/partner-nav';
 
 const MOBILE_MQ = '(max-width: 767px)';
-const AXIS_LOCK_PX = 10;
-const COMMIT_RATIO = 0.22;
-const COMMIT_PX_MIN = 56;
-const COMMIT_VELOCITY = 0.45;
-const EDGE_RESISTANCE = 0.28;
-const SLIDE_MS = 320;
-/** iOS-like interactive spring */
-const SWIPE_EASE = 'cubic-bezier(0.32, 0.72, 0, 1)';
+/** Small lock distance so horizontal intent feels immediate */
+const AXIS_LOCK_PX = 6;
+const COMMIT_RATIO = 0.18;
+const COMMIT_PX_MIN = 48;
+const COMMIT_VELOCITY = 0.35;
+const EDGE_RESISTANCE = 0.22;
+const SLIDE_MS = 280;
+/** Smooth decelerating ease — no spring overshoot hesitation */
+const SWIPE_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
 const COVER_ID = 'partner-tab-page-cover';
 
 function isInteractiveTarget(target: EventTarget | null) {
@@ -41,6 +42,9 @@ function clearPaneMotion(pane: HTMLElement) {
   pane.style.transition = '';
   pane.style.transform = '';
   pane.style.opacity = '';
+  pane.style.visibility = '';
+  pane.style.pointerEvents = '';
+  pane.style.willChange = '';
   pane.classList.remove(
     'partner-tab-exit-next',
     'partner-tab-exit-prev',
@@ -54,15 +58,15 @@ function removePartnerTabCover() {
 }
 
 /**
- * Keeps the outgoing page painted while the next route mounts, then slides both
- * panes together like a continuous scroll — no empty white frame in between.
+ * Freezes the outgoing page as a lightweight sliding cover, then lets the
+ * incoming route enter via CSS. Animation starts immediately — no mount poll.
  */
 function presentPartnerTabCover(pane: HTMLElement, direction: 1 | -1, fromDx = 0) {
   removePartnerTabCover();
   if (prefersReducedMotion()) return false;
 
   const rect = pane.getBoundingClientRect();
-  const width = rect.width || window.innerWidth;
+  const width = Math.max(1, rect.width || window.innerWidth);
   const targetX = direction === 1 ? -width : width;
 
   const cover = document.createElement('div');
@@ -71,91 +75,61 @@ function presentPartnerTabCover(pane: HTMLElement, direction: 1 | -1, fromDx = 0
   cover.setAttribute('aria-hidden', 'true');
   cover.style.cssText = [
     'position:fixed',
-    `top:${rect.top}px`,
+    `top:${Math.round(rect.top)}px`,
     'left:0',
     'right:0',
-    `height:${rect.height}px`,
+    `height:${Math.round(rect.height)}px`,
     'z-index:50',
     'overflow:hidden',
     'pointer-events:none',
     'background:var(--background)',
     `transform:translate3d(${fromDx}px,0,0)`,
     'will-change:transform',
+    'backface-visibility:hidden',
   ].join(';');
 
+  // Shallow visual freeze: clone once, strip heavy effects, clip to viewport.
   const clone = pane.cloneNode(true) as HTMLElement;
+  clone.removeAttribute('id');
   clone.classList.remove(
     'partner-tab-exit-next',
     'partner-tab-exit-prev',
     'partner-tab-enter-next',
-    'partner-tab-enter-prev'
+    'partner-tab-enter-prev',
+    'will-change-transform'
   );
   clone.style.cssText = [
     'transform:none',
     'opacity:1',
+    'visibility:visible',
     'transition:none',
     'animation:none',
-    'min-height:100%',
+    'pointer-events:none',
+    'will-change:auto',
+    `height:${Math.round(rect.height)}px`,
+    'overflow:hidden',
     'background:var(--background)',
   ].join(';');
   cover.appendChild(clone);
+
+  // Hide the live pane so route swap is invisible under the cover.
+  pane.style.visibility = 'hidden';
+  pane.style.pointerEvents = 'none';
+  pane.style.transition = 'none';
+  pane.style.transform = 'none';
+
   document.body.appendChild(cover);
 
-  const outgoingPane = pane;
-  let exited = false;
-  const startExit = () => {
-    if (exited || !cover.isConnected) return;
-    exited = true;
+  // Double-rAF ensures the browser paints the cover at fromDx before sliding.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (!cover.isConnected) return;
+      cover.style.transition = `transform ${SLIDE_MS}ms ${SWIPE_EASE}`;
+      cover.style.transform = `translate3d(${targetX}px,0,0)`;
+    });
+  });
 
-    let incoming: HTMLElement | null = null;
-    for (const el of document.querySelectorAll<HTMLElement>('.partner-tab-pane')) {
-      if (el === outgoingPane || cover.contains(el)) continue;
-      incoming = el;
-      break;
-    }
-
-    if (incoming) {
-      incoming.classList.remove('partner-tab-enter-next', 'partner-tab-enter-prev');
-      const startX = fromDx + (direction === 1 ? width : -width);
-      incoming.style.transition = 'none';
-      incoming.style.animation = 'none';
-      incoming.style.transform = `translate3d(${startX}px, 0, 0)`;
-      void incoming.offsetWidth;
-      incoming.style.transition = `transform ${SLIDE_MS}ms ${SWIPE_EASE}`;
-      incoming.style.transform = 'translate3d(0, 0, 0)';
-      window.setTimeout(() => {
-        if (!incoming?.isConnected) return;
-        incoming.style.transition = '';
-        incoming.style.transform = '';
-        incoming.style.animation = '';
-      }, SLIDE_MS + 40);
-    }
-
-    cover.style.transition = `transform ${SLIDE_MS}ms ${SWIPE_EASE}`;
-    cover.style.transform = `translate3d(${targetX}px, 0, 0)`;
-    window.setTimeout(removePartnerTabCover, SLIDE_MS + 60);
-  };
-
-  const incomingReady = () => {
-    for (const el of document.querySelectorAll<HTMLElement>('.partner-tab-pane')) {
-      if (el === outgoingPane || cover.contains(el)) continue;
-      return true;
-    }
-    return false;
-  };
-
-  const poll = window.setInterval(() => {
-    if (incomingReady()) {
-      window.clearInterval(poll);
-      startExit();
-    }
-  }, 16);
-
-  window.setTimeout(() => {
-    window.clearInterval(poll);
-    startExit();
-  }, 220);
-
+  window.setTimeout(removePartnerTabCover, SLIDE_MS + 48);
   return true;
 }
 
@@ -176,9 +150,14 @@ export function navigatePartnerTab(
 ) {
   const pane = document.querySelector<HTMLElement>('.partner-tab-pane');
   if (pane && isMobileViewport()) {
-    const covered = presentPartnerTabCover(pane, direction, fromDx);
-    clearPaneMotion(pane);
-    if (!covered) writeSlideDirection(direction);
+    // Always seed CSS enter so the new page slides in without a blank frame.
+    writeSlideDirection(direction);
+    try {
+      document.documentElement.style.setProperty('--partner-tab-from', `${Math.round(fromDx)}px`);
+    } catch {
+      /* ignore */
+    }
+    presentPartnerTabCover(pane, direction, fromDx);
     router.push(href);
     return;
   }
@@ -203,10 +182,12 @@ export function usePartnerTabSwipe({
 }) {
   const router = useRouter();
   const start = useRef<{ x: number; y: number; t: number } | null>(null);
-  const velocitySample = useRef<{ x: number; t: number } | null>(null);
+  const lastMove = useRef<{ x: number; t: number } | null>(null);
   const axis = useRef<'undecided' | 'x' | 'y'>('undecided');
   const dragging = useRef(false);
   const dragX = useRef(0);
+  const pendingDx = useRef(0);
+  const rafId = useRef(0);
   const busy = useRef(false);
   const navOpenRef = useRef(navOpen);
   const pathnameRef = useRef(pathname);
@@ -222,10 +203,21 @@ export function usePartnerTabSwipe({
     busy.current = false;
     const pane = paneRef.current;
     if (pane) {
+      // Keep enter animation classes — only clear drag styles from the previous page.
       pane.style.transition = '';
       pane.style.transform = '';
       pane.style.opacity = '';
+      pane.style.visibility = '';
+      pane.style.pointerEvents = '';
+      pane.style.willChange = '';
       pane.classList.remove('partner-tab-exit-next', 'partner-tab-exit-prev');
+    }
+    try {
+      window.setTimeout(() => {
+        document.documentElement.style.removeProperty('--partner-tab-from');
+      }, SLIDE_MS + 40);
+    } catch {
+      /* ignore */
     }
   }, [pathname, paneRef]);
 
@@ -236,31 +228,53 @@ export function usePartnerTabSwipe({
     }
   }, [router, tabs]);
 
-  useEffect(() => () => removePartnerTabCover(), []);
+  useEffect(
+    () => () => {
+      if (rafId.current) cancelAnimationFrame(rafId.current);
+      removePartnerTabCover();
+    },
+    []
+  );
+
+  const flushDrag = useCallback(() => {
+    rafId.current = 0;
+    const pane = paneRef.current;
+    if (!pane) return;
+    const dx = pendingDx.current;
+    dragX.current = dx;
+    pane.style.transform = `translate3d(${dx}px, 0, 0)`;
+  }, [paneRef]);
 
   const applyDrag = useCallback(
     (dx: number, { animate = false }: { animate?: boolean } = {}) => {
       const pane = paneRef.current;
       if (!pane) return;
-      dragX.current = dx;
-      pane.style.transition = animate
-        ? `transform ${SLIDE_MS}ms ${SWIPE_EASE}`
-        : 'none';
-      pane.style.transform = dx ? `translate3d(${dx}px, 0, 0)` : 'translate3d(0, 0, 0)';
-      pane.style.opacity = '1';
+      pendingDx.current = dx;
+
       if (animate) {
+        if (rafId.current) {
+          cancelAnimationFrame(rafId.current);
+          rafId.current = 0;
+        }
+        dragX.current = dx;
+        pane.style.transition = `transform ${SLIDE_MS}ms ${SWIPE_EASE}`;
+        pane.style.transform = dx ? `translate3d(${dx}px, 0, 0)` : 'translate3d(0, 0, 0)';
         window.setTimeout(() => {
           const current = paneRef.current;
-          if (!current) return;
-          if (dragX.current === 0) {
-            current.style.transition = '';
-            current.style.transform = '';
-            current.style.opacity = '';
-          }
-        }, SLIDE_MS + 20);
+          if (!current || dragX.current !== 0) return;
+          current.style.transition = '';
+          current.style.transform = '';
+          current.style.willChange = '';
+        }, SLIDE_MS + 24);
+        return;
+      }
+
+      pane.style.transition = 'none';
+      if (!rafId.current) {
+        rafId.current = requestAnimationFrame(flushDrag);
       }
     },
-    [paneRef]
+    [flushDrag, paneRef]
   );
 
   const goToIndex = useCallback(
@@ -306,20 +320,24 @@ export function usePartnerTabSwipe({
       event.stopPropagation();
     };
     document.addEventListener('click', block, true);
-    window.setTimeout(() => document.removeEventListener('click', block, true), 450);
+    window.setTimeout(() => document.removeEventListener('click', block, true), 380);
   }, []);
 
   useEffect(() => {
+    const stage = () =>
+      paneRef.current?.closest('.partner-tab-stage') ?? paneRef.current ?? document;
+
     const onStart = (event: TouchEvent) => {
       if (busy.current || !isMobileViewport() || event.touches.length !== 1) return;
       if (isInteractiveTarget(event.target)) return;
       const touch = event.touches[0];
       const now = performance.now();
       start.current = { x: touch.clientX, y: touch.clientY, t: now };
-      velocitySample.current = { x: touch.clientX, t: now };
+      lastMove.current = { x: touch.clientX, t: now };
       axis.current = 'undecided';
       dragging.current = false;
       dragX.current = 0;
+      pendingDx.current = 0;
     };
 
     const onMove = (event: TouchEvent) => {
@@ -329,13 +347,12 @@ export function usePartnerTabSwipe({
       const dx = touch.clientX - start.current.x;
       const dy = touch.clientY - start.current.y;
 
-      if (!velocitySample.current || now - velocitySample.current.t >= 24) {
-        velocitySample.current = { x: touch.clientX, t: now };
-      }
+      lastMove.current = { x: touch.clientX, t: now };
 
       if (axis.current === 'undecided') {
         if (Math.abs(dx) < AXIS_LOCK_PX && Math.abs(dy) < AXIS_LOCK_PX) return;
-        axis.current = Math.abs(dx) > Math.abs(dy) * 1.15 ? 'x' : 'y';
+        // Prefer horizontal slightly so swipes feel decisive.
+        axis.current = Math.abs(dx) > Math.abs(dy) * 1.05 ? 'x' : 'y';
         if (axis.current === 'x') {
           const pane = paneRef.current;
           if (pane) {
@@ -366,12 +383,18 @@ export function usePartnerTabSwipe({
 
     const onEnd = (event: TouchEvent) => {
       const origin = start.current;
-      const sample = velocitySample.current;
+      const sample = lastMove.current;
       start.current = null;
-      velocitySample.current = null;
+      lastMove.current = null;
+
+      if (rafId.current) {
+        cancelAnimationFrame(rafId.current);
+        rafId.current = 0;
+        flushDrag();
+      }
 
       const pane = paneRef.current;
-      if (pane) pane.style.willChange = '';
+      if (pane && !busy.current) pane.style.willChange = '';
 
       if (!origin || axis.current !== 'x') {
         axis.current = 'undecided';
@@ -384,7 +407,8 @@ export function usePartnerTabSwipe({
       const touch = event.changedTouches[0];
       const dx = touch.clientX - origin.x;
       const now = performance.now();
-      const sampleDt = Math.max(16, now - (sample?.t ?? origin.t));
+      // Velocity from the last tracked move sample — more stable than a long window.
+      const sampleDt = Math.max(12, now - (sample?.t ?? origin.t));
       const sampleDx = touch.clientX - (sample?.x ?? origin.x);
       const velocity = sampleDx / sampleDt;
 
@@ -412,7 +436,8 @@ export function usePartnerTabSwipe({
         return;
       }
 
-      const direction: 1 | -1 = dx < 0 || (Math.abs(dx) < 8 && velocity < 0) ? 1 : -1;
+      const direction: 1 | -1 =
+        dx < 0 || (Math.abs(dx) < 8 && velocity < 0) ? 1 : -1;
       const nextIndex = index + direction;
       if (nextIndex < 0 || nextIndex >= tabsRef.current.length) {
         applyDrag(0, { animate: true });
@@ -425,18 +450,19 @@ export function usePartnerTabSwipe({
       goToIndex(nextIndex, direction, dragX.current || dx);
     };
 
-    document.addEventListener('touchstart', onStart, { passive: true });
-    document.addEventListener('touchmove', onMove, { passive: false });
-    document.addEventListener('touchend', onEnd);
-    document.addEventListener('touchcancel', onEnd);
+    const root = stage();
+    root.addEventListener('touchstart', onStart, { passive: true });
+    root.addEventListener('touchmove', onMove, { passive: false });
+    root.addEventListener('touchend', onEnd);
+    root.addEventListener('touchcancel', onEnd);
 
     return () => {
-      document.removeEventListener('touchstart', onStart);
-      document.removeEventListener('touchmove', onMove);
-      document.removeEventListener('touchend', onEnd);
-      document.removeEventListener('touchcancel', onEnd);
+      root.removeEventListener('touchstart', onStart);
+      root.removeEventListener('touchmove', onMove);
+      root.removeEventListener('touchend', onEnd);
+      root.removeEventListener('touchcancel', onEnd);
     };
-  }, [applyDrag, goToIndex, paneRef, suppressClick]);
+  }, [applyDrag, flushDrag, goToIndex, paneRef, suppressClick]);
 }
 
 export function readPartnerTabSlideIn(): 'next' | 'prev' | null {

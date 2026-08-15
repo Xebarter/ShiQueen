@@ -3,7 +3,16 @@ import { subscribeTable, type Unsubscribe } from '@/lib/supabase/realtime';
 import { stripUndefined } from '@/lib/supabase/sanitize';
 import { TABLES } from '@/lib/supabase/tables';
 import { toDate } from '@/lib/supabase/timestamp';
-import type { ProductReview } from '@/lib/types/database';
+import type {
+  ProductReview,
+  ProductReviewFlagReason,
+  ProductReviewFlagStatus,
+} from '@/lib/types/database';
+
+function mapFlagStatus(value: unknown): ProductReviewFlagStatus {
+  if (value === 'pending' || value === 'dismissed' || value === 'none') return value;
+  return 'none';
+}
 
 function mapReview(row: Record<string, unknown>): ProductReview {
   return {
@@ -17,6 +26,14 @@ function mapReview(row: Record<string, unknown>): ProductReview {
     customerName: String(row.customer_name ?? ''),
     isVerified: Boolean(row.is_verified ?? false),
     isVisible: Boolean(row.is_visible ?? true),
+    isFlagged: Boolean(row.is_flagged ?? false),
+    flagStatus: mapFlagStatus(row.flag_status),
+    flagReason: String(row.flag_reason ?? ''),
+    flagNote: String(row.flag_note ?? ''),
+    flaggedBy: row.flagged_by ? String(row.flagged_by) : undefined,
+    flaggedAt: row.flagged_at ? toDate(row.flagged_at) : undefined,
+    flagResolvedAt: row.flag_resolved_at ? toDate(row.flag_resolved_at) : undefined,
+    flagResolvedBy: row.flag_resolved_by ? String(row.flag_resolved_by) : undefined,
     createdAt: toDate(row.created_at),
     updatedAt: toDate(row.updated_at),
   };
@@ -113,15 +130,90 @@ export function generateProductReviewId(): string {
   return `prev-${Date.now().toString(36)}`;
 }
 
-export async function upsertProductReview(
-  review: Omit<ProductReview, 'createdAt' | 'updatedAt'>
+export async function upsertProductReview(review: {
+  id: string;
+  productId: string;
+  orderId?: string;
+  userId: string;
+  rating: number;
+  title: string;
+  comment: string;
+  customerName: string;
+  isVerified: boolean;
+  isVisible?: boolean;
+}): Promise<void> {
+  const supabase = getSupabaseClient();
+  if (!supabase) throw new Error('Supabase not initialized');
+
+  const { error } = await supabase.from(TABLES.productReviews).upsert(
+    reviewToRow({
+      ...review,
+      isVisible: review.isVisible ?? true,
+    }),
+    { onConflict: 'product_id,user_id' }
+  );
+
+  if (error) throw error;
+}
+
+export async function flagProductReview(
+  reviewId: string,
+  reason: ProductReviewFlagReason,
+  note = ''
 ): Promise<void> {
   const supabase = getSupabaseClient();
   if (!supabase) throw new Error('Supabase not initialized');
 
-  const { error } = await supabase.from(TABLES.productReviews).upsert(reviewToRow(review), {
-    onConflict: 'product_id,user_id',
+  const { error } = await supabase.rpc('flag_product_review', {
+    p_review_id: reviewId,
+    p_reason: reason,
+    p_note: note,
   });
 
-  if (error) throw error;
+  if (error) throw new Error(error.message || 'Could not flag review');
+
+  void import('@/lib/pwa/notify-client').then(({ notifyAdminFlaggedReviewClients }) =>
+    notifyAdminFlaggedReviewClients(reviewId)
+  );
+}
+
+export async function dismissProductReviewFlag(reviewId: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  if (!supabase) throw new Error('Supabase not initialized');
+
+  const { error } = await supabase.rpc('dismiss_product_review_flag', {
+    p_review_id: reviewId,
+  });
+
+  if (error) throw new Error(error.message || 'Could not dismiss flag');
+}
+
+export async function deleteProductReviews(reviewIds: string[]): Promise<number> {
+  const supabase = getSupabaseClient();
+  if (!supabase) throw new Error('Supabase not initialized');
+  if (reviewIds.length === 0) return 0;
+
+  const { data, error } = await supabase.rpc('delete_product_reviews', {
+    p_review_ids: reviewIds,
+  });
+
+  if (error) throw new Error(error.message || 'Could not delete reviews');
+  return Number(data ?? 0);
+}
+
+export function productReviewFlagLabel(reason: string): string {
+  switch (reason) {
+    case 'inappropriate':
+      return 'Inappropriate';
+    case 'spam':
+      return 'Spam';
+    case 'fake':
+      return 'Suspicious / fake';
+    case 'off_topic':
+      return 'Off-topic';
+    case 'other':
+      return 'Other';
+    default:
+      return reason || 'Flagged';
+  }
 }

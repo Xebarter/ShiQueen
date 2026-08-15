@@ -133,9 +133,10 @@ export async function createOrder(order: Omit<Order, 'createdAt' | 'updatedAt'>)
   );
   if (error) throw error;
 
-  void import('@/lib/pwa/notify-client').then(({ notifyPartnerClients }) =>
-    notifyPartnerClients('order', id)
-  );
+  void import('@/lib/pwa/notify-client').then(({ notifyPartnerClients, notifyAdminOrderClients }) => {
+    void notifyPartnerClients('order', id);
+    void notifyAdminOrderClients(id);
+  });
 
   return id;
 }

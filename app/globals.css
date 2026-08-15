@@ -191,7 +191,13 @@
   }
   .partner-tab-page-cover {
     backface-visibility: hidden;
-    box-shadow: -12px 0 28px oklch(0.40 0.13 340 / 8%);
+    transform: translateZ(0);
+    box-shadow: -10px 0 24px oklch(0.40 0.13 340 / 7%);
+    contain: layout paint;
+  }
+  .partner-tab-stage {
+    touch-action: pan-y;
+    isolation: isolate;
   }
   .partner-app[data-chrome='premium'] .partner-page-shell {
     --partner-card-shadow: 0 8px 30px oklch(0.40 0.13 340 / 6%);
@@ -214,14 +220,14 @@
     display: none;
   }
   .partner-tab-enter-next {
-    animation: partner-tab-enter-next 320ms cubic-bezier(0.32, 0.72, 0, 1) both;
+    animation: partner-tab-enter-next 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
   .partner-tab-enter-prev {
-    animation: partner-tab-enter-prev 320ms cubic-bezier(0.32, 0.72, 0, 1) both;
+    animation: partner-tab-enter-prev 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
   @keyframes partner-tab-enter-next {
     from {
-      transform: translate3d(100%, 0, 0);
+      transform: translate3d(calc(100% + var(--partner-tab-from, 0px)), 0, 0);
     }
     to {
       transform: translate3d(0, 0, 0);
@@ -229,7 +235,7 @@
   }
   @keyframes partner-tab-enter-prev {
     from {
-      transform: translate3d(-100%, 0, 0);
+      transform: translate3d(calc(-100% + var(--partner-tab-from, 0px)), 0, 0);
     }
     to {
       transform: translate3d(0, 0, 0);

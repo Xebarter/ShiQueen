@@ -110,8 +110,11 @@ export async function createOrderServer(order: CreateServerOrderInput): Promise<
   const { error } = await supabase.from(TABLES.orders).insert(createOrderInputToRow(order));
   if (error) throw error;
 
-  void import('@/lib/fcm/partner-alerts-server').then(({ notifyPartnerOrder }) =>
-    notifyPartnerOrder(id)
+  void import('@/lib/fcm/partner-alerts-server').then(
+    ({ notifyPartnerOrder, notifyAdminOrder }) => {
+      void notifyPartnerOrder(id);
+      void notifyAdminOrder(id);
+    }
   );
 
   return id;

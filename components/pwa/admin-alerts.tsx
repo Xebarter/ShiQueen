@@ -9,8 +9,13 @@ import { useServices } from '@/lib/services-context';
 import { resolveUserPreferences } from '@/lib/account-settings';
 import {
   ADMIN_MESSAGES_HREF,
+  ADMIN_ORDERS_HREF,
+  ADMIN_REVIEWS_HREF,
+  ADMIN_SERVICE_BOOKINGS_HREF,
   ADMIN_SERVICE_PROVIDERS_HREF,
   ADMIN_SUPPLIERS_HREF,
+  ADMIN_WHOLESALE_HREF,
+  ADMIN_WHOLESALE_ORDERS_HREF,
 } from '@/lib/pwa/paths';
 import {
   registerPartnerPushToken,
@@ -19,7 +24,12 @@ import {
 } from '@/lib/pwa/messaging';
 import { playPartnerChime, vibratePartnerAlert } from '@/lib/pwa/sound';
 import { subscribeContactMessages } from '@/lib/firebase/contact-messages';
+import { subscribeOrders } from '@/lib/firebase/orders';
+import { subscribeProductReviews } from '@/lib/firebase/product-reviews';
+import { subscribeBulkOrders, subscribeWholesaleAccounts } from '@/lib/firebase/wholesale';
 import type { ContactMessage } from '@/lib/types/contact-messages';
+import type { Order, ProductReview } from '@/lib/types/database';
+import type { BulkOrder, WholesaleAccount } from '@/lib/types/wholesale';
 import { Button } from '@/components/ui/button';
 
 type Banner = {
@@ -50,7 +60,7 @@ function pendingIds(items: Array<{ id: string; approvalStatus?: string }>) {
 export function AdminAlerts() {
   const { user, isAdmin, profile } = useAuth();
   const { suppliers, loading: suppliersLoading } = useSuppliers();
-  const { providers, loading: servicesLoading } = useServices();
+  const { providers, bookings, loading: servicesLoading } = useServices();
   const prefs = resolveUserPreferences(profile?.preferences);
   const enabled = isAdmin && prefs.pushAlerts !== false;
   const [banner, setBanner] = useState<Banner | null>(null);
@@ -58,9 +68,22 @@ export function AdminAlerts() {
   const [promptHidden, setPromptHidden] = useState(true);
   const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
   const [contactLoading, setContactLoading] = useState(true);
+  const [productReviews, setProductReviews] = useState<ProductReview[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
+  const [bulkOrders, setBulkOrders] = useState<BulkOrder[]>([]);
+  const [bulkLoading, setBulkLoading] = useState(true);
+  const [wholesaleAccounts, setWholesaleAccounts] = useState<WholesaleAccount[]>([]);
+  const [wholesaleLoading, setWholesaleLoading] = useState(true);
   const seenSuppliers = useRef<Set<string> | null>(null);
   const seenProviders = useRef<Set<string> | null>(null);
   const seenMessages = useRef<Set<string> | null>(null);
+  const seenFlags = useRef<Set<string> | null>(null);
+  const seenOrders = useRef<Set<string> | null>(null);
+  const seenBookings = useRef<Set<string> | null>(null);
+  const seenBulk = useRef<Set<string> | null>(null);
+  const seenWholesale = useRef<Set<string> | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) {
@@ -75,18 +98,68 @@ export function AdminAlerts() {
     if (!enabled) {
       setContactMessages([]);
       setContactLoading(false);
+      setProductReviews([]);
+      setReviewsLoading(false);
+      setOrders([]);
+      setOrdersLoading(false);
+      setBulkOrders([]);
+      setBulkLoading(false);
+      setWholesaleAccounts([]);
+      setWholesaleLoading(false);
       return;
     }
+
     setContactLoading(true);
-    const unsubscribe = subscribeContactMessages(
-      (next) => {
-        setContactMessages(next);
-        setContactLoading(false);
-      },
-      () => setContactLoading(false)
-    );
-    return unsubscribe;
+    setReviewsLoading(true);
+    setOrdersLoading(true);
+    setBulkLoading(true);
+    setWholesaleLoading(true);
+
+    const unsubs = [
+      subscribeContactMessages(
+        (next) => {
+          setContactMessages(next);
+          setContactLoading(false);
+        },
+        () => setContactLoading(false)
+      ),
+      subscribeProductReviews(
+        (next) => {
+          setProductReviews(next);
+          setReviewsLoading(false);
+        },
+        () => setReviewsLoading(false)
+      ),
+      subscribeOrders(
+        (next) => {
+          setOrders(next);
+          setOrdersLoading(false);
+        },
+        () => setOrdersLoading(false)
+      ),
+      subscribeBulkOrders(
+        (next) => {
+          setBulkOrders(next);
+          setBulkLoading(false);
+        },
+        () => setBulkLoading(false)
+      ),
+      subscribeWholesaleAccounts(
+        (next) => {
+          setWholesaleAccounts(next);
+          setWholesaleLoading(false);
+        },
+        () => setWholesaleLoading(false)
+      ),
+    ];
+
+    return () => unsubs.forEach((unsub) => unsub());
   }, [enabled]);
+
+  const showBanner = (next: Banner) => {
+    setBanner(next);
+    fireAlert(next, true);
+  };
 
   useEffect(() => {
     if (!enabled || suppliersLoading) return;
@@ -101,7 +174,7 @@ export function AdminAlerts() {
     seenSuppliers.current = ids;
     const newest = fresh[0];
     if (!newest) return;
-    const next: Banner = {
+    showBanner({
       id: `approval-supplier-${newest.id}`,
       title: fresh.length > 1 ? `${fresh.length} new supplier requests` : 'New supplier approval request',
       body:
@@ -109,9 +182,7 @@ export function AdminAlerts() {
           ? `${newest.companyName || newest.name} and ${fresh.length - 1} more are waiting`
           : `${newest.companyName || newest.name} is waiting for approval`,
       href: ADMIN_SUPPLIERS_HREF,
-    };
-    setBanner(next);
-    fireAlert(next, true);
+    });
   }, [enabled, suppliers, suppliersLoading]);
 
   useEffect(() => {
@@ -127,7 +198,7 @@ export function AdminAlerts() {
     seenProviders.current = ids;
     const newest = fresh[0];
     if (!newest) return;
-    const next: Banner = {
+    showBanner({
       id: `approval-provider-${newest.id}`,
       title: fresh.length > 1 ? `${fresh.length} new provider requests` : 'New provider approval request',
       body:
@@ -135,9 +206,7 @@ export function AdminAlerts() {
           ? `${newest.businessName || newest.name} and ${fresh.length - 1} more are waiting`
           : `${newest.businessName || newest.name} is waiting for approval`,
       href: ADMIN_SERVICE_PROVIDERS_HREF,
-    };
-    setBanner(next);
-    fireAlert(next, true);
+    });
   }, [enabled, providers, servicesLoading]);
 
   useEffect(() => {
@@ -151,18 +220,130 @@ export function AdminAlerts() {
     seenMessages.current = ids;
     const newest = fresh[0];
     if (!newest) return;
-    const next: Banner = {
+    const isAd = newest.topic === 'advertise';
+    showBanner({
       id: `contact-${newest.id}`,
-      title: fresh.length > 1 ? `${fresh.length} new contact messages` : 'New contact message',
+      title: isAd
+        ? fresh.length > 1
+          ? `${fresh.length} advertising requests`
+          : 'New advertising request'
+        : fresh.length > 1
+          ? `${fresh.length} new contact messages`
+          : 'New contact message',
       body:
         fresh.length > 1
           ? `${newest.name}: ${newest.subject} (+${fresh.length - 1} more)`
           : `${newest.name}: ${newest.subject}`,
       href: `${ADMIN_MESSAGES_HREF}?id=${encodeURIComponent(newest.id)}`,
-    };
-    setBanner(next);
-    fireAlert(next, true);
+    });
   }, [enabled, contactMessages, contactLoading]);
+
+  useEffect(() => {
+    if (!enabled || reviewsLoading) return;
+    const flagged = productReviews.filter((review) => review.flagStatus === 'pending');
+    const ids = new Set(flagged.map((review) => review.id));
+    if (!seenFlags.current) {
+      seenFlags.current = ids;
+      return;
+    }
+    const fresh = flagged.filter((review) => !seenFlags.current!.has(review.id));
+    seenFlags.current = ids;
+    const newest = fresh[0];
+    if (!newest) return;
+    showBanner({
+      id: `review-flag-${newest.id}`,
+      title: fresh.length > 1 ? `${fresh.length} reviews flagged` : 'Product review flagged',
+      body:
+        fresh.length > 1
+          ? `${newest.customerName || 'A customer'} review needs moderation (+${fresh.length - 1} more)`
+          : `${newest.customerName || 'A customer'}: ${newest.title || newest.comment.slice(0, 80)}`,
+      href: ADMIN_REVIEWS_HREF,
+    });
+  }, [enabled, productReviews, reviewsLoading]);
+
+  useEffect(() => {
+    if (!enabled || ordersLoading) return;
+    const ids = new Set(orders.map((order) => order.id));
+    if (!seenOrders.current) {
+      seenOrders.current = ids;
+      return;
+    }
+    const fresh = orders.filter((order) => !seenOrders.current!.has(order.id));
+    seenOrders.current = ids;
+    const newest = fresh[0];
+    if (!newest) return;
+    showBanner({
+      id: `admin-order-${newest.id}`,
+      title: fresh.length > 1 ? `${fresh.length} new orders` : 'New ShiQueen order',
+      body:
+        fresh.length > 1
+          ? `${newest.customerName} and ${fresh.length - 1} more`
+          : `${newest.customerName} · UGX ${newest.total.toLocaleString('en-UG')}`,
+      href: ADMIN_ORDERS_HREF,
+    });
+  }, [enabled, orders, ordersLoading]);
+
+  useEffect(() => {
+    if (!enabled || servicesLoading) return;
+    const ids = new Set(bookings.map((booking) => booking.id));
+    if (!seenBookings.current) {
+      seenBookings.current = ids;
+      return;
+    }
+    const fresh = bookings.filter((booking) => !seenBookings.current!.has(booking.id));
+    seenBookings.current = ids;
+    const newest = fresh[0];
+    if (!newest) return;
+    showBanner({
+      id: `admin-booking-${newest.id}`,
+      title: fresh.length > 1 ? `${fresh.length} new bookings` : 'New service booking',
+      body:
+        fresh.length > 1
+          ? `${newest.customerName} and ${fresh.length - 1} more`
+          : `${newest.customerName} booked ${newest.serviceName}`,
+      href: ADMIN_SERVICE_BOOKINGS_HREF,
+    });
+  }, [enabled, bookings, servicesLoading]);
+
+  useEffect(() => {
+    if (!enabled || bulkLoading) return;
+    const pending = bulkOrders.filter((order) => order.status === 'pending');
+    const ids = new Set(pending.map((order) => order.id));
+    if (!seenBulk.current) {
+      seenBulk.current = ids;
+      return;
+    }
+    const fresh = pending.filter((order) => !seenBulk.current!.has(order.id));
+    seenBulk.current = ids;
+    const newest = fresh[0];
+    if (!newest) return;
+    showBanner({
+      id: `bulk-order-${newest.id}`,
+      title: fresh.length > 1 ? `${fresh.length} wholesale orders` : 'New wholesale order',
+      body: `Bulk order · UGX ${newest.totalAmount.toLocaleString('en-UG')}`,
+      href: ADMIN_WHOLESALE_ORDERS_HREF,
+    });
+  }, [enabled, bulkOrders, bulkLoading]);
+
+  useEffect(() => {
+    if (!enabled || wholesaleLoading) return;
+    const pending = wholesaleAccounts.filter((account) => account.status === 'pending');
+    const ids = new Set(pending.map((account) => account.id));
+    if (!seenWholesale.current) {
+      seenWholesale.current = ids;
+      return;
+    }
+    const fresh = pending.filter((account) => !seenWholesale.current!.has(account.id));
+    seenWholesale.current = ids;
+    const newest = fresh[0];
+    if (!newest) return;
+    showBanner({
+      id: `wholesale-account-${newest.id}`,
+      title: fresh.length > 1 ? `${fresh.length} wholesale applications` : 'New wholesale application',
+      body: `${newest.companyName} applied for wholesale access`,
+      href: ADMIN_WHOLESALE_HREF,
+    });
+  }, [enabled, wholesaleAccounts, wholesaleLoading]);
 
   const enableNotifications = async () => {
     const next = await requestPartnerNotificationPermission();
@@ -192,7 +373,8 @@ export function AdminAlerts() {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold">Admin alerts</p>
               <p className="text-xs text-muted-foreground">
-                Get notified for contact messages and approval requests on this device.
+                Get notified for orders, bookings, wholesale activity, messages, ads requests, and
+                approvals on this device.
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <Button size="sm" onClick={() => void enableNotifications()}>

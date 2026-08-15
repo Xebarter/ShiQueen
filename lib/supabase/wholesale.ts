@@ -247,6 +247,12 @@ export async function saveBulkOrder(order: BulkOrder): Promise<void> {
   });
 
   if (error) throw error;
+
+  if (order.status === 'pending') {
+    void import('@/lib/pwa/notify-client').then(({ notifyAdminBulkOrderClients }) =>
+      notifyAdminBulkOrderClients(id)
+    );
+  }
 }
 
 export async function updateBulkOrder(
@@ -291,6 +297,12 @@ export async function saveWholesaleAccount(
   });
 
   if (error) throw error;
+
+  if (data.status === 'pending') {
+    void import('@/lib/pwa/notify-client').then(({ notifyAdminWholesaleAccountClients }) =>
+      notifyAdminWholesaleAccountClients(id)
+    );
+  }
 }
 
 export async function updateWholesaleAccountStatus(

@@ -3,6 +3,7 @@ export const CONTACT_MESSAGE_TOPICS = [
   { value: 'order', label: 'Order support' },
   { value: 'services', label: 'List my services' },
   { value: 'wholesale', label: 'Wholesale & packages' },
+  { value: 'advertise', label: 'Advertise with us' },
   { value: 'other', label: 'Something else' },
 ] as const;
 

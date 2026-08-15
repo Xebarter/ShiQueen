@@ -121,6 +121,47 @@ export interface Order {
 
 export type { Package, BulkOrder, WholesaleAccount };
 
+export type ProductReviewFlagReason =
+  | 'inappropriate'
+  | 'spam'
+  | 'fake'
+  | 'off_topic'
+  | 'other';
+
+export type ProductReviewFlagStatus = 'none' | 'pending' | 'dismissed';
+
+export const PRODUCT_REVIEW_FLAG_REASONS: Array<{
+  value: ProductReviewFlagReason;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: 'inappropriate',
+    label: 'Inappropriate',
+    description: 'Offensive, abusive, or unsuitable language',
+  },
+  {
+    value: 'spam',
+    label: 'Spam',
+    description: 'Promotional or irrelevant content',
+  },
+  {
+    value: 'fake',
+    label: 'Suspicious / fake',
+    description: 'Does not seem like a real customer experience',
+  },
+  {
+    value: 'off_topic',
+    label: 'Off-topic',
+    description: 'Not about this product',
+  },
+  {
+    value: 'other',
+    label: 'Other',
+    description: 'Something else that needs admin attention',
+  },
+];
+
 export type ProductReview = {
   id: string;
   productId: string;
@@ -132,6 +173,14 @@ export type ProductReview = {
   customerName: string;
   isVerified: boolean;
   isVisible: boolean;
+  isFlagged: boolean;
+  flagStatus: ProductReviewFlagStatus;
+  flagReason: string;
+  flagNote: string;
+  flaggedBy?: string;
+  flaggedAt?: Date;
+  flagResolvedAt?: Date;
+  flagResolvedBy?: string;
   createdAt: Date;
   updatedAt: Date;
 };
