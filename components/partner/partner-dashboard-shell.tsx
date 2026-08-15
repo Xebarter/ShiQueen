@@ -11,7 +11,7 @@ import {
 } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { ExternalLink, LogOut, Menu, X, type LucideIcon } from 'lucide-react';
 import { BrandLogo } from '@/components/brand-logo';
 import { Button } from '@/components/ui/button';
@@ -30,9 +30,9 @@ import { getAvatarColorsForLetter, getEmailInitial } from '@/lib/user-display';
 import { montserrat } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
 import {
+  navigatePartnerTab,
   readPartnerTabSlideIn,
   usePartnerTabSwipe,
-  writePartnerTabSlide,
 } from '@/components/partner/partner-tab-swipe';
 import { InstallAppButton } from '@/components/pwa/install-app-button';
 
@@ -467,6 +467,7 @@ function PartnerTabBar({
   premium?: boolean;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { navOpen, toggleNav } = usePartnerShell();
 
   const currentIndex = getPartnerTabIndex(pathname, tabs, homeHref, navOpen);
@@ -530,9 +531,14 @@ function PartnerTabBar({
               key={tab.href}
               href={tab.href!}
               className={tabClass}
-              onClick={() => {
+              onClick={(event) => {
                 if (currentIndex < 0 || index === currentIndex) return;
-                writePartnerTabSlide(index > currentIndex ? 'next' : 'prev');
+                event.preventDefault();
+                navigatePartnerTab(
+                  router,
+                  tab.href!,
+                  index > currentIndex ? 1 : -1
+                );
               }}
             >
               {activeIndicator}
@@ -586,7 +592,7 @@ function PartnerDashboardChromeInner(props: PartnerDashboardChromeProps) {
         <PartnerSidebar {...props} />
         <main
           className={cn(
-            'min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain',
+            'partner-tab-stage relative min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain',
             premium && 'partner-premium-main'
           )}
           onClick={() => {
@@ -596,7 +602,7 @@ function PartnerDashboardChromeInner(props: PartnerDashboardChromeProps) {
           <div
             ref={paneRef}
             className={cn(
-              'partner-tab-pane min-h-full will-change-transform',
+              'partner-tab-pane min-h-full bg-background will-change-transform',
               slideIn === 'next' && 'partner-tab-enter-next',
               slideIn === 'prev' && 'partner-tab-enter-prev'
             )}
