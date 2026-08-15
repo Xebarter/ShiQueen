@@ -1,11 +1,4 @@
-import { Figtree, Montserrat, Playfair_Display } from 'next/font/google'
-
-export const figtree = Figtree({
-  variable: '--font-figtree',
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  display: 'swap',
-})
+import { Montserrat, Playfair_Display } from 'next/font/google'
 
 export const montserrat = Montserrat({
   variable: '--font-montserrat',
