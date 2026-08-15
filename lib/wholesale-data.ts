@@ -96,6 +96,36 @@ export function getTieredPrice(basePrice: number, quantity: number) {
   return calculateTieredPrice(basePrice, quantity, createDefaultPricingTiers(basePrice));
 }
 
+export function getProductWholesaleUnitPrice(
+  product: Pick<Product, 'price' | 'wholesalePrice'>,
+  quantity: number
+): number {
+  if (product.wholesalePrice != null && product.wholesalePrice > 0) {
+    return product.wholesalePrice;
+  }
+  return getTieredPrice(product.price, quantity).unitPrice;
+}
+
+export function getProductWholesaleTiers(
+  product: Pick<Product, 'price' | 'wholesalePrice' | 'minOrderQuantity'>
+): PricingTier[] {
+  if (product.wholesalePrice != null && product.wholesalePrice > 0) {
+    const discount =
+      product.price > 0
+        ? Math.max(0, Math.round((1 - product.wholesalePrice / product.price) * 100))
+        : 0;
+    return [
+      {
+        minQuantity: product.minOrderQuantity,
+        maxQuantity: null,
+        pricePerUnit: product.wholesalePrice,
+        discount,
+      },
+    ];
+  }
+  return createDefaultPricingTiers(product.price);
+}
+
 export function formatUGX(amount: number): string {
   return `USh ${amount.toLocaleString('en-UG', { maximumFractionDigits: 0 })}`;
 }

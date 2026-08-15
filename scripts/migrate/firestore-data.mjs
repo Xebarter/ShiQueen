@@ -129,6 +129,7 @@ function mapDoc(collection, id, data) {
         supplier_id: data.supplierId ?? 'supplier-shequeen-default',
         price: data.price ?? 0,
         original_price: data.originalPrice ?? null,
+        wholesale_price: data.wholesalePrice ?? null,
         stock: data.stock ?? 0,
         rating: data.rating ?? 0,
         reviews: data.reviews ?? 0,

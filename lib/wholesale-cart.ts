@@ -1,7 +1,7 @@
 import { CartItem } from '@/lib/cart-context';
 import { Product } from '@/lib/types/database';
 import { validateWholesaleQuantity } from '@/lib/package-utils';
-import { getTieredPrice } from '@/lib/wholesale-data';
+import { getProductWholesaleUnitPrice, getTieredPrice } from '@/lib/wholesale-data';
 import { getWholesaleDiscountPercent } from '@/lib/wholesale-catalog';
 
 const BULK_CART_STORAGE_KEY = 'bulk-cart';
@@ -44,7 +44,7 @@ export function clampWholesaleQuantity(product: Product, quantity: number): numb
 
 export function productToWholesaleCartItem(product: Product, quantity: number): CartItem {
   const qty = clampWholesaleQuantity(product, quantity);
-  const { unitPrice } = getTieredPrice(product.price, qty);
+  const unitPrice = getProductWholesaleUnitPrice(product, qty);
 
   return {
     id: product.id,
@@ -54,6 +54,7 @@ export function productToWholesaleCartItem(product: Product, quantity: number): 
     quantity: qty,
     wholesale: {
       basePrice: product.price,
+      fixedWholesalePrice: product.wholesalePrice,
       minOrderQuantity: product.minOrderQuantity,
       maxOrderQuantity: product.maxOrderQuantity,
       stock: product.stock,
@@ -64,7 +65,10 @@ export function productToWholesaleCartItem(product: Product, quantity: number): 
 export function recalcWholesaleItem(item: CartItem, quantity: number): CartItem {
   if (!item.wholesale) return item;
 
-  const { unitPrice } = getTieredPrice(item.wholesale.basePrice, quantity);
+  const unitPrice =
+    item.wholesale.fixedWholesalePrice != null && item.wholesale.fixedWholesalePrice > 0
+      ? item.wholesale.fixedWholesalePrice
+      : getTieredPrice(item.wholesale.basePrice, quantity).unitPrice;
 
   return {
     ...item,

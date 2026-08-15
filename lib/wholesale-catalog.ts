@@ -1,5 +1,5 @@
 import { Product } from '@/lib/types/database';
-import { createDefaultPricingTiers, getTieredPrice } from '@/lib/wholesale-data';
+import { getProductWholesaleUnitPrice, getTieredPrice } from '@/lib/wholesale-data';
 import { filterByCategory } from '@/lib/hooks/use-product-merchandising';
 
 export type WholesaleSortOption =
@@ -30,7 +30,7 @@ export function getMaxWholesaleDiscountPercent(basePrice: number): number {
 }
 
 export function getWholesaleUnitPrice(product: Product, quantity: number): number {
-  return getTieredPrice(product.price, quantity).unitPrice;
+  return getProductWholesaleUnitPrice(product, quantity);
 }
 
 export function sortWholesaleProducts(products: Product[], sortBy: WholesaleSortOption): Product[] {

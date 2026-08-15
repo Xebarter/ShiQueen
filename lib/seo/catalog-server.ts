@@ -17,6 +17,7 @@ function mapProduct(row: Record<string, unknown>): Product {
     supplierId: String(row.supplier_id ?? ''),
     price: Number(row.price ?? 0),
     originalPrice: row.original_price != null ? Number(row.original_price) : undefined,
+    wholesalePrice: row.wholesale_price != null ? Number(row.wholesale_price) : undefined,
     stock: Number(row.stock ?? 0),
     rating: Number(row.rating ?? 0),
     reviews: Number(row.reviews ?? 0),

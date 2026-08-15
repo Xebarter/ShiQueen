@@ -44,6 +44,7 @@ export interface Product {
   supplierId: string;
   price: number;
   originalPrice?: number;
+  wholesalePrice?: number;
   stock: number;
   rating: number;
   reviews: number;

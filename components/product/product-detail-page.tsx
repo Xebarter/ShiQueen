@@ -23,7 +23,7 @@ import { ProductImage, isRemoteProductImage } from '@/components/product-image';
 import { ShareProductButton } from '@/components/shared/share-button';
 import { useCart } from '@/lib/cart-context';
 import { usePublicProducts } from '@/lib/hooks/use-public-catalog';
-import { createDefaultPricingTiers, formatUGX } from '@/lib/wholesale-data';
+import { formatUGX, getProductWholesaleTiers } from '@/lib/wholesale-data';
 import { cn } from '@/lib/utils';
 import { shopCategoryPath } from '@/lib/seo/shop-categories';
 import { useSmartBack } from '@/lib/hooks/use-smart-back';
@@ -172,7 +172,8 @@ export function ProductDetailPage() {
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
-  const wholesaleTiers = createDefaultPricingTiers(product.price);
+  const wholesaleTiers = getProductWholesaleTiers(product);
+  const wholesaleBasePrice = product.wholesalePrice ?? product.price;
 
   const galleryImages =
     product.images.filter(isRemoteProductImage).length > 0
@@ -303,7 +304,7 @@ export function ProductDetailPage() {
                   <h3 className="mb-3 text-sm font-semibold text-primary sm:mb-4 sm:text-base">
                     Wholesale pricing available
                   </h3>
-                  <PricingTiers tiers={wholesaleTiers} basePrice={product.price} />
+                  <PricingTiers tiers={wholesaleTiers} basePrice={wholesaleBasePrice} />
                   <Link href="/wholesale" className="mt-4 block">
                     <Button variant="outline" className="w-full" size="sm">
                       Place bulk order

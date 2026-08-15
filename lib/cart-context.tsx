@@ -12,6 +12,8 @@ import {
 
 export type CartItemWholesale = {
   basePrice: number;
+  /** Set when the product has an explicit wholesale unit price. */
+  fixedWholesalePrice?: number;
   minOrderQuantity: number;
   maxOrderQuantity: number | null;
   stock: number;

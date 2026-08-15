@@ -38,6 +38,7 @@ function emptyForm(defaultSupplierId = '') {
     supplierId: defaultSupplierId,
     price: '',
     originalPrice: '',
+    wholesalePrice: '',
     stock: '',
     description: '',
     sizes: '',
@@ -56,6 +57,7 @@ function productToFormState(product: Product) {
     supplierId: product.supplierId,
     price: String(product.price),
     originalPrice: product.originalPrice ? String(product.originalPrice) : '',
+    wholesalePrice: product.wholesalePrice ? String(product.wholesalePrice) : '',
     stock: String(product.stock),
     description: product.description,
     sizes: product.sizes.join(', '),
@@ -187,13 +189,25 @@ export function ProductForm({
       toast.error('Select a supplier.');
       return;
     }
+    const price = parseInt(formData.price, 10) || 0;
+    const wholesalePrice = formData.wholesalePrice
+      ? parseInt(formData.wholesalePrice, 10)
+      : undefined;
+    if (
+      formData.isWholesaleEnabled &&
+      wholesalePrice &&
+      wholesalePrice > 0 &&
+      wholesalePrice >= price
+    ) {
+      toast.error('Wholesale price must be lower than retail price.');
+      return;
+    }
 
     setSaving(true);
     try {
       const uploadedUrls = await uploadProductImages(productId, pendingFiles);
       const allImages = [...imageUrls, ...uploadedUrls];
       const stock = parseInt(formData.stock, 10) || 0;
-      const price = parseInt(formData.price, 10) || 0;
       const originalPrice = formData.originalPrice
         ? parseInt(formData.originalPrice, 10)
         : undefined;
@@ -206,6 +220,10 @@ export function ProductForm({
         supplierId: forcedSupplierId || formData.supplierId,
         price,
         originalPrice: originalPrice && originalPrice > price ? originalPrice : undefined,
+        wholesalePrice:
+          formData.isWholesaleEnabled && wholesalePrice && wholesalePrice > 0
+            ? wholesalePrice
+            : undefined,
         stock,
         description: formData.description.trim(),
         image: allImages[0] ?? '',
@@ -431,7 +449,7 @@ export function ProductForm({
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="price">Price (UGX)</Label>
+                <Label htmlFor="price">Retail Price (UGX)</Label>
                 <Input
                   id="price"
                   name="price"
@@ -442,7 +460,24 @@ export function ProductForm({
                 />
               </div>
               <div>
-                <Label htmlFor="originalPrice">Original Price (UGX)</Label>
+                <Label htmlFor="wholesalePrice">Wholesale Price (UGX)</Label>
+                <Input
+                  id="wholesalePrice"
+                  name="wholesalePrice"
+                  type="number"
+                  min="0"
+                  value={formData.wholesalePrice}
+                  onChange={handleInputChange}
+                  placeholder="Bulk unit price at MOQ"
+                  disabled={!formData.isWholesaleEnabled}
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Per-unit price for wholesale orders. Leave blank to use automatic volume tiers from
+                  retail price.
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="originalPrice">Compare-at Price (UGX)</Label>
                 <Input
                   id="originalPrice"
                   name="originalPrice"
@@ -450,7 +485,7 @@ export function ProductForm({
                   min="0"
                   value={formData.originalPrice}
                   onChange={handleInputChange}
-                  placeholder="Optional sale compare-at price"
+                  placeholder="Optional strikethrough price for retail"
                 />
               </div>
               <div>
@@ -559,6 +594,16 @@ export function ProductForm({
               <p className="text-sm text-muted-foreground mt-1">
                 {formData.category || 'Category'} · {formData.sku || 'SKU'}
               </p>
+              {formData.price && (
+                <p className="mt-2 text-sm tabular-nums">
+                  Retail: USh {Number(formData.price).toLocaleString('en-UG')}
+                </p>
+              )}
+              {formData.isWholesaleEnabled && formData.wholesalePrice && (
+                <p className="text-sm tabular-nums text-primary">
+                  Wholesale: USh {Number(formData.wholesalePrice).toLocaleString('en-UG')}
+                </p>
+              )}
               <p className="text-sm capitalize mt-3">
                 Status: {computeStatus(parseInt(formData.stock, 10) || 0)}
               </p>
