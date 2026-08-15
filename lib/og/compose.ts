@@ -79,11 +79,9 @@ export async function composeShareJpeg(options: {
   eyebrow?: string;
 }): Promise<Buffer> {
   if (options.photo && options.photo.byteLength > 0) {
-    try {
-      return await composeProductPhoto(options.photo);
-    } catch {
-      // Fall through to the branded card so crawlers still get a 1200×1200 JPEG.
-    }
+    // Let callers fall back to proxying the raw product photo on failure —
+    // do not replace a real catalog image with a branded logo card.
+    return await composeProductPhoto(options.photo);
   }
 
   const overlay = fallbackOverlay(options.title, options.eyebrow);

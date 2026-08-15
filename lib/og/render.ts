@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getCachedOg, setCachedOg } from '@/lib/og/cache';
-import { CACHE_CONTROL, serveDefaultOgImage } from '@/lib/og/serve-image';
+import { CACHE_CONTROL, serveDefaultOgImage, serveRemoteImage } from '@/lib/og/serve-image';
 
 export function ogJpegResponse(jpeg: Buffer): NextResponse {
   return new NextResponse(new Uint8Array(jpeg), {
@@ -28,6 +28,14 @@ export function ogHeadResponse(): NextResponse {
   });
 }
 
+async function serveProductPhotoOrDefault(imageUrl?: string): Promise<NextResponse> {
+  if (imageUrl) {
+    const remote = await serveRemoteImage(imageUrl);
+    if (remote) return remote;
+  }
+  return serveDefaultOgImage();
+}
+
 export async function renderShareOgImage(options: {
   cacheKey: string;
   imageUrl?: string;
@@ -41,8 +49,28 @@ export async function renderShareOgImage(options: {
     const { fetchOgPhotoBuffer } = await import('@/lib/og/photo');
     const { composeShareJpeg } = await import('@/lib/og/compose');
     const photo = options.imageUrl ? await fetchOgPhotoBuffer(options.imageUrl) : null;
+
+    // Prefer the real catalog photo. If composition fails, proxy the photo
+    // instead of falling back to the brand logo.
+    if (photo && photo.byteLength > 0) {
+      try {
+        const jpeg = await composeShareJpeg({
+          photo,
+          title: options.title,
+          eyebrow: options.eyebrow,
+        });
+        setCachedOg(options.cacheKey, jpeg);
+        return ogJpegResponse(jpeg);
+      } catch {
+        return serveProductPhotoOrDefault(options.imageUrl);
+      }
+    }
+
+    if (options.imageUrl) {
+      return serveProductPhotoOrDefault(options.imageUrl);
+    }
+
     const jpeg = await composeShareJpeg({
-      photo,
       title: options.title,
       eyebrow: options.eyebrow,
     });
@@ -50,12 +78,7 @@ export async function renderShareOgImage(options: {
     return ogJpegResponse(jpeg);
   } catch {
     try {
-      const { composeShareJpeg } = await import('@/lib/og/compose');
-      const jpeg = await composeShareJpeg({
-        title: options.title,
-        eyebrow: options.eyebrow,
-      });
-      return ogJpegResponse(jpeg);
+      return await serveProductPhotoOrDefault(options.imageUrl);
     } catch {
       return serveDefaultOgImage();
     }

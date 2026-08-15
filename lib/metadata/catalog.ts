@@ -3,6 +3,8 @@ import type { Product } from '@/lib/types/database';
 import type { Package } from '@/lib/types/wholesale';
 import type { ServiceCategory, ServiceListing } from '@/lib/types/services';
 import { BRAND_NAME } from '@/lib/brand';
+import { resolveProductOgImage } from '@/lib/metadata/resolve-og-image';
+import { resolvePackageOgImage } from '@/lib/metadata/resolve-package-og-image';
 import { SEO_CITY, SEO_COUNTRY, pageMetadata } from '@/lib/seo/site';
 import { toAbsoluteUrl } from '@/lib/site-url';
 
@@ -21,6 +23,20 @@ export function packageOgImagePath(packageId: string): string {
   return `/og/package/${encodeURIComponent(packageId)}.jpg`;
 }
 
+function shareImageOptions(primary?: string, composedPath?: string) {
+  if (primary) {
+    return { image: primary };
+  }
+  if (composedPath) {
+    return {
+      image: toAbsoluteUrl(composedPath),
+      imageWidth: 1200,
+      imageHeight: 1200,
+    };
+  }
+  return {};
+}
+
 export function buildProductMetadata(product: Product): Metadata {
   const path = `/products/${product.id}`;
   const categoryLabel = product.category?.trim() || 'fashion';
@@ -28,14 +44,13 @@ export function buildProductMetadata(product: Product): Metadata {
     product.description,
     `Shop ${categoryLabel.toLowerCase()} at ${BRAND_NAME}.`
   );
+  const productImage = resolveProductOgImage(product);
 
   return pageMetadata({
     title: product.name,
     description,
     path,
-    image: toAbsoluteUrl(productOgImagePath(product.id)),
-    imageWidth: 1200,
-    imageHeight: 1200,
+    ...shareImageOptions(productImage, productOgImagePath(product.id)),
     keywords: [
       product.name,
       `${product.name} Uganda`,
@@ -46,20 +61,19 @@ export function buildProductMetadata(product: Product): Metadata {
   });
 }
 
-export function buildPackageMetadata(pkg: Package): Metadata {
+export async function buildPackageMetadata(pkg: Package): Promise<Metadata> {
   const path = `/packages/${pkg.id}`;
   const description = shareDescription(
     pkg.tagline || pkg.description,
     `Shop this package at ${BRAND_NAME}.`
   );
+  const packageImage = await resolvePackageOgImage(pkg);
 
   return pageMetadata({
     title: `${pkg.name} Package`,
     description,
     path,
-    image: toAbsoluteUrl(packageOgImagePath(pkg.id)),
-    imageWidth: 1200,
-    imageHeight: 1200,
+    ...shareImageOptions(packageImage, packageOgImagePath(pkg.id)),
     keywords: [
       pkg.name,
       'beauty packages Uganda',

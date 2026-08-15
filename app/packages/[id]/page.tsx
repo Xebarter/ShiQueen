@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return buildFallbackMetadata('Bundle not found');
   }
 
-  return buildPackageMetadata(pkg);
+  return await buildPackageMetadata(pkg);
 }
 
 export default async function PackageDetail({ params }: PageProps) {
