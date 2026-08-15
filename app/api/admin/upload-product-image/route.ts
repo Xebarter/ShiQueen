@@ -34,7 +34,13 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[ShiQueen] upload-product-image:', error);
     const message = error instanceof Error ? error.message : 'Upload failed.';
-    const status = message.includes('sign-in') || message.includes('Admin access') ? 403 : 500;
+    const status =
+      message.includes('sign-in') ||
+      message.includes('Admin access') ||
+      message.includes('Supplier or admin') ||
+      message.includes('only upload')
+        ? 403
+        : 500;
     return NextResponse.json({ error: message }, { status });
   }
 }
