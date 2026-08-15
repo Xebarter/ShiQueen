@@ -10,10 +10,12 @@ import {
 } from '@/components/partner/partner-nav';
 
 const MOBILE_MQ = '(max-width: 767px)';
-const AXIS_LOCK_PX = 10;
-const COMMIT_PX = 56;
-const COMMIT_VELOCITY = 0.35;
-const EXIT_MS = 200;
+const AXIS_LOCK_PX = 8;
+const COMMIT_PX = 48;
+const COMMIT_VELOCITY = 0.28;
+const EXIT_MS = 240;
+const SNAP_MS = 260;
+const DRAG_TRANSITION = 'transform 260ms cubic-bezier(0.22, 1, 0.36, 1)';
 
 function isInteractiveTarget(target: EventTarget | null) {
   if (!(target instanceof Element)) return false;
@@ -57,10 +59,16 @@ export function usePartnerTabSwipe({
   pathnameRef.current = pathname;
 
   const applyDrag = useCallback(
-    (dx: number) => {
+    (dx: number, animate = false) => {
       const pane = paneRef.current;
       if (!pane) return;
+      pane.style.transition = animate ? DRAG_TRANSITION : 'none';
       pane.style.transform = dx ? `translate3d(${dx}px, 0, 0)` : '';
+      if (animate) {
+        window.setTimeout(() => {
+          if (paneRef.current) paneRef.current.style.transition = '';
+        }, SNAP_MS);
+      }
     },
     [paneRef]
   );
@@ -72,7 +80,7 @@ export function usePartnerTabSwipe({
       busy.current = true;
 
       if (tab.action === 'more') {
-        applyDrag(0);
+        applyDrag(0, true);
         setNavOpen(true);
         busy.current = false;
         return;
@@ -86,7 +94,7 @@ export function usePartnerTabSwipe({
       }
 
       if (isPartnerNavActive(pathnameRef.current, tab.href, homeHref)) {
-        applyDrag(0);
+        applyDrag(0, true);
         busy.current = false;
         return;
       }
@@ -97,7 +105,7 @@ export function usePartnerTabSwipe({
         pane.classList.add(direction === 1 ? 'partner-tab-exit-next' : 'partner-tab-exit-prev');
         await new Promise((resolve) => window.setTimeout(resolve, EXIT_MS));
       } else {
-        applyDrag(0);
+        applyDrag(0, true);
       }
 
       try {
@@ -154,7 +162,8 @@ export function usePartnerTabSwipe({
       if (navOpenRef.current) return;
       const atStart = index === 0 && dx > 0;
       const atEnd = index === tabs.length - 1 && dx < 0;
-      applyDrag(atStart || atEnd ? dx * 0.28 : dx);
+      const resistance = atStart || atEnd ? 0.32 : 1;
+      applyDrag(dx * resistance);
     };
 
     const onEnd = (event: TouchEvent) => {
@@ -162,7 +171,7 @@ export function usePartnerTabSwipe({
       start.current = null;
       if (!origin || axis.current !== 'x') {
         axis.current = 'undecided';
-        applyDrag(0);
+        applyDrag(0, dragging.current);
         return;
       }
       axis.current = 'undecided';
@@ -178,13 +187,19 @@ export function usePartnerTabSwipe({
         navOpenRef.current
       );
 
-      applyDrag(0);
-
-      if (index < 0) return;
+      if (index < 0) {
+        applyDrag(0, dragging.current);
+        return;
+      }
 
       const committed =
         Math.abs(dx) >= COMMIT_PX || Math.abs(velocity) >= COMMIT_VELOCITY;
-      if (!committed) return;
+      if (!committed) {
+        applyDrag(0, dragging.current);
+        return;
+      }
+
+      applyDrag(0, false);
 
       const direction: 1 | -1 = dx < 0 ? 1 : -1;
       const nextIndex = index + direction;

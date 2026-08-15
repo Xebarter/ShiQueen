@@ -11,7 +11,7 @@ export function PartnerPage({
   className?: string;
 }) {
   return (
-    <div className={cn('px-4 py-4 pb-28 sm:px-6 sm:py-6 md:p-8 md:pb-8', className)}>
+    <div className={cn('partner-page-shell px-4 py-4 pb-28 sm:px-6 sm:py-6 md:p-8 md:pb-8', className)}>
       {children}
     </div>
   );
@@ -60,7 +60,9 @@ export function PartnerCard({
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm shadow-primary/5',
+        'overflow-hidden rounded-2xl border border-border/60 bg-card/95 shadow-sm',
+        'shadow-[var(--partner-card-shadow,0_4px_20px_oklch(0.40_0.13_340_/_5%))]',
+        'backdrop-blur-sm',
         className
       )}
     >
@@ -79,7 +81,8 @@ export function PartnerFormCard({
   return (
     <div
       className={cn(
-        'max-w-xl space-y-5 rounded-xl border border-border/70 bg-card p-5 shadow-sm sm:p-6',
+        'max-w-xl space-y-5 rounded-2xl border border-border/60 bg-card/95 p-5 shadow-sm',
+        'shadow-[var(--partner-card-shadow,0_4px_20px_oklch(0.40_0.13_340_/_5%))] sm:p-6',
         className
       )}
     >
@@ -98,8 +101,8 @@ export function PartnerEmptyState({
   description: string;
 }) {
   return (
-    <div className="rounded-xl border border-dashed border-border/80 bg-card px-6 py-14 text-center">
-      <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+    <div className="rounded-2xl border border-dashed border-primary/15 bg-gradient-to-b from-card to-secondary/30 px-6 py-14 text-center shadow-sm">
+      <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 text-primary ring-1 ring-primary/10">
         <Icon className="h-6 w-6" />
       </span>
       <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
@@ -123,14 +126,14 @@ export function PartnerStatCard({
   return (
     <Link
       href={href}
-      className="group rounded-xl border border-border/70 bg-card p-4 shadow-sm shadow-primary/5 transition hover:border-primary/25"
+      className="group rounded-2xl border border-border/60 bg-card/95 p-4 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-primary/20 hover:shadow-[0_12px_32px_oklch(0.40_0.13_340_/_8%)]"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
           <p className="mt-1 truncate text-2xl font-bold tabular-nums">{value}</p>
         </div>
-        <span className="shrink-0 rounded-lg bg-muted p-2 text-primary">
+        <span className="shrink-0 rounded-xl bg-gradient-to-br from-primary/12 to-primary/5 p-2.5 text-primary ring-1 ring-primary/10">
           <Icon className="h-4 w-4" />
         </span>
       </div>

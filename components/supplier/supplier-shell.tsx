@@ -7,7 +7,6 @@ import {
   Boxes,
   ClipboardList,
   Loader2,
-  Menu,
   Package,
   Settings,
   Truck,
@@ -37,7 +36,7 @@ export const SUPPLIER_TABS: readonly PartnerTabItem[] = [
   { href: SUPPLIER_HOME_HREF, label: 'Orders', icon: ClipboardList },
   { href: '/suppliers/products', label: 'Products', icon: Package },
   { href: '/suppliers/packages', label: 'Packages', icon: Boxes },
-  { label: 'More', icon: Menu, action: 'more' },
+  { href: '/suppliers/profile', label: 'Profile', icon: UserRound },
 ];
 
 export const SUPPLIER_PAGE_TITLES: readonly PartnerPageTitle[] = [
@@ -116,7 +115,7 @@ export function SupplierShell({ children, publicPage = false }: SupplierShellPro
       <div
         className={cn(
           figtree.className,
-          'admin-app flex min-h-[100dvh] items-center justify-center bg-background'
+          'partner-app partner-premium-app flex min-h-[100dvh] items-center justify-center'
         )}
       >
         <div className="text-center">
@@ -152,6 +151,7 @@ export function SupplierShell({ children, publicPage = false }: SupplierShellPro
       nav={SUPPLIER_NAV}
       tabs={SUPPLIER_TABS}
       pageTitles={SUPPLIER_PAGE_TITLES}
+      chromeVariant="premium"
       onLogout={async () => {
         await logout();
         router.push('/suppliers');

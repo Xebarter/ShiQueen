@@ -106,6 +106,7 @@ export type PartnerDashboardChromeProps = {
   nav: readonly PartnerNavItem[];
   tabs: readonly PartnerTabItem[];
   pageTitles: readonly PartnerPageTitle[];
+  chromeVariant?: 'default' | 'premium';
   onLogout: () => Promise<void>;
 };
 
@@ -300,10 +301,11 @@ function PartnerMobileHeader({
   pageTitles,
   marketplaceHref,
   marketplaceLabel,
+  premium = false,
 }: Pick<
   PartnerDashboardChromeProps,
   'portalLabel' | 'pageTitles' | 'marketplaceHref' | 'marketplaceLabel'
->) {
+> & { premium?: boolean }) {
   const { navOpen, toggleNav, setNavOpen } = usePartnerShell();
   const pathname = usePathname();
   const title = getPartnerPageTitle(pathname, pageTitles);
@@ -311,8 +313,10 @@ function PartnerMobileHeader({
   return (
     <header
       className={cn(
-        'sticky top-0 z-[60] flex h-16 shrink-0 items-center gap-3 border-b border-border',
-        'bg-card/95 px-4 shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-card/90 md:hidden'
+        'sticky top-0 z-[60] flex h-16 shrink-0 items-center gap-3 md:hidden',
+        premium
+          ? 'border-b border-white/50 bg-card/88 px-4 shadow-[0_4px_24px_oklch(0.40_0.13_340_/_5%)] backdrop-blur-xl supports-[backdrop-filter]:bg-card/82'
+          : 'border-b border-border bg-card/95 px-4 shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-card/90'
       )}
       onClick={() => {
         if (navOpen) setNavOpen(false);
@@ -328,10 +332,12 @@ function PartnerMobileHeader({
         aria-controls="partner-mobile-nav"
         aria-label={navOpen ? 'Close navigation menu' : 'Open navigation menu'}
         className={cn(
-          'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition',
+          'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition duration-300',
           navOpen
             ? 'border-primary/30 bg-primary text-primary-foreground shadow-sm'
-            : 'border-border bg-background hover:bg-secondary'
+            : premium
+              ? 'border-white/70 bg-white/60 shadow-sm hover:bg-white/80'
+              : 'border-border bg-background hover:bg-secondary'
         )}
       >
         {navOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -347,7 +353,12 @@ function PartnerMobileHeader({
       <Link
         href={marketplaceHref}
         onClick={(e) => e.stopPropagation()}
-        className="shrink-0 rounded-xl border border-border bg-background px-3 py-2 text-xs font-semibold text-primary transition hover:bg-primary/5"
+        className={cn(
+          'shrink-0 rounded-xl border px-3 py-2 text-xs font-semibold transition duration-300',
+          premium
+            ? 'border-primary/15 bg-primary/5 text-primary hover:bg-primary/10'
+            : 'border-border bg-background text-primary hover:bg-primary/5'
+        )}
       >
         {marketplaceLabel === 'Storefront' ? 'Store' : marketplaceLabel}
       </Link>
@@ -386,7 +397,10 @@ function PartnerMobileDrawer(props: PartnerDashboardChromeProps) {
         style={{ top: MOBILE_HEADER_OFFSET, height: `calc(100dvh - ${MOBILE_HEADER_OFFSET})` }}
         className={cn(
           'fixed left-0 z-50 flex w-[min(20rem,82vw)] flex-col overflow-hidden',
-          'border-r border-border/80 bg-card shadow-2xl transition-transform duration-300 ease-out md:hidden',
+          'border-r shadow-2xl transition-transform duration-300 ease-out md:hidden',
+          props.chromeVariant === 'premium'
+            ? 'border-white/50 bg-card/95 backdrop-blur-xl'
+            : 'border-border/80 bg-card',
           navOpen ? 'translate-x-0' : 'pointer-events-none -translate-x-full'
         )}
         onClick={(e) => e.stopPropagation()}
@@ -441,9 +455,11 @@ function PartnerMobileDrawer(props: PartnerDashboardChromeProps) {
 function PartnerTabBar({
   tabs,
   homeHref,
+  premium = false,
 }: {
   tabs: readonly PartnerTabItem[];
   homeHref: string;
+  premium?: boolean;
 }) {
   const pathname = usePathname();
   const { navOpen, toggleNav } = usePartnerShell();
@@ -451,9 +467,14 @@ function PartnerTabBar({
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-[55] border-t border-border bg-card/95 pb-[max(0.4rem,env(safe-area-inset-bottom))] shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-card/90 md:hidden"
+      className={cn(
+        'fixed inset-x-0 bottom-0 z-[55] pb-[max(0.4rem,env(safe-area-inset-bottom))] md:hidden',
+        premium
+          ? 'partner-premium-tab-bar border-t border-white/60 bg-card/88 shadow-[0_-8px_32px_oklch(0.40_0.13_340_/_6%)] backdrop-blur-xl supports-[backdrop-filter]:bg-card/82'
+          : 'border-t border-border bg-card/95 shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-card/90'
+      )}
     >
-      <div className="grid h-14 grid-cols-4">
+      <div className="grid h-[3.75rem] grid-cols-4 px-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const active =
@@ -462,33 +483,46 @@ function PartnerTabBar({
               : tab.href
                 ? isPartnerNavActive(pathname, tab.href, homeHref)
                 : false;
+          const tabClass = cn(
+            'relative flex flex-col items-center justify-center gap-1 text-[10px] font-semibold tracking-wide transition-all duration-300 ease-out',
+            active
+              ? premium
+                ? 'text-primary'
+                : 'text-primary'
+              : premium
+                ? 'text-muted-foreground/75 active:scale-95'
+                : 'text-muted-foreground'
+          );
+          const activeIndicator = active ? (
+            <span
+              className={cn(
+                'pointer-events-none absolute inset-x-1.5 inset-y-1 rounded-2xl',
+                premium
+                  ? 'bg-gradient-to-b from-primary/14 to-primary/6 ring-1 ring-primary/10'
+                  : 'bg-primary/8'
+              )}
+              aria-hidden
+            />
+          ) : null;
           if (tab.action === 'more') {
             return (
               <button
                 key={tab.label}
                 type="button"
                 onClick={toggleNav}
-                className={cn(
-                  'flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold',
-                  active ? 'text-primary' : 'text-muted-foreground'
-                )}
+                className={tabClass}
               >
-                <Icon className="h-5 w-5" />
-                {tab.label}
+                {activeIndicator}
+                <Icon className={cn('relative h-5 w-5', active && premium && 'drop-shadow-sm')} />
+                <span className="relative">{tab.label}</span>
               </button>
             );
           }
           return (
-            <Link
-              key={tab.href}
-              href={tab.href!}
-              className={cn(
-                'flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold',
-                active ? 'text-primary' : 'text-muted-foreground'
-              )}
-            >
-              <Icon className="h-5 w-5" />
-              {tab.label}
+            <Link key={tab.href} href={tab.href!} className={tabClass}>
+              {activeIndicator}
+              <Icon className={cn('relative h-5 w-5', active && premium && 'drop-shadow-sm')} />
+              <span className="relative">{tab.label}</span>
             </Link>
           );
         })}
@@ -498,7 +532,9 @@ function PartnerTabBar({
 }
 
 function PartnerDashboardChromeInner(props: PartnerDashboardChromeProps) {
-  const { children, statusBanner, statusTone, statusIcon: StatusIcon } = props;
+  const { children, statusBanner, statusTone, statusIcon: StatusIcon, chromeVariant = 'default' } =
+    props;
+  const premium = chromeVariant === 'premium';
   const { navOpen, setNavOpen } = usePartnerShell();
   const pathname = usePathname();
   const paneRef = useRef<HTMLDivElement>(null);
@@ -517,21 +553,27 @@ function PartnerDashboardChromeInner(props: PartnerDashboardChromeProps) {
     <div
       className={cn(
         figtree.className,
-        'partner-app flex h-[100dvh] flex-col overflow-hidden bg-background'
+        'partner-app flex h-[100dvh] flex-col overflow-hidden bg-background',
+        premium && 'partner-premium-app'
       )}
+      data-chrome={chromeVariant}
     >
       <PartnerMobileHeader
         portalLabel={props.portalLabel}
         pageTitles={props.pageTitles}
         marketplaceHref={props.marketplaceHref}
         marketplaceLabel={props.marketplaceLabel}
+        premium={premium}
       />
       <PartnerMobileDrawer {...props} />
 
       <div className="flex min-h-0 flex-1 md:flex-row">
         <PartnerSidebar {...props} />
         <main
-          className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto"
+          className={cn(
+            'min-w-0 flex-1 overflow-x-hidden overflow-y-auto',
+            premium && 'partner-premium-main'
+          )}
           onClick={() => {
             if (navOpen) setNavOpen(false);
           }}
@@ -539,7 +581,7 @@ function PartnerDashboardChromeInner(props: PartnerDashboardChromeProps) {
           <div
             ref={paneRef}
             className={cn(
-              'min-h-full will-change-transform',
+              'partner-tab-pane min-h-full will-change-transform',
               slideIn === 'next' && 'partner-tab-enter-next',
               slideIn === 'prev' && 'partner-tab-enter-prev'
             )}
@@ -564,7 +606,7 @@ function PartnerDashboardChromeInner(props: PartnerDashboardChromeProps) {
           </div>
         </main>
       </div>
-      <PartnerTabBar tabs={props.tabs} homeHref={props.homeHref} />
+      <PartnerTabBar tabs={props.tabs} homeHref={props.homeHref} premium={premium} />
       <PartnerPwaRuntime />
     </div>
   );
