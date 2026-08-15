@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { figtree } from '@/lib/fonts';
+import { montserrat } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
 import { BRAND_ASSETS, BRAND_NAME, BRAND_THEME } from '@/lib/brand';
 
@@ -25,5 +25,5 @@ export default function SuppliersLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <div className={cn(figtree.className, 'min-h-[100dvh]')}>{children}</div>;
+  return <div className={cn(montserrat.className, 'min-h-[100dvh]')}>{children}</div>;
 }

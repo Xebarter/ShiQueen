@@ -10,7 +10,7 @@ import { WholesaleProvider } from '@/lib/wholesale-context'
 import { ServicesProvider } from '@/lib/services-context'
 import { SuppliersProvider } from '@/lib/suppliers-context'
 import { BRAND_ASSETS, BRAND_NAME, BRAND_THEME } from '@/lib/brand'
-import { figtree, playfair, workSans } from '@/lib/fonts'
+import { figtree, montserrat, playfair } from '@/lib/fonts'
 import { getDefaultOgImageUrl } from '@/lib/metadata/resolve-og-image'
 import { CORE_KEYWORDS, SEO_HOME_DESCRIPTION, SEO_HOME_TITLE, SEO_LOCALE } from '@/lib/seo/site'
 import { JsonLd, organizationJsonLd, websiteJsonLd } from '@/lib/seo/json-ld'
@@ -85,7 +85,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en-UG" className={`${figtree.variable} ${playfair.variable} ${workSans.variable} bg-background`}>
+    <html lang="en-UG" className={`${figtree.variable} ${montserrat.variable} ${playfair.variable} bg-background`}>
       <body className="font-sans antialiased">
         <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
         <AuthProvider>

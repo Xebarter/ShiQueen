@@ -18,7 +18,7 @@ import { PartnerDashboardChrome } from '@/components/partner/partner-dashboard-s
 import type { PartnerNavItem, PartnerPageTitle, PartnerTabItem } from '@/components/partner/partner-nav';
 import { useAuth } from '@/lib/auth-context';
 import { useServices } from '@/lib/services-context';
-import { figtree } from '@/lib/fonts';
+import { montserrat } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
 import type { ProviderApprovalStatus } from '@/lib/types/services';
 import { PROVIDER_HOME_HREF, PROVIDER_INSIGHTS_HREF } from '@/lib/pwa/paths';
@@ -109,8 +109,8 @@ export function ProviderShell({ children }: ProviderShellProps) {
     return (
       <div
         className={cn(
-          figtree.className,
-          'admin-app flex min-h-[100dvh] items-center justify-center bg-background'
+          montserrat.className,
+          'partner-app flex min-h-[100dvh] items-center justify-center bg-background'
         )}
       >
         <div className="text-center">

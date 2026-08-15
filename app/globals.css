@@ -5,8 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-heading: var(--font-work-sans), 'Work Sans', ui-sans-serif, system-ui, sans-serif;
-  --font-sans: var(--font-work-sans), 'Work Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-montserrat), 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-montserrat), 'Montserrat', ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, 'Cascadia Code', 'Segoe UI Mono', Menlo, Monaco, Consolas, monospace;
   --font-brand: var(--font-playfair), 'Playfair Display', Georgia, serif;
   --color-sidebar-ring: var(--sidebar-ring);
@@ -152,7 +152,7 @@
 
 @layer utilities {
   .partner-app {
-    font-family: var(--font-figtree), 'Figtree', ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-montserrat), 'Montserrat', ui-sans-serif, system-ui, sans-serif;
   }
   @media (display-mode: standalone) {
     .partner-app {
@@ -160,7 +160,7 @@
     }
   }
   .partner-app :is(.font-sans, .font-heading, .font-brand) {
-    font-family: var(--font-figtree), 'Figtree', ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-montserrat), 'Montserrat', ui-sans-serif, system-ui, sans-serif;
   }
   .partner-canvas-wash {
     background-color: var(--background);
@@ -196,7 +196,7 @@
   .admin-app {
     font-family: var(--font-figtree), 'Figtree', ui-sans-serif, system-ui, sans-serif;
   }
-  /* Public UI is Work Sans; keep admin on Figtree */
+  /* Public UI / partner PWAs use Montserrat; keep admin on Figtree */
   .admin-app :is(.font-sans, .font-heading, .font-brand) {
     font-family: var(--font-figtree), 'Figtree', ui-sans-serif, system-ui, sans-serif;
   }

@@ -27,7 +27,7 @@ import {
 } from '@/components/partner/partner-nav';
 import { isRemoteProductImage } from '@/components/product-image';
 import { getAvatarColorsForLetter, getEmailInitial } from '@/lib/user-display';
-import { figtree } from '@/lib/fonts';
+import { montserrat } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
 import {
   readPartnerTabSlideIn,
@@ -567,7 +567,7 @@ function PartnerDashboardChromeInner(props: PartnerDashboardChromeProps) {
   return (
     <div
       className={cn(
-        figtree.className,
+        montserrat.className,
         'partner-app flex h-[100dvh] flex-col overflow-hidden bg-background',
         premium && 'partner-premium-app'
       )}
