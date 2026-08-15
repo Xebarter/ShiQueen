@@ -172,7 +172,10 @@ export function ProductForm({
 
   const handleFilesSelected = (files: FileList | null) => {
     if (!files?.length) return;
-    setPendingImages((prev) => [...prev, ...createPendingImages(files)]);
+    // Snapshot File objects before the input is cleared — live FileList empties
+    // when value is reset, and deferred setState updaters then see zero files.
+    const next = createPendingImages(Array.from(files));
+    setPendingImages((prev) => [...prev, ...next]);
   };
 
   const removeExistingImage = (index: number) => {
@@ -222,9 +225,10 @@ export function ProductForm({
 
     setSaving(true);
     try {
+      const pending = pendingImagesRef.current;
       const uploadedUrls = await uploadProductImages(
         productId,
-        pendingImages.map((item) => item.file)
+        pending.map((item) => item.file)
       );
       const allImages = [...imageUrls, ...uploadedUrls];
       const stock = parseInt(formData.stock, 10) || 0;
@@ -267,7 +271,7 @@ export function ProductForm({
         toast.success('Product saved');
       }
 
-      revokePendingImages(pendingImages);
+      revokePendingImages(pending);
       setPendingImages([]);
       setImageUrls(allImages);
       onSaved?.();
@@ -321,7 +325,8 @@ export function ProductForm({
                 multiple
                 className="hidden"
                 onChange={(e) => {
-                  handleFilesSelected(e.target.files);
+                  const files = e.target.files;
+                  handleFilesSelected(files);
                   e.target.value = '';
                 }}
               />
