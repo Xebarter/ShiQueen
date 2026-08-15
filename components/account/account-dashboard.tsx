@@ -72,6 +72,36 @@ function formatOrderReference(orderId: string): string {
   return orderId.slice(-10).toUpperCase();
 }
 
+function OrderItemThumb({
+  src,
+  alt,
+  size = 'md',
+}: {
+  src?: string;
+  alt: string;
+  size?: 'sm' | 'md' | 'lg';
+}) {
+  const dim =
+    size === 'sm' ? 'h-8 w-8' : size === 'lg' ? 'h-16 w-16' : 'h-12 w-12';
+
+  return (
+    <div
+      className={cn(
+        'relative shrink-0 overflow-hidden rounded-lg bg-muted ring-1 ring-border/60',
+        dim
+      )}
+    >
+      {isRemoteProductImage(src) ? (
+        <Image src={src!} alt={alt} fill sizes="64px" className="object-cover" />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+          <Package className={size === 'sm' ? 'h-3.5 w-3.5' : 'h-5 w-5'} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function OrderStatusBadge({ status }: { status: Order['status'] }) {
   const config = ORDER_STATUS[status];
   return (
@@ -162,16 +192,45 @@ function OrderCard({
   const [expanded, setExpanded] = useState(false);
   const itemPreview = order.items.slice(0, 3);
   const remainingItems = order.items.length - itemPreview.length;
+  const coverImages = order.items
+    .map((item) => resolveItemImage(item))
+    .filter((src): src is string => Boolean(isRemoteProductImage(src)))
+    .slice(0, 3);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm ring-1 ring-border/40 transition hover:border-primary/20 hover:shadow-md">
       <button
         type="button"
         onClick={() => setExpanded((open) => !open)}
-        className="flex w-full items-start gap-4 px-4 py-4 text-left sm:px-5 sm:py-5"
+        className="flex w-full items-start gap-3 px-4 py-4 text-left sm:gap-4 sm:px-5 sm:py-5"
       >
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
-          <Package className="h-5 w-5" />
+        <div
+          className={cn(
+            'relative shrink-0',
+            coverImages.length > 1 ? 'h-14 w-[4.25rem]' : 'h-14 w-14'
+          )}
+          aria-hidden
+        >
+          {coverImages.length > 0 ? (
+            coverImages.map((src, index) => (
+              <div
+                key={`${src}-${index}`}
+                className="absolute top-0 h-14 w-14 overflow-hidden rounded-xl bg-muted shadow-sm ring-2 ring-card"
+                style={{ left: `${index * 14}px`, zIndex: coverImages.length - index }}
+              >
+                <Image src={src} alt="" fill sizes="56px" className="object-cover" />
+              </div>
+            ))
+          ) : (
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/15">
+              <Package className="h-5 w-5" />
+            </div>
+          )}
+          {order.items.length > coverImages.length && coverImages.length > 0 ? (
+            <span className="absolute -bottom-1 -right-1 z-20 flex h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-semibold text-background">
+              +{order.items.length - coverImages.length}
+            </span>
+          ) : null}
         </div>
 
         <div className="min-w-0 flex-1">
@@ -193,14 +252,23 @@ function OrderCard({
             </div>
           </div>
 
-          <ul className="mt-3 space-y-1 text-sm text-muted-foreground">
+          <ul className="mt-3 space-y-2">
             {itemPreview.map((item, index) => (
-              <li key={`${item.productId}-${index}`} className="line-clamp-1">
-                {item.name} × {item.quantity}
+              <li
+                key={`${item.productId}-${index}`}
+                className="flex items-center gap-2.5 text-sm text-muted-foreground"
+              >
+                <OrderItemThumb src={resolveItemImage(item)} alt={item.name} size="sm" />
+                <span className="min-w-0 flex-1 line-clamp-1 text-foreground/80">
+                  {item.name}{' '}
+                  <span className="text-muted-foreground">× {item.quantity}</span>
+                </span>
               </li>
             ))}
             {remainingItems > 0 && (
-              <li className="text-xs">+ {remainingItems} more</li>
+              <li className="pl-[2.375rem] text-xs text-muted-foreground">
+                + {remainingItems} more
+              </li>
             )}
           </ul>
         </div>
@@ -228,21 +296,7 @@ function OrderCard({
                       key={`${item.productId}-${index}`}
                       className="flex items-center gap-3 rounded-xl border border-border/50 bg-background/70 p-2 pr-3"
                     >
-                      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-muted ring-1 ring-border/60">
-                        {isRemoteProductImage(image) ? (
-                          <Image
-                            src={image!}
-                            alt={item.name}
-                            fill
-                            sizes="64px"
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                            <Package className="h-5 w-5" />
-                          </div>
-                        )}
-                      </div>
+                      <OrderItemThumb src={image} alt={item.name} size="lg" />
                       <div className="min-w-0 flex-1">
                         <p className="line-clamp-1 text-sm font-medium text-foreground">
                           {item.name}
@@ -731,7 +785,10 @@ export function AccountDashboard() {
                               );
                               return listing ? resolveListingImage(listing) ?? undefined : undefined;
                             }
-                            return getProductById(item.productId)?.image;
+                            const product = getProductById(item.productId);
+                            if (!product) return undefined;
+                            if (isRemoteProductImage(product.image)) return product.image;
+                            return product.images.find((url) => isRemoteProductImage(url));
                           }}
                         />
                       ))}
