@@ -26,8 +26,8 @@ export default function EditProductPage() {
     async function loadProduct() {
       setLoading(true);
       try {
-        const fromFirestore = await getProduct(productId);
-        const resolved = fromStore ?? getProductByIdRef.current(productId) ?? null;
+        const loaded = await getProduct(productId);
+        const resolved = loaded ?? getProductByIdRef.current(productId) ?? null;
         if (!cancelled) setProduct(resolved);
       } finally {
         if (!cancelled) setLoading(false);
