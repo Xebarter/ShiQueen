@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
@@ -14,6 +14,9 @@ export default function EditProductPage() {
   const router = useRouter();
   const productId = params.id as string;
   const { getProductById } = useProducts();
+  const getProductByIdRef = useRef(getProductById);
+  getProductByIdRef.current = getProductById;
+
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -24,7 +27,7 @@ export default function EditProductPage() {
       setLoading(true);
       try {
         const fromFirestore = await getProduct(productId);
-        const resolved = fromFirestore ?? getProductById(productId) ?? null;
+        const resolved = fromRepos ?? getProductByIdRef.current(productId) ?? null;
         if (!cancelled) setProduct(resolved);
       } finally {
         if (!cancelled) setLoading(false);
@@ -36,7 +39,9 @@ export default function EditProductPage() {
     return () => {
       cancelled = true;
     };
-  }, [productId, getProductById]);
+    // Load once per product id. Do not re-run when the products catalog
+    // refreshes — that remounts ProductForm and wipes in-progress image edits.
+  }, [productId]);
 
   if (loading) {
     return (

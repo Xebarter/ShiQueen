@@ -1,6 +1,14 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 import { Product } from '@/lib/types/database';
 import { subscribeProducts } from '@/lib/firebase/products';
 import { ensureDatabaseSeeded } from '@/lib/firebase/seed';
@@ -55,13 +63,17 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const getProductById = (id: string) => products.find((product) => product.id === id);
-
-  return (
-    <ProductsContext.Provider value={{ products, loading, error, getProductById }}>
-      {children}
-    </ProductsContext.Provider>
+  const getProductById = useCallback(
+    (id: string) => products.find((product) => product.id === id),
+    [products]
   );
+
+  const value = useMemo(
+    () => ({ products, loading, error, getProductById }),
+    [products, loading, error, getProductById]
+  );
+
+  return <ProductsContext.Provider value={value}>{children}</ProductsContext.Provider>;
 }
 
 export function useProducts() {
