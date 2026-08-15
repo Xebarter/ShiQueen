@@ -97,7 +97,15 @@ export function ServiceDetailPage({ slug }: ServiceDetailPageProps) {
           <div>
             <div className="relative mb-6 aspect-[16/10] overflow-hidden rounded-2xl bg-gradient-to-br from-primary/15 to-accent/15">
               {heroImage ? (
-                <Image src={heroImage} alt={listing.name} fill className="object-cover" priority />
+                <Image
+                  src={heroImage}
+                  alt={listing.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 66vw"
+                  quality={75}
+                  priority
+                />
               ) : (
                 <div className="flex h-full items-center justify-center text-7xl">✨</div>
               )}
@@ -169,7 +177,7 @@ export function ServiceDetailPage({ slug }: ServiceDetailPageProps) {
                 <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {gallery.slice(0, 6).map((src, i) => (
                     <div key={`${src}-${i}`} className="relative aspect-square overflow-hidden rounded-xl">
-                      <Image src={src} alt="" fill className="object-cover" sizes="200px" />
+                      <Image src={src} alt="" fill className="object-cover" sizes="200px" quality={75} />
                     </div>
                   ))}
                 </div>

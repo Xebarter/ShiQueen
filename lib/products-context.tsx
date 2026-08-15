@@ -6,6 +6,7 @@ import { subscribeProducts } from '@/lib/firebase/products';
 import { ensureDatabaseSeeded } from '@/lib/firebase/seed';
 import { SEED_PRODUCTS } from '@/lib/firebase/seed-data';
 import { uniqueByProductId } from '@/lib/home-merchandising';
+import { readCatalogCache, writeCatalogCache } from '@/lib/catalog-cache';
 
 interface ProductsContextType {
   products: Product[];
@@ -28,33 +29,29 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let unsubscribe = () => {};
-
-    async function init() {
-      try {
-        await ensureDatabaseSeeded();
-        unsubscribe = subscribeProducts(
-          (nextProducts) => {
-            const source = nextProducts.length > 0 ? nextProducts : FALLBACK_PRODUCTS;
-            setProducts(uniqueByProductId(source));
-            setLoading(false);
-          },
-          (err) => {
-            console.error('Products subscription error:', err);
-            setProducts(FALLBACK_PRODUCTS);
-            setError(err.message);
-            setLoading(false);
-          }
-        );
-      } catch (err) {
-        console.error('Products init error:', err);
-        setProducts(FALLBACK_PRODUCTS);
-        setError(err instanceof Error ? err.message : 'Failed to load products');
-        setLoading(false);
-      }
+    const cached = readCatalogCache<Product>('products');
+    if (cached?.length) {
+      setProducts(uniqueByProductId(cached));
+      setLoading(false);
     }
 
-    init();
+    const unsubscribe = subscribeProducts(
+      (nextProducts) => {
+        const source = nextProducts.length > 0 ? nextProducts : FALLBACK_PRODUCTS;
+        const unique = uniqueByProductId(source);
+        setProducts(unique);
+        writeCatalogCache('products', unique);
+        setLoading(false);
+      },
+      (err) => {
+        console.error('Products subscription error:', err);
+        setProducts((prev) => (prev.length > 0 ? prev : FALLBACK_PRODUCTS));
+        setError(err.message);
+        setLoading(false);
+      }
+    );
+
+    void ensureDatabaseSeeded();
     return () => unsubscribe();
   }, []);
 

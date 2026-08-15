@@ -164,7 +164,7 @@ function SearchResultRow({
       >
         <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl ring-1 ring-border/60 bg-muted">
           {image && isRemoteProductImage(image) ? (
-            <Image src={image} alt={listing.name} fill sizes="56px" className="object-cover" />
+            <Image src={image} alt={listing.name} fill sizes="56px" quality={75} className="object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-muted-foreground">
               <Sparkles className="h-5 w-5" />

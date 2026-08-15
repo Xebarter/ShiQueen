@@ -26,6 +26,7 @@ interface HomeProductCardProps {
   variant?: 'default' | 'compact' | 'editorial';
   badges?: ProductBadge[];
   index?: number;
+  priority?: boolean;
   onQuickView?: (product: Product) => void;
   wishlistIds?: string[];
   onWishlistChange?: (ids: string[]) => void;
@@ -65,6 +66,7 @@ export function HomeProductCard({
   variant = 'default',
   badges,
   index = 0,
+  priority = false,
   onQuickView,
   wishlistIds = [],
   onWishlistChange,
@@ -115,6 +117,7 @@ export function HomeProductCard({
             className="absolute inset-0"
             imageClassName={`transition-transform duration-500 ${hovered && !lightScroll ? 'scale-[1.03]' : ''}`}
             sizes="(max-width: 768px) 50vw, 25vw"
+            priority={priority}
           />
 
           <div className="absolute top-2 left-2 flex max-w-[70%] flex-wrap gap-1">

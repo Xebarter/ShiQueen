@@ -29,15 +29,13 @@ export function buildProductMetadata(product: Product): Metadata {
     `Shop ${categoryLabel.toLowerCase()} at ${BRAND_NAME}.`
   );
 
-  const cacheBust = product.updatedAt?.getTime?.() || 0;
-
   return pageMetadata({
     title: product.name,
     description,
     path,
-    image: toAbsoluteUrl(`${productOgImagePath(product.id)}?v=${cacheBust}`),
+    image: toAbsoluteUrl(productOgImagePath(product.id)),
     imageWidth: 1200,
-    imageHeight: 630,
+    imageHeight: 1200,
     keywords: [
       product.name,
       `${product.name} Uganda`,
@@ -59,11 +57,9 @@ export function buildPackageMetadata(pkg: Package): Metadata {
     title: `${pkg.name} Package`,
     description,
     path,
-    image: toAbsoluteUrl(
-      `${packageOgImagePath(pkg.id)}?v=${pkg.updatedAt?.getTime?.() || 0}`
-    ),
+    image: toAbsoluteUrl(packageOgImagePath(pkg.id)),
     imageWidth: 1200,
-    imageHeight: 630,
+    imageHeight: 1200,
     keywords: [
       pkg.name,
       'beauty packages Uganda',

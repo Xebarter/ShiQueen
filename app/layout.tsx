@@ -59,7 +59,12 @@ export const metadata: Metadata = {
     type: 'website',
     locale: SEO_LOCALE,
     url: getSiteUrl(),
-    images: [{ url: defaultOgImage, alt: `${BRAND_NAME} — women's online shop Uganda` }],
+    images: [{
+      url: defaultOgImage,
+      width: 512,
+      height: 512,
+      alt: `${BRAND_NAME} — women's online shop Uganda`,
+    }],
   },
   twitter: {
     card: 'summary_large_image',

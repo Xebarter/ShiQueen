@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { subscribeServiceCategories } from '@/lib/firebase/service-categories';
 import { subscribeServiceProviders } from '@/lib/firebase/service-providers';
@@ -10,6 +11,7 @@ import { subscribeServiceReviews } from '@/lib/firebase/service-reviews';
 import { subscribeProviderAvailability } from '@/lib/firebase/provider-availability';
 import { SERVICE_CATALOG } from '@/lib/service-catalog';
 import { isProviderPubliclyVisible } from '@/lib/provider-visibility';
+import { readCatalogCache, writeCatalogCache } from '@/lib/catalog-cache';
 import type {
   ProviderAvailability,
   ServiceBooking,
@@ -49,6 +51,7 @@ function catalogFallbackCategories(): ServiceCategory[] {
 }
 
 export function ServicesProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const { isAdmin } = useAuth();
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [providers, setProviders] = useState<ServiceProvider[]>([]);
@@ -60,30 +63,59 @@ export function ServicesProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState({ categories: false, providers: false, listings: false });
 
   useEffect(() => {
+    const cachedCategories = readCatalogCache<ServiceCategory>('service-categories');
+    const cachedProviders = readCatalogCache<ServiceProvider>('service-providers');
+    const cachedListings = readCatalogCache<ServiceListing>('service-listings');
+    if (cachedCategories?.length) setCategories(cachedCategories);
+    if (cachedProviders?.length) setProviders(cachedProviders);
+    if (cachedListings?.length) setListings(cachedListings);
+    if (cachedCategories?.length && cachedListings?.length) {
+      setReady({ categories: true, providers: true, listings: true });
+      setLoading(false);
+    }
+
     const unsubs: Array<() => void> = [
       subscribeServiceCategories((data) => {
-        setCategories(data.length > 0 ? data : catalogFallbackCategories());
+        const next = data.length > 0 ? data : catalogFallbackCategories();
+        setCategories(next);
+        writeCatalogCache('service-categories', next);
         setReady((r) => ({ ...r, categories: true }));
       }),
       subscribeServiceProviders((data) => {
         setProviders(data);
+        writeCatalogCache('service-providers', data);
         setReady((r) => ({ ...r, providers: true }));
       }),
       subscribeServiceListings((data) => {
         setListings(data);
+        writeCatalogCache('service-listings', data);
         setReady((r) => ({ ...r, listings: true }));
       }),
+    ];
+
+    return () => unsubs.forEach((u) => u());
+  }, []);
+
+  useEffect(() => {
+    const needsExtras =
+      pathname.startsWith('/services') ||
+      pathname.startsWith('/admin') ||
+      pathname.startsWith('/account');
+    if (!needsExtras) return;
+
+    const unsubs: Array<() => void> = [
       subscribeServiceReviews(setReviews),
       subscribeProviderAvailability(setAvailability),
     ];
-
-    if (isAdmin) {
-      unsubs.push(subscribeServiceBookings(setBookings));
-    } else {
-      setBookings([]);
-    }
-
     return () => unsubs.forEach((u) => u());
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!isAdmin) {
+      setBookings([]);
+      return;
+    }
+    return subscribeServiceBookings(setBookings);
   }, [isAdmin]);
 
   useEffect(() => {

@@ -22,6 +22,7 @@ import {
   DEFAULT_SUPPLIER_ID,
   type Supplier,
 } from '@/lib/types/suppliers';
+import { readCatalogCache, writeCatalogCache } from '@/lib/catalog-cache';
 
 type SuppliersContextType = {
   suppliers: Supplier[];
@@ -56,32 +57,27 @@ export function SuppliersProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    let unsubscribe = () => {};
-
-    async function init() {
-      try {
-        await ensureSuppliersReady();
-        unsubscribe = subscribeSuppliers(
-          (next) => {
-            setSuppliers(next.length > 0 ? next : FALLBACK_SUPPLIERS);
-            setLoading(false);
-          },
-          (err) => {
-            console.error('Suppliers subscription error:', err);
-            setSuppliers(FALLBACK_SUPPLIERS);
-            setError(err.message);
-            setLoading(false);
-          }
-        );
-      } catch (err) {
-        console.error('Suppliers init error:', err);
-        setSuppliers(FALLBACK_SUPPLIERS);
-        setError(err instanceof Error ? err.message : 'Failed to load suppliers');
-        setLoading(false);
-      }
+    const cached = readCatalogCache<Supplier>('suppliers');
+    if (cached?.length) {
+      setSuppliers(cached);
+      setLoading(false);
     }
 
-    init();
+    const unsubscribe = subscribeSuppliers(
+      (next) => {
+        const source = next.length > 0 ? next : FALLBACK_SUPPLIERS;
+        setSuppliers(source);
+        writeCatalogCache('suppliers', source);
+        setLoading(false);
+      },
+      (err) => {
+        console.error('Suppliers subscription error:', err);
+        setSuppliers((prev) => (prev.length > 0 ? prev : FALLBACK_SUPPLIERS));
+        setError(err.message);
+        setLoading(false);
+      }
+    );
+
     return () => unsubscribe();
   }, []);
 

@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 
 const HERO_IMAGE =
-  'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=2400&q=80';
+  'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1400&q=70';
 
 interface ServicesHeroProps {
   totalServices: number;
@@ -24,8 +24,9 @@ export function ServicesHero({ totalServices, totalProviders }: ServicesHeroProp
         alt="Beauty and wellness styling"
         fill
         priority
-        className="object-cover object-[center_30%]"
+        quality={75}
         sizes="100vw"
+        className="object-cover object-[center_30%]"
       />
       <div
         className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/25"

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 import { Package, BulkOrder, WholesaleAccount } from '@/lib/types/wholesale';
 import {
   subscribePackages,
@@ -15,6 +16,7 @@ import {
 } from '@/lib/firebase/wholesale';
 import { ensureDatabaseSeeded } from '@/lib/firebase/seed';
 import { SEED_PACKAGES } from '@/lib/firebase/seed-data';
+import { readCatalogCache, writeCatalogCache } from '@/lib/catalog-cache';
 
 interface WholesaleContextType {
   packages: Package[];
@@ -45,7 +47,16 @@ const FALLBACK_PACKAGES: Package[] = SEED_PACKAGES.map((pkg) => ({
   updatedAt: new Date(),
 }));
 
+function needsWholesaleAdminData(pathname: string) {
+  return (
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/wholesale') ||
+    pathname.startsWith('/suppliers')
+  );
+}
+
 export function WholesaleProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const [packages, setPackages] = useState<Package[]>([]);
   const [bulkOrders, setBulkOrders] = useState<BulkOrder[]>([]);
   const [wholesaleAccounts, setWholesaleAccounts] = useState<WholesaleAccount[]>([]);
@@ -54,37 +65,37 @@ export function WholesaleProvider({ children }: { children: ReactNode }) {
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
 
   useEffect(() => {
-    const unsubscribers: Array<() => void> = [];
-
-    async function init() {
-      try {
-        await ensureDatabaseSeeded();
-
-        unsubscribers.push(
-          subscribePackages(
-            (nextPackages) => {
-              setPackages(nextPackages.length > 0 ? nextPackages : FALLBACK_PACKAGES);
-              setLoading(false);
-            },
-            () => {
-              setPackages(FALLBACK_PACKAGES);
-              setLoading(false);
-            }
-          )
-        );
-
-        unsubscribers.push(subscribeBulkOrders(setBulkOrders));
-        unsubscribers.push(subscribeWholesaleAccounts(setWholesaleAccounts));
-      } catch (error) {
-        console.error('Wholesale init error:', error);
-        setPackages(FALLBACK_PACKAGES);
-        setLoading(false);
-      }
+    const cached = readCatalogCache<Package>('packages');
+    if (cached?.length) {
+      setPackages(cached);
+      setLoading(false);
     }
 
-    init();
-    return () => unsubscribers.forEach((unsub) => unsub());
+    const unsubscribe = subscribePackages(
+      (nextPackages) => {
+        const source = nextPackages.length > 0 ? nextPackages : FALLBACK_PACKAGES;
+        setPackages(source);
+        writeCatalogCache('packages', source);
+        setLoading(false);
+      },
+      () => {
+        setPackages((prev) => (prev.length > 0 ? prev : FALLBACK_PACKAGES));
+        setLoading(false);
+      }
+    );
+
+    void ensureDatabaseSeeded();
+    return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!needsWholesaleAdminData(pathname)) return;
+    const unsubscribers = [
+      subscribeBulkOrders(setBulkOrders),
+      subscribeWholesaleAccounts(setWholesaleAccounts),
+    ];
+    return () => unsubscribers.forEach((unsub) => unsub());
+  }, [pathname]);
 
   const addPackage = async (pkg: Package) => {
     await savePackage(pkg);

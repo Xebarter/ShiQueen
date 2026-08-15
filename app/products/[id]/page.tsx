@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         path: `/products/${id}`,
         image: toAbsoluteUrl(productOgImagePath(id)),
         imageWidth: 1200,
-        imageHeight: 630,
+        imageHeight: 1200,
       });
     }
     return buildFallbackMetadata('Product not found');

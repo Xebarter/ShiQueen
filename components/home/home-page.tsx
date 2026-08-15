@@ -130,6 +130,7 @@ export function HomePage() {
                         product={product}
                         variant={i === 0 ? 'editorial' : 'compact'}
                         index={i}
+                        priority={i < 2}
                         badges={i === 0 ? ['trending'] : undefined}
                         onQuickView={setQuickViewProduct}
                         wishlistIds={wishlistIds}

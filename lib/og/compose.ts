@@ -41,8 +41,8 @@ function fallbackOverlay(title?: string, eyebrow?: string): Buffer {
   <rect x="22" y="22" width="${OG_WIDTH - 44}" height="${OG_HEIGHT - 44}" fill="none" stroke="${GOLD}" stroke-opacity="0.5" stroke-width="1.5"/>
   <rect x="32" y="26" rx="22" ry="22" width="172" height="44" fill="${CREAM}"/>
   <text x="118" y="55" text-anchor="middle" font-size="22" font-weight="700" font-family="Georgia, Times New Roman, serif" fill="${BRAND_THEME.themeColor}">${BRAND_NAME}</text>
-  ${category ? `<text x="600" y="268" text-anchor="middle" font-size="18" font-weight="600" font-family="Arial, Helvetica, sans-serif" fill="${BLUSH}" letter-spacing="4">${category}</text>` : ''}
-  <text x="600" y="${category ? 338 : 320}" text-anchor="middle" font-size="${titleSize}" font-weight="700" font-family="Georgia, Times New Roman, serif" fill="${CREAM}">${label}</text>
+  ${category ? `<text x="600" y="560" text-anchor="middle" font-size="18" font-weight="600" font-family="Arial, Helvetica, sans-serif" fill="${BLUSH}" letter-spacing="4">${category}</text>` : ''}
+  <text x="600" y="${category ? 640 : 620}" text-anchor="middle" font-size="${titleSize}" font-weight="700" font-family="Georgia, Times New Roman, serif" fill="${CREAM}">${label}</text>
   <rect x="0" y="${OG_HEIGHT - 6}" width="${OG_WIDTH}" height="6" fill="${GOLD}"/>
 </svg>`);
 }
@@ -82,7 +82,7 @@ export async function composeShareJpeg(options: {
     try {
       return await composeProductPhoto(options.photo);
     } catch {
-      // Fall through to the branded card so crawlers still get a 1200×630 JPEG.
+      // Fall through to the branded card so crawlers still get a 1200×1200 JPEG.
     }
   }
 

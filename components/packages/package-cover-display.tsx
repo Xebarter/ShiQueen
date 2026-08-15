@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { Boxes } from 'lucide-react';
 import { isRemoteProductImage } from '@/components/product-image';
+import { IMAGE_BLUR_DATA_URL, IMAGE_QUALITY } from '@/lib/image';
 import { cn } from '@/lib/utils';
 
 interface PackageCoverDisplayProps {
@@ -14,12 +15,37 @@ interface PackageCoverDisplayProps {
   fallbackClassName?: string;
 }
 
+function CoverImage({
+  src,
+  alt,
+  sizes,
+  className,
+}: {
+  src: string;
+  alt: string;
+  sizes: string;
+  className?: string;
+}) {
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      fill
+      sizes={sizes}
+      quality={IMAGE_QUALITY}
+      placeholder="blur"
+      blurDataURL={IMAGE_BLUR_DATA_URL}
+      className={cn('object-cover', className)}
+    />
+  );
+}
+
 export function PackageCoverDisplay({
   images,
   alt,
   className,
   imageClassName,
-  sizes = '100vw',
+  sizes = '(max-width: 768px) 100vw, 33vw',
   fallbackClassName,
 }: PackageCoverDisplayProps) {
   const validImages = images.filter(isRemoteProductImage);
@@ -41,13 +67,7 @@ export function PackageCoverDisplay({
   if (validImages.length === 1) {
     return (
       <div className={cn('relative h-full w-full', className)}>
-        <Image
-          src={validImages[0]}
-          alt={alt}
-          fill
-          sizes={sizes}
-          className={cn('object-cover', imageClassName)}
-        />
+        <CoverImage src={validImages[0]!} alt={alt} sizes={sizes} className={imageClassName} />
       </div>
     );
   }
@@ -57,13 +77,7 @@ export function PackageCoverDisplay({
       <div className={cn('grid h-full w-full grid-cols-2 gap-0.5', className)}>
         {validImages.map((src, index) => (
           <div key={`${src}-${index}`} className="relative h-full min-h-0">
-            <Image
-              src={src}
-              alt={`${alt} ${index + 1}`}
-              fill
-              sizes={sizes}
-              className={cn('object-cover', imageClassName)}
-            />
+            <CoverImage src={src} alt={`${alt} ${index + 1}`} sizes={sizes} className={imageClassName} />
           </div>
         ))}
       </div>
@@ -74,31 +88,13 @@ export function PackageCoverDisplay({
     return (
       <div className={cn('grid h-full w-full grid-cols-2 grid-rows-2 gap-0.5', className)}>
         <div className="relative row-span-2 h-full min-h-0">
-          <Image
-            src={validImages[0]}
-            alt={`${alt} 1`}
-            fill
-            sizes={sizes}
-            className={cn('object-cover', imageClassName)}
-          />
+          <CoverImage src={validImages[0]!} alt={`${alt} 1`} sizes={sizes} className={imageClassName} />
         </div>
         <div className="relative h-full min-h-0">
-          <Image
-            src={validImages[1]}
-            alt={`${alt} 2`}
-            fill
-            sizes={sizes}
-            className={cn('object-cover', imageClassName)}
-          />
+          <CoverImage src={validImages[1]!} alt={`${alt} 2`} sizes={sizes} className={imageClassName} />
         </div>
         <div className="relative h-full min-h-0">
-          <Image
-            src={validImages[2]}
-            alt={`${alt} 3`}
-            fill
-            sizes={sizes}
-            className={cn('object-cover', imageClassName)}
-          />
+          <CoverImage src={validImages[2]!} alt={`${alt} 3`} sizes={sizes} className={imageClassName} />
         </div>
       </div>
     );
@@ -108,13 +104,7 @@ export function PackageCoverDisplay({
     <div className={cn('grid h-full w-full grid-cols-2 grid-rows-2 gap-0.5', className)}>
       {validImages.slice(0, 4).map((src, index) => (
         <div key={`${src}-${index}`} className="relative h-full min-h-0">
-          <Image
-            src={src}
-            alt={`${alt} ${index + 1}`}
-            fill
-            sizes={sizes}
-            className={cn('object-cover', imageClassName)}
-          />
+          <CoverImage src={src} alt={`${alt} ${index + 1}`} sizes={sizes} className={imageClassName} />
         </div>
       ))}
     </div>

@@ -9,7 +9,15 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    unoptimized: true,
+    remotePatterns: [
+      { protocol: 'https', hostname: 'firebasestorage.googleapis.com', pathname: '/v0/b/**' },
+      { protocol: 'https', hostname: '**.firebasestorage.app' },
+      { protocol: 'https', hostname: 'images.unsplash.com' },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+    ],
+    formats: ['image/avif', 'image/webp'],
+    qualities: [75],
+    minimumCacheTTL: 60 * 60 * 24 * 7,
   },
   serverExternalPackages: ['sharp'],
   turbopack: {
@@ -20,8 +28,8 @@ const nextConfig = {
     return [
       { source: '/sw.js', destination: '/api/pwa/sw' },
       { source: '/api/dpo/callback', destination: '/api/payments/card/callback' },
-      { source: '/og/product/:id.jpg', destination: '/api/og/product/:id' },
-      { source: '/og/package/:id.jpg', destination: '/api/og/package/:id' },
+      { source: '/og/product/:id.jpg', destination: '/og/product/:id' },
+      { source: '/og/package/:id.jpg', destination: '/og/package/:id' },
     ];
   },
   async redirects() {

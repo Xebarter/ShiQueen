@@ -66,7 +66,7 @@ export function pageMetadata(options: {
     image.includes('/api/og/');
   const isJpeg = isOgJpeg || /\.jpe?g(\?|#|$)/i.test(image);
   const imageWidth = options.imageWidth ?? (isOgJpeg ? 1200 : undefined);
-  const imageHeight = options.imageHeight ?? (isOgJpeg ? 630 : undefined);
+  const imageHeight = options.imageHeight ?? (isOgJpeg ? 1200 : undefined);
   const ogImage = {
     url: image,
     secureUrl: image.startsWith('https://') ? image : undefined,

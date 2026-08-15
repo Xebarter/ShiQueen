@@ -212,6 +212,7 @@ export function ProductDetailPage() {
                     fill
                     className="object-cover"
                     sizes="(max-width: 1024px) 100vw, 50vw"
+                    quality={75}
                     priority
                   />
                 ) : (
@@ -243,7 +244,7 @@ export function ProductDetailPage() {
                         activeImage === url ? 'border-primary' : 'border-transparent ring-1 ring-border/50'
                       )}
                     >
-                      <Image src={url} alt="" fill className="object-cover" sizes="72px" />
+                      <Image src={url} alt="" fill className="object-cover" sizes="72px" quality={75} />
                     </button>
                   ))}
                 </div>

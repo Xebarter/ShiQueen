@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { buildTelLink, buildWhatsAppLink, resolveListingImage } from '@/lib/services-utils';
 import type { ServiceListing, ServiceProvider } from '@/lib/types/services';
 import { formatUGX } from '@/lib/wholesale-data';
+import { IMAGE_BLUR_DATA_URL, IMAGE_QUALITY } from '@/lib/image';
 import { cn } from '@/lib/utils';
 
 const CATEGORY_GRADIENTS: Record<string, string> = {
@@ -66,6 +67,9 @@ export function ServiceCard({
             src={image}
             alt={listing.name}
             fill
+            quality={IMAGE_QUALITY}
+            placeholder="blur"
+            blurDataURL={IMAGE_BLUR_DATA_URL}
             className="object-cover transition duration-500 group-hover:scale-[1.04]"
             sizes="(max-width: 768px) 100vw, 33vw"
           />

@@ -48,6 +48,7 @@ function MenuImage({
         alt={alt}
         fill
         sizes="160px"
+        quality={75}
         className={cn('object-cover', className)}
       />
     );

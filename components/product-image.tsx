@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { Product } from '@/lib/types/database';
+import { CARD_IMAGE_SIZES, IMAGE_BLUR_DATA_URL, IMAGE_QUALITY } from '@/lib/image';
 import { cn } from '@/lib/utils';
 
 const CATEGORY_EMOJI: Record<string, string> = {
@@ -28,7 +29,7 @@ export function ProductImage({
   className,
   imageClassName,
   fallbackClassName,
-  sizes = '(max-width: 768px) 100vw, 50vw',
+  sizes = CARD_IMAGE_SIZES,
   priority = false,
 }: ProductImageProps) {
   const emoji = CATEGORY_EMOJI[product.category] ?? '🛍️';
@@ -41,7 +42,10 @@ export function ProductImage({
           alt={product.name}
           fill
           sizes={sizes}
+          quality={IMAGE_QUALITY}
           priority={priority}
+          placeholder="blur"
+          blurDataURL={IMAGE_BLUR_DATA_URL}
           className={cn('object-cover', imageClassName)}
         />
       </div>

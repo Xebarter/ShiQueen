@@ -550,15 +550,7 @@ export async function backfillCatalogSupplierIds(
 
 export async function ensureSuppliersReady(): Promise<Supplier> {
   try {
-    const supplier = await ensureDefaultSupplier();
-    try {
-      await backfillSupplierApprovalStatus();
-      await backfillCatalogSupplierIds(supplier.id);
-    } catch (error) {
-      // Backfill needs admin write access on catalog collections.
-      if (!isPermissionDenied(error)) throw error;
-    }
-    return supplier;
+    return await ensureDefaultSupplier();
   } catch (error) {
     if (isPermissionDenied(error)) {
       const fallback = buildDefaultSupplier();
