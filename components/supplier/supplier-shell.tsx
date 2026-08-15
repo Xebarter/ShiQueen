@@ -25,10 +25,10 @@ import { SUPPLIER_HOME_HREF, SUPPLIER_INSIGHTS_HREF } from '@/lib/pwa/paths';
 
 export const SUPPLIER_NAV: readonly PartnerNavItem[] = [
   { href: SUPPLIER_HOME_HREF, label: 'Orders', icon: ClipboardList, group: 'Work' },
+  { href: '/suppliers/reviews', label: 'Reviews', icon: Star, group: 'Work' },
   { href: '/suppliers/products', label: 'Products', icon: Package, group: 'Catalog' },
   { href: '/suppliers/packages', label: 'Packages', icon: Boxes, group: 'Catalog' },
   { href: '/suppliers/inventory', label: 'Inventory', icon: Warehouse, group: 'Catalog' },
-  { href: '/suppliers/reviews', label: 'Reviews', icon: Star, group: 'Work' },
   { href: SUPPLIER_INSIGHTS_HREF, label: 'Insights', icon: BarChart3, group: 'Account' },
   { href: '/suppliers/profile', label: 'Profile', icon: UserRound, group: 'Account' },
   { href: '/suppliers/settings', label: 'Settings', icon: Settings, group: 'Account' },

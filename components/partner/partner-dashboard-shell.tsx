@@ -146,8 +146,8 @@ function NavLinks({
 
   return (
     <div className="space-y-4">
-      {groups.map((group) => (
-        <div key={group.label || group.items[0]?.href}>
+      {groups.map((group, groupIndex) => (
+        <div key={`${group.label || 'nav'}-${group.items[0]?.href ?? groupIndex}`}>
           {group.label ? (
             <p className="mb-1.5 px-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
               {group.label}
