@@ -1,7 +1,6 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { motion } from 'framer-motion';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { usePublicProducts } from '@/lib/hooks/use-public-catalog';
@@ -29,27 +28,17 @@ export function HomePage({ children }: { children?: ReactNode }) {
     <>
       <Header />
       <main className="overflow-x-clip mobile-scroll-optimize">
+        {children}
         <section className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-background" />
           <div className="pointer-events-none absolute top-20 right-0 hidden h-96 w-96 rounded-full bg-accent/10 blur-3xl md:block" />
           <div className="relative mx-auto max-w-[90rem] px-3 pt-6 pb-6 sm:px-4 md:pt-10 md:pb-8 lg:px-5">
             <div className="grid items-start gap-4 lg:grid-cols-2 lg:gap-8">
-              <motion.div
-                initial={{ opacity: 0, x: -16 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5 }}
-                className="space-y-4"
-              >
-                {children}
+              <div>
                 <HeroMarketingSlot placement="home-hero" compact />
-              </motion.div>
+              </div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.08 }}
-                className="grid grid-cols-2 gap-2 sm:gap-2.5"
-              >
+              <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
                 {loading
                   ? Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)
                   : sections?.heroProducts.map((product, i) => (
@@ -65,7 +54,7 @@ export function HomePage({ children }: { children?: ReactNode }) {
                         onWishlistChange={setWishlistIds}
                       />
                     ))}
-              </motion.div>
+              </div>
             </div>
           </div>
         </section>

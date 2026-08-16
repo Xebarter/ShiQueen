@@ -16,19 +16,20 @@ import {
 
 const TOC = [
   { id: 'who-we-are', label: '1. Who We Are' },
-  { id: 'information-we-collect', label: '2. Information We Collect' },
-  { id: 'how-we-use', label: '3. How We Use Your Information' },
-  { id: 'legal-bases', label: '4. Legal Bases for Processing' },
-  { id: 'sharing', label: '5. Sharing and Disclosure' },
-  { id: 'cookies', label: '6. Cookies and Tracking' },
-  { id: 'security', label: '7. Data Security' },
-  { id: 'retention', label: '8. Data Retention' },
-  { id: 'rights', label: '9. Your Rights and Choices' },
-  { id: 'transfers', label: '10. International Transfers' },
-  { id: 'children', label: '11. Children’s Privacy' },
-  { id: 'third-parties', label: '12. Third-Party Links' },
-  { id: 'changes', label: '13. Changes to This Policy' },
-  { id: 'contact', label: '14. Contact Us' },
+  { id: 'google-user-data', label: '2. Google User Data' },
+  { id: 'information-we-collect', label: '3. Information We Collect' },
+  { id: 'how-we-use', label: '4. How We Use Your Information' },
+  { id: 'legal-bases', label: '5. Legal Bases for Processing' },
+  { id: 'sharing', label: '6. Sharing and Disclosure' },
+  { id: 'cookies', label: '7. Cookies and Tracking' },
+  { id: 'security', label: '8. Data Security' },
+  { id: 'retention', label: '9. Data Retention' },
+  { id: 'rights', label: '10. Your Rights and Choices' },
+  { id: 'transfers', label: '11. International Transfers' },
+  { id: 'children', label: '12. Children’s Privacy' },
+  { id: 'third-parties', label: '13. Third-Party Links' },
+  { id: 'changes', label: '14. Changes to This Policy' },
+  { id: 'contact', label: '15. Contact Us' },
 ] as const;
 
 export function PrivacyPolicyPage() {
@@ -96,7 +97,22 @@ export function PrivacyPolicyPage() {
         </div>
       </LegalSection>
 
-      <LegalSection id="information-we-collect" title="2. Information We Collect">
+      <LegalSection id="google-user-data" title="2. Google User Data">
+        <p>
+          If you choose Sign in with Google, ShiQueen receives basic identity information from
+          Google: your name, email address, and profile photo. We access this data only when you
+          complete Google Sign-In. We use it to create or authenticate your ShiQueen account, display
+          your name and photo in the app, save favorites, place orders, and manage bookings.
+        </p>
+        <p>
+          We store this information with your account record. We do not share Google user data with
+          advertisers or data brokers. We do not access Gmail, Contacts, Drive, Calendar, or other
+          Google services. Signing in with Google is optional; you may browse ShiQueen and use email
+          and password registration instead.
+        </p>
+      </LegalSection>
+
+      <LegalSection id="information-we-collect" title="3. Information We Collect">
         <p>
           We collect personal information that you provide directly to us, information collected
           automatically when you use the Site, and information from third parties.
@@ -179,7 +195,7 @@ export function PrivacyPolicyPage() {
         </p>
       </LegalSection>
 
-      <LegalSection id="how-we-use" title="3. How We Use Your Information">
+      <LegalSection id="how-we-use" title="4. How We Use Your Information">
         <p>We use the information we collect for the following purposes:</p>
         <LegalBulletList
           items={[
@@ -197,7 +213,7 @@ export function PrivacyPolicyPage() {
 
       <LegalSection
         id="legal-bases"
-        title="4. Legal Bases for Processing (EEA, UK, and Similar Jurisdictions)"
+        title="5. Legal Bases for Processing (EEA, UK, and Similar Jurisdictions)"
       >
         <p>
           Where required by applicable law (including the GDPR), we process your personal data
@@ -217,7 +233,7 @@ export function PrivacyPolicyPage() {
         </p>
       </LegalSection>
 
-      <LegalSection id="sharing" title="5. Sharing and Disclosure of Information">
+      <LegalSection id="sharing" title="6. Sharing and Disclosure of Information">
         <p>
           We do not sell your personal information. We may share your information in the
           following circumstances:
@@ -256,7 +272,7 @@ export function PrivacyPolicyPage() {
         />
       </LegalSection>
 
-      <LegalSection id="cookies" title="6. Cookies and Tracking Technologies">
+      <LegalSection id="cookies" title="7. Cookies and Tracking Technologies">
         <p>
           We use cookies, web beacons, pixels, and similar technologies to enhance your
           experience, analyze Site usage, and support marketing efforts.
@@ -282,7 +298,7 @@ export function PrivacyPolicyPage() {
         </p>
       </LegalSection>
 
-      <LegalSection id="security" title="7. Data Security">
+      <LegalSection id="security" title="8. Data Security">
         <p>
           We implement appropriate technical and organizational measures to protect your
           personal information against unauthorized access, alteration, disclosure, or
@@ -296,7 +312,7 @@ export function PrivacyPolicyPage() {
         </p>
       </LegalSection>
 
-      <LegalSection id="retention" title="8. Data Retention">
+      <LegalSection id="retention" title="9. Data Retention">
         <p>
           We retain your personal information only for as long as necessary to fulfill the
           purposes outlined in this Policy, including:
@@ -312,7 +328,7 @@ export function PrivacyPolicyPage() {
         <p>When data is no longer needed, we securely delete or anonymize it.</p>
       </LegalSection>
 
-      <LegalSection id="rights" title="9. Your Rights and Choices">
+      <LegalSection id="rights" title="10. Your Rights and Choices">
         <p>
           Depending on your location and applicable law, you may have the following rights
           regarding your personal data:
@@ -371,7 +387,7 @@ export function PrivacyPolicyPage() {
         </p>
       </LegalSection>
 
-      <LegalSection id="transfers" title="10. International Data Transfers">
+      <LegalSection id="transfers" title="11. International Data Transfers">
         <p>
           Your information may be transferred to and processed in countries other than your
           country of residence, including countries that may not provide the same level of data
@@ -382,7 +398,7 @@ export function PrivacyPolicyPage() {
         </p>
       </LegalSection>
 
-      <LegalSection id="children" title="11. Children’s Privacy">
+      <LegalSection id="children" title="12. Children’s Privacy">
         <p>
           Our Site and services are not directed to children under the age of 16 (or the
           applicable age of consent in your jurisdiction). We do not knowingly collect personal
@@ -393,7 +409,7 @@ export function PrivacyPolicyPage() {
         </p>
       </LegalSection>
 
-      <LegalSection id="third-parties" title="12. Third-Party Links and Services">
+      <LegalSection id="third-parties" title="13. Third-Party Links and Services">
         <p>
           Our Site may contain links to third-party websites, plugins, or services (including
           social media platforms and payment providers). This Privacy Policy does not apply to
@@ -402,7 +418,7 @@ export function PrivacyPolicyPage() {
         </p>
       </LegalSection>
 
-      <LegalSection id="changes" title="13. Changes to This Privacy Policy">
+      <LegalSection id="changes" title="14. Changes to This Privacy Policy">
         <p>
           We may update this Privacy Policy from time to time to reflect changes in our
           practices, technology, legal requirements, or other factors. We will post the updated
@@ -413,7 +429,7 @@ export function PrivacyPolicyPage() {
         </p>
       </LegalSection>
 
-      <LegalSection id="contact" title="14. Contact Us">
+      <LegalSection id="contact" title="15. Contact Us">
         <p>
           If you have any questions, concerns, or requests regarding this Privacy Policy or our
           data practices, please contact us at:

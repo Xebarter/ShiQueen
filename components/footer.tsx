@@ -7,6 +7,7 @@ import {
   contactWhatsAppHref,
 } from '@/lib/contact-info';
 import { cn } from '@/lib/utils';
+import { OAUTH_PRIVACY_URL } from '@/lib/brand';
 
 const WHATSAPP_HREF = contactWhatsAppHref();
 
@@ -204,12 +205,12 @@ export function Footer() {
             aria-label="Legal"
             className="mt-5 grid w-full grid-cols-2 gap-x-3 gap-y-3 md:mt-0 md:flex md:w-auto md:flex-wrap md:justify-end md:gap-x-6 md:gap-y-2"
           >
-            <Link
-              href="/privacy"
+            <a
+              href={OAUTH_PRIVACY_URL}
               className="rounded-lg border border-border/60 bg-background/40 px-3 py-2.5 text-center text-[13px] transition hover:border-primary/25 hover:text-foreground md:border-0 md:bg-transparent md:p-0 md:text-left md:text-sm"
             >
               Privacy Policy
-            </Link>
+            </a>
             <Link
               href="/terms"
               className="rounded-lg border border-border/60 bg-background/40 px-3 py-2.5 text-center text-[13px] transition hover:border-primary/25 hover:text-foreground md:border-0 md:bg-transparent md:p-0 md:text-left md:text-sm"

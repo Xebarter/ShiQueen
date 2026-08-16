@@ -43,3 +43,8 @@ export const BRAND_THEME = {
   themeColor: '#5B2850',
   backgroundColor: '#FAF5F4',
 } as const;
+
+/** Exact URLs to paste into Google Auth Platform. Must match homepage <a href> values. */
+export const OAUTH_HOME_URL = 'https://shiqueen.com';
+export const OAUTH_PRIVACY_URL = 'https://shiqueen.com/privacy';
+export const OAUTH_TERMS_URL = 'https://shiqueen.com/terms';
