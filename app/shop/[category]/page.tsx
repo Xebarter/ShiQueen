@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { ShopPage } from '@/components/shop/shop-page';
+import { NoscriptPageSummary } from '@/components/seo/noscript-page-summary';
 import { isShopSeoCategory, SHOP_SEO_CATEGORIES, shopCategoryPath } from '@/lib/seo/shop-categories';
 import { pageMetadata, shopCategorySeo } from '@/lib/seo/site';
 import { breadcrumbJsonLd, JsonLd } from '@/lib/seo/json-ld';
@@ -56,6 +57,10 @@ export default async function ShopCategoryPage({ params }: Props) {
       >
         <ShopPage initialCategory={slug} />
       </Suspense>
+      <NoscriptPageSummary
+        title={shopCategorySeo(slug).title}
+        description={shopCategorySeo(slug).description}
+      />
     </>
   );
 }

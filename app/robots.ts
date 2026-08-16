@@ -1,36 +1,30 @@
 import type { MetadataRoute } from 'next';
 import { getSiteUrl } from '@/lib/site-url';
+import {
+  AI_AND_SEARCH_CRAWLERS,
+  ROBOTS_DISALLOW_PATHS,
+  SOCIAL_PREVIEW_CRAWLERS,
+} from '@/lib/seo/robots-policy';
 
 export default function robots(): MetadataRoute.Robots {
   const origin = getSiteUrl();
+  const disallow = [...ROBOTS_DISALLOW_PATHS];
+
   return {
     rules: [
       {
-        userAgent: ['facebookexternalhit', 'Twitterbot', 'WhatsApp', 'TelegramBot'],
+        userAgent: [...SOCIAL_PREVIEW_CRAWLERS],
         allow: '/',
       },
       {
+        userAgent: [...AI_AND_SEARCH_CRAWLERS],
+        allow: ['/', '/llms.txt', '/llms-full.txt', '/sitemap.xml'],
+        disallow,
+      },
+      {
         userAgent: '*',
-        allow: '/',
-        disallow: [
-          '/admin',
-          '/account',
-          '/cart',
-          '/checkout',
-          '/sign-in',
-          '/sign-up',
-          '/forgot-password',
-          '/payments',
-          '/order-confirmation',
-          '/suppliers',
-          '/services/dashboard',
-          '/services/sign-in',
-          '/services/sign-up',
-          '/services/book',
-          '/services/booking-confirmation',
-          '/wholesale/account',
-          '/api/',
-        ],
+        allow: ['/', '/llms.txt', '/llms-full.txt', '/sitemap.xml'],
+        disallow,
       },
     ],
     sitemap: `${origin}/sitemap.xml`,

@@ -65,6 +65,20 @@ export default async function ServiceDetailRoute({ params }: Props) {
         />
       ) : null}
       <ServiceDetailPage slug={slug} />
+      {listing ? (
+        <noscript>
+          <article>
+            <h1>{listing.name}</h1>
+            <p>{listing.description}</p>
+            <p>
+              {listing.basePrice} UGX · Book in {listing.location || 'Kampala'} with {BRAND_NAME}.
+            </p>
+            <p>
+              <a href="/services">All services</a>
+            </p>
+          </article>
+        </noscript>
+      ) : null}
     </>
   );
 }

@@ -6,6 +6,7 @@ import { BRAND_NAME } from '@/lib/brand';
 import { resolveProductOgImage } from '@/lib/metadata/resolve-og-image';
 import { resolvePackageOgImage } from '@/lib/metadata/resolve-package-og-image';
 import { SEO_CITY, SEO_COUNTRY, pageMetadata } from '@/lib/seo/site';
+import { NOINDEX_ROBOTS } from '@/lib/seo/robots-policy';
 import { toAbsoluteUrl } from '@/lib/site-url';
 
 function shareDescription(text: string, fallback: string): string {
@@ -122,7 +123,7 @@ export function buildFallbackMetadata(title = 'Not found'): Metadata {
   return {
     title,
     description: `This item is no longer available on ${BRAND_NAME}.`,
-    robots: { index: false, follow: false },
+    robots: NOINDEX_ROBOTS,
   };
 }
 

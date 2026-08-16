@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { PackagesPage } from '@/components/packages/packages-page';
+import { NoscriptPageSummary } from '@/components/seo/noscript-page-summary';
 import { breadcrumbJsonLd, JsonLd } from '@/lib/seo/json-ld';
 import { PAGE_SEO } from '@/lib/seo/site';
 
@@ -18,6 +19,10 @@ export default function Packages() {
       <Suspense fallback={null}>
         <PackagesPage />
       </Suspense>
+      <NoscriptPageSummary
+        title="Beauty Packages & Women's Bundles Uganda"
+        description="Shop ShiQueen beauty packages, product bundles, and product-plus-service collections in Kampala. Curated ladies packages with real savings versus buying separately."
+      />
     </>
   );
 }

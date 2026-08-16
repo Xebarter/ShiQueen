@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Header } from '@/components/header';
@@ -15,7 +16,7 @@ import { ShopCategoryStrip } from '@/components/shop/shop-category-strip';
 import { CatalogBottomCta } from '@/components/shop/catalog-bottom-cta';
 import { SEO_HOME_TITLE } from '@/lib/seo/site';
 
-export function HomePage() {
+export function HomePage({ children }: { children?: ReactNode }) {
   const { products, loading } = usePublicProducts();
   const {
     sections,
@@ -68,6 +69,7 @@ export function HomePage() {
                 <h1 className="mt-4 font-[family-name:var(--font-brand)] text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
                   {SEO_HOME_TITLE}
                 </h1>
+                {children}
                 <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
                   <Link href="/packages" className="font-medium text-primary hover:underline">
                     Bundles

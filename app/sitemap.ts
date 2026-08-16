@@ -27,6 +27,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${origin}/privacy`, lastModified: now, changeFrequency: 'yearly', priority: 0.2 },
     { url: `${origin}/refunds`, lastModified: now, changeFrequency: 'yearly', priority: 0.2 },
     { url: `${origin}/cookies`, lastModified: now, changeFrequency: 'yearly', priority: 0.2 },
+    { url: `${origin}/llms.txt`, lastModified: now, changeFrequency: 'weekly', priority: 0.3 },
     ...SHOP_SEO_CATEGORIES.map((category) => ({
       url: `${origin}/shop/${category}`,
       lastModified: now,

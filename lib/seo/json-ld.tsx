@@ -10,6 +10,17 @@ import {
 } from '@/lib/seo/site';
 import { toAbsoluteUrl } from '@/lib/site-url';
 
+export function merchantReturnPolicyJsonLd(): Record<string, unknown> {
+  return {
+    '@type': 'MerchantReturnPolicy',
+    applicableCountry: 'UG',
+    returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+    merchantReturnDays: 30,
+    returnMethod: 'https://schema.org/ReturnByMail',
+    merchantReturnLink: toAbsoluteUrl('/refunds'),
+  };
+}
+
 export function JsonLd({ data }: { data: Record<string, unknown> | Record<string, unknown>[] }) {
   return (
     <script
@@ -43,6 +54,22 @@ export function organizationJsonLd(): Record<string, unknown> {
       { '@type': 'City', name: SEO_CITY },
     ],
     priceRange: '$$',
+    knowsAbout: [
+      "women's fashion Uganda",
+      'makeup and cosmetics Kampala',
+      'beauty packages Uganda',
+      'beauty services Kampala',
+      "women's wholesale Uganda",
+    ],
+    contactPoint: {
+      '@type': 'ContactPoint',
+      telephone: CONTACT_PHONE_E164,
+      email: SEO_EMAIL,
+      contactType: 'customer service',
+      areaServed: 'UG',
+      availableLanguage: ['en'],
+    },
+    hasMerchantReturnPolicy: merchantReturnPolicyJsonLd(),
   };
 }
 
@@ -55,6 +82,12 @@ export function websiteJsonLd(): Record<string, unknown> {
     alternateName: [...BRAND_ALTERNATE_NAMES],
     url: origin,
     inLanguage: 'en-UG',
+    description: SEO_HOME_DESCRIPTION,
+    publisher: { '@type': 'Organization', name: BRAND_NAME, url: origin },
+    speakable: {
+      '@type': 'SpeakableSpecification',
+      cssSelector: ['h1', '[data-speakable]'],
+    },
     potentialAction: {
       '@type': 'SearchAction',
       target: {
@@ -63,6 +96,24 @@ export function websiteJsonLd(): Record<string, unknown> {
       },
       'query-input': 'required name=search_term_string',
     },
+  };
+}
+
+export function itemListJsonLd(
+  name: string,
+  items: { name: string; path: string }[]
+): Record<string, unknown> {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name,
+    numberOfItems: items.length,
+    itemListElement: items.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: item.name,
+      url: toAbsoluteUrl(item.path),
+    })),
   };
 }
 
@@ -111,6 +162,7 @@ export function productJsonLd(input: {
         : 'https://schema.org/OutOfStock',
       itemCondition: 'https://schema.org/NewCondition',
       seller: { '@type': 'Organization', name: BRAND_NAME },
+      hasMerchantReturnPolicy: merchantReturnPolicyJsonLd(),
     },
     ...(input.rating && input.reviewCount
       ? {

@@ -64,6 +64,20 @@ export default async function PackageDetail({ params }: PageProps) {
         />
       ) : null}
       <PackageDetailPage />
+      {pkg && pkg.isActive ? (
+        <noscript>
+          <article>
+            <h1>{pkg.name}</h1>
+            <p>{pkg.tagline || pkg.description}</p>
+            <p>
+              {(pkg.discountedPrice || pkg.basePrice)} UGX at {BRAND_NAME}.
+            </p>
+            <p>
+              <a href="/packages">All packages</a>
+            </p>
+          </article>
+        </noscript>
+      ) : null}
     </>
   );
 }

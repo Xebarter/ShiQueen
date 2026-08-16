@@ -14,6 +14,7 @@ import { montserrat, playfair } from '@/lib/fonts'
 import { getDefaultOgImageUrl } from '@/lib/metadata/resolve-og-image'
 import { CORE_KEYWORDS, SEO_HOME_DESCRIPTION, SEO_HOME_TITLE, SEO_LOCALE } from '@/lib/seo/site'
 import { JsonLd, organizationJsonLd, websiteJsonLd } from '@/lib/seo/json-ld'
+import { INDEXABLE_ROBOTS } from '@/lib/seo/robots-policy'
 import { getSiteUrl } from '@/lib/site-url'
 import { Toaster } from 'react-hot-toast'
 
@@ -33,6 +34,20 @@ export const metadata: Metadata = {
   publisher: BRAND_NAME,
   category: 'shopping',
   referrer: 'origin-when-cross-origin',
+  robots: INDEXABLE_ROBOTS,
+  alternates: {
+    canonical: getSiteUrl(),
+    languages: {
+      'en-UG': getSiteUrl(),
+      'x-default': getSiteUrl(),
+    },
+    types: {
+      'text/plain': [
+        { url: '/llms.txt', title: 'llms.txt' },
+        { url: '/llms-full.txt', title: 'llms-full.txt' },
+      ],
+    },
+  },
   manifest: BRAND_ASSETS.manifest,
   icons: {
     icon: [

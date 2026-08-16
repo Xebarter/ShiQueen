@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { ServicesPage } from '@/components/services/services-page';
+import { NoscriptPageSummary } from '@/components/seo/noscript-page-summary';
 import { breadcrumbJsonLd, JsonLd } from '@/lib/seo/json-ld';
 import { PAGE_SEO } from '@/lib/seo/site';
 
@@ -24,6 +25,10 @@ export default function ServicesRoute() {
       >
         <ServicesPage />
       </Suspense>
+      <NoscriptPageSummary
+        title="Book Beauty, Hair & Nail Services Kampala"
+        description="Book beauty services in Kampala — makeup artists, hair salon, nails, bridal makeup, and styling. ShiQueen beauty bookings for women across Uganda."
+      />
     </>
   );
 }

@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { ShopPage } from '@/components/shop/shop-page';
+import { NoscriptPageSummary } from '@/components/seo/noscript-page-summary';
 import { isShopSeoCategory } from '@/lib/seo/shop-categories';
-import { breadcrumbJsonLd, JsonLd } from '@/lib/seo/json-ld';
+import { breadcrumbJsonLd, itemListJsonLd, JsonLd } from '@/lib/seo/json-ld';
 import { PAGE_SEO } from '@/lib/seo/site';
 
 export const metadata: Metadata = PAGE_SEO.shop;
@@ -23,10 +24,19 @@ export default async function Shop({ searchParams }: Props) {
   return (
     <>
       <JsonLd
-        data={breadcrumbJsonLd([
-          { name: 'Home', path: '/' },
-          { name: 'Shop', path: '/shop' },
-        ])}
+        data={[
+          breadcrumbJsonLd([
+            { name: 'Home', path: '/' },
+            { name: 'Shop', path: '/shop' },
+          ]),
+          itemListJsonLd("Women's shop categories", [
+            { name: 'Clothing', path: '/shop/clothing' },
+            { name: 'Beauty', path: '/shop/beauty' },
+            { name: 'Wellness', path: '/shop/wellness' },
+            { name: 'Accessories', path: '/shop/accessories' },
+            { name: 'Home', path: '/shop/home' },
+          ]),
+        ]}
       />
       <Suspense
         fallback={
@@ -37,6 +47,10 @@ export default async function Shop({ searchParams }: Props) {
       >
         <ShopPage />
       </Suspense>
+      <NoscriptPageSummary
+        title="Shop Women's Fashion & Beauty Online Uganda"
+        description="Buy women's clothes, dresses, makeup, skincare, handbags, and shoes online in Uganda. ShiQueen is a ladies boutique in Kampala with delivery nationwide."
+      />
     </>
   );
 }

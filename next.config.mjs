@@ -33,6 +33,31 @@ const nextConfig = {
       { source: '/og/package/:id.jpg', destination: '/og/package/:id' },
     ];
   },
+  async headers() {
+    const cache = { key: 'Cache-Control', value: 'public, max-age=3600, must-revalidate' };
+    const indexable = {
+      key: 'X-Robots-Tag',
+      value: 'index, follow, max-image-preview:large, max-snippet:-1',
+    };
+    return [
+      {
+        source: '/robots.txt',
+        headers: [cache],
+      },
+      {
+        source: '/sitemap.xml',
+        headers: [cache, indexable],
+      },
+      {
+        source: '/llms.txt',
+        headers: [cache, indexable],
+      },
+      {
+        source: '/llms-full.txt',
+        headers: [cache, indexable],
+      },
+    ];
+  },
   async redirects() {
     return [
       { source: '/loyalty', destination: '/packages', permanent: true },

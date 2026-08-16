@@ -73,6 +73,20 @@ export default async function ProductDetail({ params }: PageProps) {
         />
       ) : null}
       <ProductDetailPage />
+      {product ? (
+        <noscript>
+          <article>
+            <h1>{product.name}</h1>
+            <p>{product.description}</p>
+            <p>
+              {product.price} UGX · {product.stock > 0 && product.status !== 'Out of Stock' ? 'In stock' : 'Out of stock'} at {BRAND_NAME}.
+            </p>
+            <p>
+              <a href={shopCategoryPath(product.category)}>Back to shop</a>
+            </p>
+          </article>
+        </noscript>
+      ) : null}
     </>
   );
 }

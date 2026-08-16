@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { BRAND_NAME, BRAND_TAGLINE } from '@/lib/brand';
 import { getSiteUrl, toAbsoluteUrl } from '@/lib/site-url';
 import { getDefaultOgImageUrl } from '@/lib/metadata/resolve-og-image';
+import { INDEXABLE_ROBOTS, NOINDEX_ROBOTS } from '@/lib/seo/robots-policy';
 
 export const SEO_LOCALE = 'en_UG';
 export const SEO_COUNTRY = 'Uganda';
@@ -80,10 +81,11 @@ export function pageMetadata(options: {
     title: options.absoluteTitle ? { absolute: options.title } : options.title,
     description: options.description,
     keywords: options.keywords,
-    alternates: { canonical: url },
-    robots: options.noIndex
-      ? { index: false, follow: false, googleBot: { index: false, follow: false } }
-      : { index: true, follow: true },
+    alternates: {
+      canonical: url,
+      languages: { 'en-UG': url, 'x-default': url },
+    },
+    robots: options.noIndex ? NOINDEX_ROBOTS : INDEXABLE_ROBOTS,
     openGraph: {
       title: ogTitle,
       description: options.description,
