@@ -49,6 +49,10 @@ const nextConfig = {
     };
     return [
       {
+        source: '/',
+        headers: [coop],
+      },
+      {
         source: '/:path*',
         headers: [coop],
       },
