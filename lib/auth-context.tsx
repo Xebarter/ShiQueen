@@ -148,6 +148,20 @@ async function ensureSupabaseAuthClaim(user: User): Promise<void> {
   }
 }
 
+/** Stamp the auth claim, then restore role from the previous Firebase uid (same email). */
+async function syncFirebaseUserWithSupabase(user: User): Promise<void> {
+  await ensureSupabaseAuthClaim(user);
+  try {
+    const token = await user.getIdToken();
+    await fetch('/api/auth/relink-profile', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch {
+    // Profile load still runs; relink is best-effort.
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -168,7 +182,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void getRedirectResult(auth)
       .then(async (result) => {
         if (!mounted || !result?.user.email) return;
-        await ensureSupabaseAuthClaim(result.user);
+        await syncFirebaseUserWithSupabase(result.user);
         await ensureUserProfile(
           result.user.uid,
           result.user.email,
@@ -187,7 +201,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(currentUser);
 
       if (currentUser?.email) {
-        await ensureSupabaseAuthClaim(currentUser);
+        await syncFirebaseUserWithSupabase(currentUser);
         const userProfile = await loadUserProfile(currentUser);
         if (mounted) setProfile(userProfile);
       } else if (mounted) {
@@ -204,7 +218,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(currentUser);
 
       if (currentUser?.email) {
-        await ensureSupabaseAuthClaim(currentUser);
+        await syncFirebaseUserWithSupabase(currentUser);
         const userProfile = await loadUserProfile(currentUser);
         if (mounted) setProfile(userProfile);
       } else if (mounted) {
@@ -224,7 +238,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const auth = getFirebaseAuth();
     if (!auth) throw new Error('Firebase Auth not initialized');
     const credential = await signInWithEmailAndPassword(auth, email, password);
-    await ensureSupabaseAuthClaim(credential.user);
+    await syncFirebaseUserWithSupabase(credential.user);
   };
 
   const signInOrCreate = async (
@@ -241,7 +255,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const credential = await signInWithEmailAndPassword(auth, email, password);
-      await ensureSupabaseAuthClaim(credential.user);
+      await syncFirebaseUserWithSupabase(credential.user);
       return { created: false };
     } catch (error) {
       if (!isMissingAccountError(error)) throw error;
@@ -249,7 +263,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const credential = await createUserWithEmailAndPassword(auth, email, password);
         await ensureUserProfile(credential.user.uid, email, credential.user.displayName ?? undefined);
-        await ensureSupabaseAuthClaim(credential.user);
+        await syncFirebaseUserWithSupabase(credential.user);
         await maybeSendVerification(credential.user);
         return { created: true };
       } catch (createError) {
@@ -266,7 +280,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!auth) throw new Error('Firebase Auth not initialized');
     const credential = await createUserWithEmailAndPassword(auth, email, password);
     await ensureUserProfile(credential.user.uid, email);
-    await ensureSupabaseAuthClaim(credential.user);
+    await syncFirebaseUserWithSupabase(credential.user);
     await maybeSendVerification(credential.user);
   };
 
@@ -289,7 +303,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         googleUser.displayName ?? undefined,
         googleUser.photoURL ?? undefined
       );
-      await ensureSupabaseAuthClaim(googleUser);
+      await syncFirebaseUserWithSupabase(googleUser);
     }
   };
 
@@ -319,7 +333,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           googleUser.displayName ?? undefined,
           googleUser.photoURL ?? undefined
         );
-        await ensureSupabaseAuthClaim(googleUser);
+        await syncFirebaseUserWithSupabase(googleUser);
       }
     } catch (error) {
       if (isPopupFlowError(error)) {
