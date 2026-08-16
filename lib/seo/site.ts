@@ -10,15 +10,14 @@ export const SEO_CITY = 'Kampala';
 export const SEO_EMAIL = 'hello@shiqueen.com';
 
 export const BRAND_ALTERNATE_NAMES = [
-  'Shi Queen',
   'ShiQueen Uganda',
   'ShiQueen Kampala',
 ] as const;
 
-export const SEO_HOME_TITLE = `${BRAND_NAME} | Fashion, Beauty & Lifestyle for Women`;
+export const SEO_HOME_TITLE = BRAND_NAME;
 
 export const SEO_HOME_DESCRIPTION =
-  'ShiQueen is a women\'s online shop for fashion, beauty, packages, and lifestyle bookings. Shop dresses, makeup, skincare, handbags, and book beauty services.';
+  'ShiQueen is an online shopping and booking application for women. Shop fashion, beauty, and wellness products, buy curated packages, and book lifestyle services. Sign in with Google to create an account, save favorites, place orders, and manage bookings.';
 
 export const CORE_KEYWORDS = [
   'ShiQueen',

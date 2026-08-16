@@ -1,24 +1,17 @@
 import Link from 'next/link';
-import {
-  BRAND_PURPOSE,
-  BRAND_PURPOSE_HEADING,
-  BRAND_PURPOSE_POINTS,
-} from '@/lib/brand';
+import { BRAND_NAME, BRAND_PURPOSE, BRAND_PURPOSE_POINTS } from '@/lib/brand';
 
-/** Server-rendered so Google’s branding crawler sees the app purpose in the first HTML. */
+/** Server-rendered so Google’s branding crawler sees the exact app name and purpose. */
 export function HomeAppPurpose() {
   return (
     <div className="max-w-xl">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-        Purpose of this application
-      </p>
-      <h1 className="mt-2 font-[family-name:var(--font-brand)] text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
-        {BRAND_PURPOSE_HEADING}
+      <h1 className="font-[family-name:var(--font-brand)] text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
+        {BRAND_NAME}
       </h1>
-      <p
-        data-speakable
-        className="mt-3 text-sm leading-relaxed text-foreground/85 sm:text-base"
-      >
+      <h2 className="mt-4 text-base font-semibold tracking-tight text-foreground sm:text-lg">
+        Purpose of this application
+      </h2>
+      <p data-speakable className="mt-2 text-sm leading-relaxed text-foreground/90 sm:text-base">
         {BRAND_PURPOSE}
       </p>
       <ul className="mt-4 space-y-2.5 text-sm leading-relaxed text-muted-foreground">

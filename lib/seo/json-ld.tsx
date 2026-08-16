@@ -99,6 +99,24 @@ export function websiteJsonLd(): Record<string, unknown> {
   };
 }
 
+export function softwareApplicationJsonLd(): Record<string, unknown> {
+  const origin = getSeoOrigin();
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: BRAND_NAME,
+    applicationCategory: 'ShoppingApplication',
+    operatingSystem: 'Web',
+    url: origin,
+    description: SEO_HOME_DESCRIPTION,
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'UGX',
+    },
+  };
+}
+
 export function itemListJsonLd(
   name: string,
   items: { name: string; path: string }[]

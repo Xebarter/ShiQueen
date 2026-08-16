@@ -2,16 +2,12 @@ export const BRAND_NAME = 'ShiQueen';
 
 export const BRAND_TAGLINE = "Ladies' Lifestyle";
 
-/** Visible homepage H1 — must state what the application is (Google OAuth branding). */
-export const BRAND_PURPOSE_HEADING =
-  'ShiQueen is an online shopping and booking app for women';
-
 /**
  * Public purpose copy shown on the home page (Google OAuth branding).
- * Reviewers require the homepage itself to outline what the app does and why Sign in with Google is used.
+ * Keep the visible H1 as BRAND_NAME only — Google requires it to match the OAuth app name.
  */
 export const BRAND_PURPOSE =
-  'ShiQueen is an application for shopping ladies\' fashion, beauty, and wellness products, buying curated packages, and booking trusted lifestyle services in Uganda. Customers sign in with Google only to create or access a ShiQueen account so they can save favorites, place orders, and manage bookings.';
+  'The purpose of this application is to let women shop fashion, beauty, and wellness products, buy curated packages, and book trusted lifestyle services in Uganda. Customers sign in with Google only to create or access a ShiQueen account so they can save favorites, place orders, and manage bookings.';
 
 export const BRAND_PURPOSE_POINTS = [
   {

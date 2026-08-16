@@ -58,7 +58,8 @@ function ShiQueenWordmark({
     <span
       className={cn('font-brand inline-flex flex-col leading-[0.95]', isAuth && 'items-center', className)}
     >
-      <span className="inline-flex items-baseline whitespace-nowrap select-none">
+      <span className="sr-only">{BRAND_NAME}</span>
+      <span aria-hidden="true" className="inline-flex items-baseline whitespace-nowrap select-none">
         <span
           className={cn(
             'relative -mr-px italic font-semibold text-primary',
