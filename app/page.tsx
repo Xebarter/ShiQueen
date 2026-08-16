@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
+import { HomeAppPurpose } from '@/components/home/home-app-purpose';
 import { HomePage } from '@/components/home/home-page';
 import { NoscriptPageSummary } from '@/components/seo/noscript-page-summary';
+import { BRAND_PURPOSE, BRAND_PURPOSE_HEADING } from '@/lib/brand';
 import { HOME_FAQS } from '@/lib/seo/home-faqs';
 import { faqJsonLd, itemListJsonLd, JsonLd } from '@/lib/seo/json-ld';
-import { PAGE_SEO, SEO_HOME_DESCRIPTION, SEO_HOME_TITLE } from '@/lib/seo/site';
+import { PAGE_SEO } from '@/lib/seo/site';
 
 export const metadata: Metadata = PAGE_SEO.home;
 
@@ -22,14 +24,9 @@ export default function Home() {
         ]}
       />
       <HomePage>
-        <p
-          data-speakable
-          className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base"
-        >
-          {SEO_HOME_DESCRIPTION}
-        </p>
+        <HomeAppPurpose />
       </HomePage>
-      <NoscriptPageSummary title={SEO_HOME_TITLE} description={SEO_HOME_DESCRIPTION} />
+      <NoscriptPageSummary title={BRAND_PURPOSE_HEADING} description={BRAND_PURPOSE} />
     </>
   );
 }

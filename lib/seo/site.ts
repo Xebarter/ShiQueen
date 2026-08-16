@@ -18,7 +18,7 @@ export const BRAND_ALTERNATE_NAMES = [
 export const SEO_HOME_TITLE = `${BRAND_NAME} | Fashion, Beauty & Lifestyle for Women`;
 
 export const SEO_HOME_DESCRIPTION =
-  'ShiQueen is a women\'s online shop in Uganda for fashion, beauty, cosmetics, curated packages, and lifestyle bookings in Kampala. Shop dresses, makeup, skincare, handbags, and book beauty services.';
+  'ShiQueen is a women\'s online shop for fashion, beauty, packages, and lifestyle bookings. Shop dresses, makeup, skincare, handbags, and book beauty services.';
 
 export const CORE_KEYWORDS = [
   'ShiQueen',
