@@ -148,14 +148,16 @@ export async function createUserProfile(
   const supabase = getSupabaseClient();
   if (!supabase) throw new Error('Supabase not initialized');
 
-  const role = isAdminEmail(email) ? 'admin' : options?.role ?? resolveUserRole(email);
+  const requestedRole = isAdminEmail(email) ? 'admin' : options?.role ?? resolveUserRole(email);
+  // RLS profiles_insert forbids inserting role = 'admin'. Insert as customer, then promote.
+  const insertRole: UserRole = requestedRole === 'admin' ? 'customer' : requestedRole;
 
   const profile: Omit<UserProfile, 'createdAt' | 'updatedAt'> = {
     uid,
     email,
     displayName,
     photoURL: options?.photoURL,
-    role,
+    role: requestedRole,
     supplierId: options?.supplierId,
     providerId: options?.providerId,
   };
@@ -165,12 +167,16 @@ export async function createUserProfile(
     email: profile.email,
     display_name: profile.displayName ?? null,
     photo_url: profile.photoURL ?? null,
-    role: profile.role,
+    role: insertRole,
     supplier_id: profile.supplierId ?? null,
     provider_id: profile.providerId ?? null,
   });
 
   if (error) throw error;
+
+  if (requestedRole === 'admin') {
+    await updateUserRole(uid, 'admin');
+  }
 
   return {
     ...profile,
