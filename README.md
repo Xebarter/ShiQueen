@@ -286,4 +286,4 @@ This project is provided as-is for educational and commercial use.
 
 ## Support
 
-For questions or issues, please reach out to hello@shequeen.com or visit the contact page.
+For questions or issues, please reach out to hello@shiqueen.com or visit the contact page.

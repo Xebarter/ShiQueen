@@ -134,7 +134,7 @@ export function buildDefaultSupplier(): Omit<Supplier, 'createdAt' | 'updatedAt'
     name: 'ShiQueen',
     companyName: 'ShiQueen',
     contactName: 'ShiQueen Team',
-    email: 'hello@shequeen.com',
+    email: 'hello@shiqueen.com',
     phone: '',
     whatsapp: '',
     address: '',

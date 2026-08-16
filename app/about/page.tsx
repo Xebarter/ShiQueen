@@ -23,7 +23,7 @@ export default function About() {
     },
     {
       title: 'Community',
-      description: 'ShiQueen is a space for women to shop, book, and feel confident — whether you knew us as SheQueen or you are new here.',
+      description: 'ShiQueen is a space for women to shop, book, and feel confident — whether you are returning or discovering us for the first time.',
     },
   ];
 
@@ -74,13 +74,8 @@ export default function About() {
 
       <section className="py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-light mb-8">Formerly SheQueen</h2>
+          <h2 className="text-4xl font-light mb-8">Our story</h2>
           <div className="space-y-6 text-muted-foreground leading-relaxed">
-            <p>
-              If you knew us as SheQueen, you are in the right place. ShiQueen is the same
-              women&apos;s shop — fashion, cosmetics, packages, and beauty bookings — under our
-              current name. Searches for SheQueen, She Queen, and Shi Queen all lead here.
-            </p>
             <p>
               We built ShiQueen so shopping for quality pieces in Uganda would feel curated,
               not overwhelming. From ladies dresses and handbags to makeup, skincare, and

@@ -6,12 +6,10 @@ import { getDefaultOgImageUrl } from '@/lib/metadata/resolve-og-image';
 export const SEO_LOCALE = 'en_UG';
 export const SEO_COUNTRY = 'Uganda';
 export const SEO_CITY = 'Kampala';
-export const SEO_EMAIL = 'hello@shequeen.com';
+export const SEO_EMAIL = 'hello@shiqueen.com';
 
 export const BRAND_ALTERNATE_NAMES = [
   'Shi Queen',
-  'SheQueen',
-  'She Queen',
   'ShiQueen Uganda',
   'ShiQueen Kampala',
 ] as const;
@@ -19,13 +17,11 @@ export const BRAND_ALTERNATE_NAMES = [
 export const SEO_HOME_TITLE = `${BRAND_NAME} | Fashion, Beauty & Lifestyle for Women`;
 
 export const SEO_HOME_DESCRIPTION =
-  'ShiQueen is a women\'s online shop in Uganda for fashion, beauty, cosmetics, curated packages, and lifestyle bookings in Kampala. Shop dresses, makeup, skincare, handbags, and book beauty services. Formerly SheQueen.';
+  'ShiQueen is a women\'s online shop in Uganda for fashion, beauty, cosmetics, curated packages, and lifestyle bookings in Kampala. Shop dresses, makeup, skincare, handbags, and book beauty services.';
 
 export const CORE_KEYWORDS = [
   'ShiQueen',
   'Shi Queen',
-  'SheQueen',
-  'She Queen',
   'ShiQueen Uganda',
   'ShiQueen Kampala',
   'women\'s online shop Uganda',
@@ -128,7 +124,7 @@ export const PAGE_SEO = {
   shop: pageMetadata({
     title: `Shop Women's Fashion & Beauty Online Uganda`,
     description:
-      'Buy women\'s clothes, dresses, makeup, skincare, handbags, and shoes online in Uganda. ShiQueen is a ladies boutique in Kampala with delivery nationwide. Formerly SheQueen.',
+      'Buy women\'s clothes, dresses, makeup, skincare, handbags, and shoes online in Uganda. ShiQueen is a ladies boutique in Kampala with delivery nationwide.',
     path: '/shop',
     keywords: [
       'women\'s online shop Uganda',
@@ -138,7 +134,6 @@ export const PAGE_SEO = {
       'handbags Uganda',
       'ladies shoes Kampala',
       'ShiQueen shop',
-      'SheQueen shop',
     ],
   }),
   packages: pageMetadata({
@@ -152,7 +147,6 @@ export const PAGE_SEO = {
       'women\'s packages Uganda',
       'product and service packages Uganda',
       'ShiQueen packages',
-      'SheQueen packages',
       'beauty deals Kampala',
     ],
   }),
@@ -169,7 +163,7 @@ export const PAGE_SEO = {
       'bridal makeup Kampala',
       'book beauty services Uganda',
       'ShiQueen beauty services',
-      'SheQueen salon',
+      'ShiQueen salon',
     ],
   }),
   wholesale: pageMetadata({
@@ -183,20 +177,18 @@ export const PAGE_SEO = {
       'ladies wholesale Kampala',
       'bulk beauty products Uganda',
       'ShiQueen wholesale',
-      'SheQueen wholesale',
     ],
   }),
   about: pageMetadata({
-    title: `About ShiQueen — Formerly SheQueen`,
+    title: `About ShiQueen`,
     description:
-      'ShiQueen is a women\'s online shop and booking platform in Kampala, Uganda. Formerly known as SheQueen, we curate fashion, beauty, packages, and lifestyle services.',
+      'ShiQueen is a women\'s online shop and booking platform in Kampala, Uganda. We curate fashion, beauty, packages, and lifestyle services.',
     path: '/about',
     keywords: [
-      'ShiQueen formerly SheQueen',
-      'SheQueen now ShiQueen',
       'ShiQueen Uganda',
       'about ShiQueen',
-      'She Queen new name',
+      'ShiQueen Kampala',
+      'women\'s shop Kampala',
     ],
   }),
   contact: pageMetadata({
@@ -204,7 +196,7 @@ export const PAGE_SEO = {
     description:
       'Contact ShiQueen in Kampala, Uganda for orders, beauty bookings, wholesale, and support. WhatsApp, phone, and email — nationwide delivery.',
     path: '/contact',
-    keywords: ['ShiQueen contact', 'ShiQueen Kampala', 'ladies shop Kampala', 'SheQueen contact'],
+    keywords: ['ShiQueen contact', 'ShiQueen Kampala', 'ladies shop Kampala'],
   }),
   faq: pageMetadata({
     title: `FAQ — Shopping, Delivery, Returns & Payments`,
@@ -213,7 +205,6 @@ export const PAGE_SEO = {
     path: '/faq',
     keywords: [
       'ShiQueen FAQ',
-      'SheQueen FAQ',
       'ShiQueen delivery Uganda',
       'ShiQueen returns',
       'ShiQueen payment',
@@ -251,7 +242,7 @@ export function shopCategorySeo(category: string): { title: string; description:
     clothing: {
       title: `Women's Clothes & Fashion Online Uganda`,
       description:
-        'Shop women\'s clothing in Uganda — dresses, tops, jeans, two-piece sets, and office wear. Ladies fashion online in Kampala with delivery. ShiQueen, formerly SheQueen.',
+        'Shop women\'s clothing in Uganda — dresses, tops, jeans, two-piece sets, and office wear. Ladies fashion online in Kampala with delivery from ShiQueen.',
       keywords: [
         'women\'s clothes Uganda',
         'ladies dresses Kampala',

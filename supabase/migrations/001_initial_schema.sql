@@ -1,4 +1,4 @@
--- SheQueen: Firebase → Supabase schema migration
+-- ShiQueen: Firebase → Supabase schema migration
 -- Preserves Firestore document IDs as text primary keys where applicable.
 
 create extension if not exists "pgcrypto";

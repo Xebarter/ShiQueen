@@ -12,10 +12,10 @@ export type { LegalTocItem };
 
 export const LEGAL_LAST_UPDATED = 'August 12, 2026';
 export const LEGAL_LAST_UPDATED_ISO = '2026-08-12';
-export const LEGAL_SITE_URL = 'https://shequeen.com';
-export const LEGAL_SITE_LABEL = 'shequeen.com';
-export const LEGAL_SUPPORT_EMAIL = 'hello@shequeen.com';
-export const LEGAL_PRIVACY_EMAIL = 'privacy@shequeen.com';
+export const LEGAL_SITE_URL = 'https://shiqueen.com';
+export const LEGAL_SITE_LABEL = 'shiqueen.com';
+export const LEGAL_SUPPORT_EMAIL = 'hello@shiqueen.com';
+export const LEGAL_PRIVACY_EMAIL = 'privacy@shiqueen.com';
 export const LEGAL_BUSINESS_ADDRESS = 'Kampala, Uganda';
 export const LEGAL_RETURN_DAYS = 14;
 export const LEGAL_DEFECT_REPORT_DAYS = 7;

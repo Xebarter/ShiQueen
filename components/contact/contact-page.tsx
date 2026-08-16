@@ -31,7 +31,7 @@ import { CONTACT_MESSAGE_TOPICS } from '@/lib/types/contact-messages';
 const WHATSAPP_HREF = contactWhatsAppHref(
   "Hi ShiQueen, I'd like to get in touch."
 );
-const EMAIL = 'hello@shequeen.com';
+const EMAIL = 'hello@shiqueen.com';
 
 const TOPICS = CONTACT_MESSAGE_TOPICS;
 

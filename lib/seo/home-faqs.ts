@@ -4,10 +4,6 @@ export const HOME_FAQS = [
     a: 'ShiQueen is a women\'s online shop in Uganda for fashion, beauty, cosmetics, curated packages, and lifestyle bookings. Shop dresses, makeup, skincare, and handbags, or book beauty services in Kampala with delivery nationwide.',
   },
   {
-    q: 'Is ShiQueen the same as SheQueen?',
-    a: 'Yes. ShiQueen was formerly known as SheQueen. Same women\'s shop, packages, and beauty bookings in Kampala — now under the ShiQueen name.',
-  },
-  {
     q: 'Does ShiQueen deliver in Uganda?',
     a: 'Yes. ShiQueen delivers women\'s fashion, beauty products, and packages from Kampala across Uganda. You can also book beauty, hair, and nail services.',
   },

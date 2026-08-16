@@ -1,7 +1,7 @@
 {
   "name": "ShiQueen",
   "short_name": "ShiQueen",
-  "description": "ShiQueen is a women's online shop in Uganda for fashion, beauty, packages, and lifestyle bookings. Formerly SheQueen.",
+  "description": "ShiQueen is a women's online shop in Uganda for fashion, beauty, packages, and lifestyle bookings.",
   "start_url": "/",
   "scope": "/",
   "display": "browser",
