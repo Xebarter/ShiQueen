@@ -21,7 +21,7 @@ import { ensureUserProfile, resolveUserRole } from '@/lib/supabase/users';
 import { resetSupabaseClient } from '@/lib/supabase/client';
 import { UserProfile } from '@/lib/types/database';
 import { isServiceProviderProfile, isSupplierProfile } from '@/lib/auth-redirect';
-import { disableGoogleOneTapAutoSelect } from '@/lib/google-identity';
+import { disableGoogleOneTapAutoSelect, cancelGoogleOneTapPrompt } from '@/lib/google-identity';
 
 function getAuthCode(error: unknown): string {
   if (typeof error === 'object' && error !== null && 'code' in error) {
@@ -286,6 +286,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!auth) throw new Error('Firebase Auth not initialized');
 
     const provider = getGoogleProvider();
+    cancelGoogleOneTapPrompt();
 
     try {
       const credential = await signInWithPopup(

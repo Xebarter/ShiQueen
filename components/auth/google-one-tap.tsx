@@ -14,7 +14,23 @@ import {
   type GoogleCredentialResponse,
 } from '@/lib/google-identity';
 
-const EXCLUDED_PREFIXES = ['/admin', '/suppliers/orders', '/suppliers/products', '/suppliers/packages', '/suppliers/inventory', '/suppliers/profile', '/suppliers/settings', '/suppliers/insights', '/services/dashboard'];
+const EXCLUDED_PREFIXES = [
+  '/sign-in',
+  '/sign-up',
+  '/suppliers/sign-in',
+  '/suppliers/sign-up',
+  '/services/sign-in',
+  '/services/sign-up',
+  '/admin',
+  '/suppliers/orders',
+  '/suppliers/products',
+  '/suppliers/packages',
+  '/suppliers/inventory',
+  '/suppliers/profile',
+  '/suppliers/settings',
+  '/suppliers/insights',
+  '/services/dashboard',
+];
 
 function isExcludedPath(pathname: string): boolean {
   return EXCLUDED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
@@ -56,6 +72,7 @@ export function GoogleOneTap() {
   useEffect(() => {
     const clientId = getGoogleClientId();
     if (!clientId || !isFirebaseAuthConfigured() || initializedRef.current) return;
+    if (isExcludedPath(pathname)) return;
 
     let cancelled = false;
 
@@ -66,10 +83,10 @@ export function GoogleOneTap() {
         window.google.accounts.id.initialize({
           client_id: clientId,
           callback: handleCredential,
-          auto_select: true,
-          cancel_on_tap_outside: false,
+          auto_select: false,
+          cancel_on_tap_outside: true,
           itp_support: true,
-          use_fedcm_for_prompt: true,
+          use_fedcm_for_prompt: false,
           context: 'signin',
         });
 
@@ -82,7 +99,7 @@ export function GoogleOneTap() {
     return () => {
       cancelled = true;
     };
-  }, [handleCredential]);
+  }, [handleCredential, pathname]);
 
   useEffect(() => {
     if (loading) return;

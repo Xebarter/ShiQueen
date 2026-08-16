@@ -43,7 +43,15 @@ const nextConfig = {
       key: 'X-Robots-Tag',
       value: 'index, follow, max-image-preview:large, max-snippet:-1',
     };
+    const coop = {
+      key: 'Cross-Origin-Opener-Policy',
+      value: 'same-origin-allow-popups',
+    };
     return [
+      {
+        source: '/:path*',
+        headers: [coop],
+      },
       {
         source: '/robots.txt',
         headers: [cache],
