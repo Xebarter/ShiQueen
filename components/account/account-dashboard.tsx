@@ -572,7 +572,7 @@ export function AccountDashboard() {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/sign-in');
+      router.push('/');
     }
   }, [user, loading, router]);
 

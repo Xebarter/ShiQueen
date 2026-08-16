@@ -147,7 +147,7 @@ export function ProviderShell({ children }: ProviderShellProps) {
       pageTitles={PROVIDER_PAGE_TITLES}
       onLogout={async () => {
         await logout();
-        router.push('/services');
+        router.push('/');
       }}
     >
       {children}

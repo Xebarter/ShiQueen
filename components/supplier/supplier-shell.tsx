@@ -157,7 +157,7 @@ export function SupplierShell({ children, publicPage = false }: SupplierShellPro
       chromeVariant="premium"
       onLogout={async () => {
         await logout();
-        router.push('/suppliers');
+        router.push('/');
       }}
     >
       {children}

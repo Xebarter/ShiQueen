@@ -22,7 +22,7 @@ export default function AdminLayout({
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/sign-in');
+      router.push('/');
     } else if (!loading && user && !isAdmin) {
       router.push('/');
     }
