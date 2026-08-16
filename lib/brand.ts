@@ -2,34 +2,9 @@ export const BRAND_NAME = 'ShiQueen';
 
 export const BRAND_TAGLINE = "Ladies' Lifestyle";
 
-/**
- * Public purpose copy shown on the home page (Google OAuth branding).
- * Keep the visible H1 as BRAND_NAME only — Google requires it to match the OAuth app name.
- */
-export const BRAND_PURPOSE =
-  'The purpose of this application is to let women shop fashion, beauty, and wellness products, buy curated packages, and book trusted lifestyle services in Uganda. Customers sign in with Google only to create or access a ShiQueen account so they can save favorites, place orders, and manage bookings.';
-
-export const BRAND_PURPOSE_POINTS = [
-  {
-    title: 'Shop products',
-    text: 'Browse and buy fashion, beauty, and wellness items with delivery across Uganda.',
-  },
-  {
-    title: 'Buy packages',
-    text: 'Purchase curated bundles that combine products and beauty services.',
-  },
-  {
-    title: 'Book services',
-    text: 'Book makeup, hair, nails, and other lifestyle appointments.',
-  },
-  {
-    title: 'Sign in with Google',
-    text: 'Create or open your ShiQueen account to save favorites, check out, and manage orders and bookings. We only receive your name, email, and profile photo.',
-  },
-] as const;
-
 export const BRAND_ASSETS = {
   faviconIco: '/favicon.ico',
+  faviconPng96: '/favicon-96x96.png',
   faviconSvg: '/favicon.svg',
   appleTouchIcon: '/apple-touch-icon.png',
   icon192: '/web-app-manifest-192x192.png',
@@ -43,8 +18,3 @@ export const BRAND_THEME = {
   themeColor: '#5B2850',
   backgroundColor: '#FAF5F4',
 } as const;
-
-/** Exact URLs to paste into Google Auth Platform. Must match homepage <a href> values. */
-export const OAUTH_HOME_URL = 'https://shiqueen.com';
-export const OAUTH_PRIVACY_URL = 'https://shiqueen.com/privacy';
-export const OAUTH_TERMS_URL = 'https://shiqueen.com/terms';

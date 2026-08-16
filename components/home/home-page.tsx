@@ -1,6 +1,8 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { usePublicProducts } from '@/lib/hooks/use-public-catalog';
@@ -12,6 +14,7 @@ import { useProductMerchandising } from '@/lib/hooks/use-product-merchandising';
 import { HeroMarketingSlot } from '@/components/home/hero-marketing-slot';
 import { ShopCategoryStrip } from '@/components/shop/shop-category-strip';
 import { CatalogBottomCta } from '@/components/shop/catalog-bottom-cta';
+import { SEO_HOME_TITLE } from '@/lib/seo/site';
 
 export function HomePage({ children }: { children?: ReactNode }) {
   const { products, loading } = usePublicProducts();
@@ -28,17 +31,17 @@ export function HomePage({ children }: { children?: ReactNode }) {
     <>
       <Header />
       <main className="overflow-x-clip mobile-scroll-optimize">
-        {children}
         <section className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-background" />
           <div className="pointer-events-none absolute top-20 right-0 hidden h-96 w-96 rounded-full bg-accent/10 blur-3xl md:block" />
           <div className="relative mx-auto max-w-[90rem] px-3 pt-6 pb-6 sm:px-4 md:pt-10 md:pb-8 lg:px-5">
             <div className="grid items-start gap-4 lg:grid-cols-2 lg:gap-8">
-              <div>
-                <HeroMarketingSlot placement="home-hero" compact />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.08 }}
+                className="order-1 grid grid-cols-2 gap-2 sm:gap-2.5 lg:order-2"
+              >
                 {loading
                   ? Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)
                   : sections?.heroProducts.map((product, i) => (
@@ -54,7 +57,29 @@ export function HomePage({ children }: { children?: ReactNode }) {
                         onWishlistChange={setWishlistIds}
                       />
                     ))}
-              </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
+                className="order-2 lg:order-1"
+              >
+                <HeroMarketingSlot placement="home-hero" compact />
+                <h1 className="mt-4 font-[family-name:var(--font-brand)] text-3xl font-medium tracking-tight text-foreground sm:text-4xl">
+                  {SEO_HOME_TITLE}
+                </h1>
+                {children}
+                <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
+                  <Link href="/packages" className="font-medium text-primary hover:underline">
+                    Bundles
+                  </Link>
+                  <span aria-hidden>·</span>
+                  <Link href="/shop" className="hover:text-foreground">
+                    Shop all
+                  </Link>
+                </div>
+              </motion.div>
             </div>
           </div>
         </section>

@@ -51,16 +51,35 @@ export const metadata: Metadata = {
   manifest: BRAND_ASSETS.manifest,
   icons: {
     icon: [
-      { url: BRAND_ASSETS.faviconIco, sizes: 'any' },
-      { url: BRAND_ASSETS.faviconSvg, type: 'image/svg+xml' },
+      {
+        url: BRAND_ASSETS.faviconPng96,
+        sizes: '96x96',
+        type: 'image/png',
+      },
       {
         url: BRAND_ASSETS.icon192,
         sizes: '192x192',
         type: 'image/png',
       },
+      {
+        url: BRAND_ASSETS.icon512,
+        sizes: '512x512',
+        type: 'image/png',
+      },
+      {
+        url: BRAND_ASSETS.faviconIco,
+        sizes: '48x48',
+        type: 'image/x-icon',
+      },
     ],
-    apple: BRAND_ASSETS.appleTouchIcon,
-    shortcut: BRAND_ASSETS.faviconIco,
+    apple: [
+      {
+        url: BRAND_ASSETS.appleTouchIcon,
+        sizes: '180x180',
+        type: 'image/png',
+      },
+    ],
+    shortcut: BRAND_ASSETS.faviconPng96,
   },
   appleWebApp: {
     capable: true,

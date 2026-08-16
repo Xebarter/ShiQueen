@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next';
 import { getSiteUrl } from '@/lib/site-url';
 import {
   AI_AND_SEARCH_CRAWLERS,
+  IMAGE_CRAWLERS,
   ROBOTS_DISALLOW_PATHS,
   SOCIAL_PREVIEW_CRAWLERS,
 } from '@/lib/seo/robots-policy';
@@ -14,6 +15,10 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: [...SOCIAL_PREVIEW_CRAWLERS],
+        allow: '/',
+      },
+      {
+        userAgent: [...IMAGE_CRAWLERS],
         allow: '/',
       },
       {

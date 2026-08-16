@@ -35,6 +35,10 @@ const nextConfig = {
   },
   async headers() {
     const cache = { key: 'Cache-Control', value: 'public, max-age=3600, must-revalidate' };
+    const iconCache = {
+      key: 'Cache-Control',
+      value: 'public, max-age=86400, stale-while-revalidate=604800',
+    };
     const indexable = {
       key: 'X-Robots-Tag',
       value: 'index, follow, max-image-preview:large, max-snippet:-1',
@@ -43,6 +47,22 @@ const nextConfig = {
       {
         source: '/robots.txt',
         headers: [cache],
+      },
+      {
+        source: '/favicon.ico',
+        headers: [iconCache],
+      },
+      {
+        source: '/favicon-96x96.png',
+        headers: [iconCache],
+      },
+      {
+        source: '/apple-touch-icon.png',
+        headers: [iconCache],
+      },
+      {
+        source: '/web-app-manifest-:size.png',
+        headers: [iconCache],
       },
       {
         source: '/sitemap.xml',

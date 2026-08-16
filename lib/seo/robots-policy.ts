@@ -63,6 +63,9 @@ export const SOCIAL_PREVIEW_CRAWLERS = [
   'LinkedInBot',
 ] as const;
 
+/** Image crawlers must reach favicons or Google Search will not show the site icon. */
+export const IMAGE_CRAWLERS = ['Googlebot-Image', 'Googlebot-Video'] as const;
+
 export const INDEXABLE_ROBOTS: NonNullable<Metadata['robots']> = {
   index: true,
   follow: true,
