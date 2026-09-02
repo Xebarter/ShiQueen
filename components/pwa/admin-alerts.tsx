@@ -45,10 +45,14 @@ function fireAlert(banner: Banner, notify: boolean) {
   playPartnerChime();
   vibratePartnerAlert();
   if (notify) {
+    const isOrder = banner.href.startsWith(ADMIN_ORDERS_HREF);
     void showPartnerNotification(banner.title, {
       body: banner.body,
       url: banner.href,
       tag: banner.id,
+      renotify: true,
+      requireInteraction: isOrder,
+      vibrate: isOrder ? [180, 80, 180, 80, 240] : [120, 60, 120],
     });
   }
 }
@@ -279,7 +283,7 @@ export function AdminAlerts() {
         fresh.length > 1
           ? `${newest.customerName} and ${fresh.length - 1} more`
           : `${newest.customerName} · UGX ${newest.total.toLocaleString('en-UG')}`,
-      href: ADMIN_ORDERS_HREF,
+      href: `${ADMIN_ORDERS_HREF}?order=${encodeURIComponent(newest.id)}`,
     });
   }, [enabled, orders, ordersLoading]);
 

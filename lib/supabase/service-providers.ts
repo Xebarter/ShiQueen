@@ -324,6 +324,7 @@ export async function linkProviderRegistration(
     await createUserProfile(uid, email, name, {
       role: 'service_provider',
       providerId,
+      phone,
     });
   }
 

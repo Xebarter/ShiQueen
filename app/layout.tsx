@@ -2,6 +2,7 @@ import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/lib/auth-context'
+import { CompletePhoneDialog } from '@/components/auth/complete-phone-dialog'
 import { GoogleOneTap } from '@/components/auth/google-one-tap'
 import { CartProvider } from '@/lib/cart-context'
 import { ProductsProvider } from '@/lib/products-context'
@@ -19,6 +20,7 @@ import { JsonLd, organizationJsonLd, websiteJsonLd } from '@/lib/seo/json-ld'
 import { INDEXABLE_ROBOTS } from '@/lib/seo/robots-policy'
 import { getSiteUrl } from '@/lib/site-url'
 import { Toaster } from 'react-hot-toast'
+import { SignedInAlertsRuntime } from '@/components/pwa/signed-in-alerts-runtime'
 
 const defaultOgImage = getDefaultOgImageUrl()
 
@@ -135,7 +137,9 @@ export default function RootLayout({
                   <SuppliersProvider>
                   {children}
                   <GoogleOneTap />
+                  <CompletePhoneDialog />
                   <Toaster />
+                  <SignedInAlertsRuntime />
                   </SuppliersProvider>
                 </ServicesProvider>
               </WholesaleProvider>

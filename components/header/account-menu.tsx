@@ -8,7 +8,7 @@ import { ChevronRight, LogOut, Scissors, Truck, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AccountAvatar } from '@/components/account/account-avatar';
 import { useAuth } from '@/lib/auth-context';
-import { getDisplayName } from '@/lib/user-display';
+import { getAccountHandle, getDisplayName } from '@/lib/user-display';
 import { cn } from '@/lib/utils';
 import { useHistoryOverlay, navigateFromHistoryOverlay } from '@/lib/hooks/use-history-overlay';
 import { PROVIDER_HOME_HREF, SUPPLIER_HOME_HREF } from '@/lib/pwa/paths';
@@ -21,7 +21,12 @@ export function HeaderAccountMenu() {
   const containerRef = useRef<HTMLDivElement>(null);
   const closeTimerRef = useRef<number | null>(null);
 
-  const displayName = getDisplayName(profile?.displayName ?? user?.displayName, user?.email);
+  const displayName = getDisplayName(
+    profile?.displayName ?? user?.displayName,
+    user?.email,
+    profile?.phone ?? user?.phoneNumber
+  );
+  const accountHandle = getAccountHandle(user?.email, profile?.phone ?? user?.phoneNumber);
   const photoURL = profile?.photoURL || user?.photoURL || null;
 
   const clearCloseTimer = useCallback(() => {
@@ -125,6 +130,7 @@ export function HeaderAccountMenu() {
         <AccountAvatar
           displayName={displayName}
           email={user.email}
+          phone={profile?.phone ?? user.phoneNumber}
           photoURL={photoURL}
           variant="email-letter"
           size="sm"
@@ -151,6 +157,7 @@ export function HeaderAccountMenu() {
                   <AccountAvatar
                     displayName={displayName}
                     email={user.email}
+                    phone={profile?.phone ?? user.phoneNumber}
                     photoURL={photoURL}
                     variant="email-letter"
                     size="md"
@@ -159,7 +166,7 @@ export function HeaderAccountMenu() {
                     <p className="truncate text-sm font-medium tracking-tight text-foreground">
                       {displayName}
                     </p>
-                    <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                    <p className="truncate text-xs text-muted-foreground">{accountHandle}</p>
                   </div>
                 </div>
               </div>

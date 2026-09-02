@@ -8,9 +8,12 @@ import {
 
 export type AuthUser = User;
 
-export function getSignInProvider(user: User | null | undefined): 'Google' | 'Email' | 'Unknown' {
+export function getSignInProvider(
+  user: User | null | undefined
+): 'Google' | 'Email' | 'Phone' | 'Unknown' {
   if (!user) return 'Unknown';
   const providers = user.providerData.map((p) => p.providerId);
+  if (providers.includes('phone')) return 'Phone';
   if (providers.includes('google.com')) return 'Google';
   if (providers.includes('password')) return 'Email';
   return 'Unknown';

@@ -1,7 +1,13 @@
 import { getFcmAdminApp, isFcmAdminConfigured } from '@/lib/fcm/admin';
+import {
+  itemsForSupplier,
+  resolveOrderSuppliers,
+  summarizeSupplierItems,
+} from '@/lib/orders/resolve-suppliers';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { isSupabaseAdminConfigured } from '@/lib/supabase/config';
 import { TABLES } from '@/lib/supabase/tables';
+import type { OrderItem } from '@/lib/types/database';
 import {
   ADMIN_MESSAGES_HREF,
   ADMIN_ORDERS_HREF,
@@ -81,6 +87,9 @@ async function sendToTokens(tokens: string[], payload: AlertPayload): Promise<vo
     },
     webpush: {
       fcmOptions: { link: payload.url },
+      ...(payload.type === 'order' || payload.type === 'admin_order'
+        ? { headers: { Urgency: 'high' } }
+        : {}),
     },
   });
 }
@@ -92,23 +101,46 @@ export async function notifyPartnerOrder(orderId: string): Promise<void> {
     const { data } = await admin.from(TABLES.orders).select('*').eq('id', orderId).maybeSingle();
     if (!data) return;
 
-    const supplierIds = Array.isArray(data.supplier_ids)
+    const rawItems = (Array.isArray(data.items) ? data.items : []) as OrderItem[];
+    const storedSupplierIds = Array.isArray(data.supplier_ids)
       ? data.supplier_ids.map(String).filter(Boolean)
       : [];
+    const attributed = await resolveOrderSuppliers(admin, rawItems).catch(() => ({
+      items: rawItems,
+      supplierIds: storedSupplierIds,
+    }));
+    const supplierIds: string[] =
+      storedSupplierIds.length > 0 ? storedSupplierIds : attributed.supplierIds;
+
     if (supplierIds.length === 0) return;
 
-    const tokenSets = await Promise.all(
-      supplierIds.map((id: string) => tokensForField('supplier_id', id))
-    );
-    const tokens = [...new Set(tokenSets.flat())];
+    if (storedSupplierIds.length === 0 && attributed.supplierIds.length > 0) {
+      void admin
+        .from(TABLES.orders)
+        .update({
+          supplier_ids: attributed.supplierIds,
+          items: attributed.items,
+        })
+        .eq('id', orderId);
+    }
+
     const customer = String(data.customer_name || 'A customer');
-    const total = Number(data.total ?? 0);
-    await sendToTokens(tokens, {
-      type: 'order',
-      title: 'New ShiQueen order',
-      body: `${customer} placed an order${total > 0 ? ` · UGX ${total.toLocaleString('en-UG')}` : ''}`,
-      url: SUPPLIER_HOME_HREF,
-    });
+    await Promise.all(
+      supplierIds.map(async (supplierId) => {
+        const tokens = await tokensForField('supplier_id', supplierId);
+        const theirItems = itemsForSupplier(attributed.items, supplierId);
+        const summary = summarizeSupplierItems(theirItems.length > 0 ? theirItems : attributed.items);
+        await sendToTokens(tokens, {
+          type: 'order',
+          title: 'New ShiQueen order',
+          body: `${customer} ordered ${summary.names}${
+            summary.subtotal > 0 ? ` · UGX ${summary.subtotal.toLocaleString('en-UG')}` : ''
+          }`,
+          url: SUPPLIER_HOME_HREF,
+          tag: `order-${orderId}-${supplierId}`,
+        });
+      })
+    );
   } catch (error) {
     console.warn('[ShiQueen] Partner order alert failed:', error);
   }
@@ -245,7 +277,7 @@ export async function notifyAdminOrder(orderId: string): Promise<void> {
       type: 'admin_order',
       title: 'New ShiQueen order',
       body: `${customer} placed a ${orderType} order${total > 0 ? ` · UGX ${total.toLocaleString('en-UG')}` : ''}`,
-      url: ADMIN_ORDERS_HREF,
+      url: `${ADMIN_ORDERS_HREF}?order=${encodeURIComponent(orderId)}`,
       tag: `admin-order-${orderId}`,
     });
   } catch (error) {

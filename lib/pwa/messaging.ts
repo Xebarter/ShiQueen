@@ -18,6 +18,9 @@ export async function showPartnerNotification(
   title: string,
   options: NotificationOptions & {
     url?: string;
+    renotify?: boolean;
+    vibrate?: number[];
+    requireInteraction?: boolean;
     actions?: Array<{ action: string; title: string; icon?: string }>;
   }
 ) {

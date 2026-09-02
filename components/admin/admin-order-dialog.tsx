@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -9,8 +9,10 @@ import {
   CreditCard,
   Mail,
   MapPin,
+  MessageCircle,
   Package,
   Phone,
+  Store,
   User,
   Wallet,
   X,
@@ -20,10 +22,16 @@ import { Button } from '@/components/ui/button';
 import { isRemoteProductImage } from '@/components/product-image';
 import { updateOrderStatus } from '@/lib/firebase/orders';
 import { useHistoryOverlay } from '@/lib/hooks/use-history-overlay';
+import { useProducts } from '@/lib/products-context';
+import { useSuppliers } from '@/lib/suppliers-context';
+import { useWholesale } from '@/lib/wholesale-context';
+import { buildTelLink, buildWhatsAppLink, formatE164Display } from '@/lib/phone-utils';
 import {
   Order,
+  type OrderItem,
   type PaymentStatus,
 } from '@/lib/types/database';
+import type { Supplier } from '@/lib/types/suppliers';
 import { formatUGX } from '@/lib/wholesale-data';
 import { PAYMENT_METHOD_LABELS } from '@/lib/payments/labels';
 import { cn } from '@/lib/utils';
@@ -133,13 +141,94 @@ function CopyChip({ label, value }: { label: string; value: string }) {
   );
 }
 
+function supplierDisplayName(supplier: Supplier): string {
+  return supplier.companyName || supplier.name || supplier.contactName || 'Supplier';
+}
+
+function supplierPhone(supplier: Supplier): string {
+  return (supplier.phone || supplier.whatsapp || '').trim();
+}
+
+function PhoneLinks({
+  phone,
+  whatsapp,
+  message,
+}: {
+  phone: string;
+  whatsapp?: string;
+  message?: string;
+}) {
+  const callNumber = phone.trim();
+  const chatNumber = (whatsapp || phone).trim();
+  if (!callNumber && !chatNumber) return null;
+  return (
+    <div className="flex shrink-0 flex-wrap items-center gap-1">
+      {callNumber ? (
+        <a
+          href={buildTelLink(callNumber)}
+          className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold text-primary hover:underline"
+        >
+          <Phone className="h-3 w-3" />
+          Call
+        </a>
+      ) : null}
+      {chatNumber ? (
+        <a
+          href={buildWhatsAppLink(chatNumber, message)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold text-emerald-700 hover:underline"
+        >
+          <MessageCircle className="h-3 w-3" />
+          WhatsApp
+        </a>
+      ) : null}
+    </div>
+  );
+}
+
 type AdminOrderDialogProps = {
   order: Order | null;
   onClose: () => void;
 };
 
 export function AdminOrderDialog({ order, onClose }: AdminOrderDialogProps) {
+  const { getProductById } = useProducts();
+  const { packages } = useWholesale();
+  const { getSupplierById } = useSuppliers();
   useHistoryOverlay(Boolean(order), onClose);
+
+  const resolveSupplier = (item: OrderItem): Supplier | undefined => {
+    const supplierId =
+      item.supplierId ||
+      (item.packageId
+        ? packages.find((pkg) => pkg.id === item.packageId)?.supplierId
+        : undefined) ||
+      getProductById(item.productId)?.supplierId;
+    return supplierId ? getSupplierById(supplierId) : undefined;
+  };
+
+  const suppliersOnOrder = useMemo(() => {
+    if (!order) return [];
+    const grouped = new Map<string, { supplier: Supplier; items: OrderItem[] }>();
+    for (const item of order.items) {
+      const supplierId =
+        item.supplierId ||
+        (item.packageId
+          ? packages.find((pkg) => pkg.id === item.packageId)?.supplierId
+          : undefined) ||
+        getProductById(item.productId)?.supplierId;
+      const supplier = supplierId ? getSupplierById(supplierId) : undefined;
+      if (!supplier) continue;
+      const existing = grouped.get(supplier.id);
+      if (existing) {
+        existing.items.push(item);
+      } else {
+        grouped.set(supplier.id, { supplier, items: [item] });
+      }
+    }
+    return [...grouped.values()];
+  }, [order, packages, getProductById, getSupplierById]);
 
   useEffect(() => {
     if (!order) return;
@@ -347,13 +436,15 @@ export function AdminOrderDialog({ order, onClose }: AdminOrderDialogProps) {
                     <div className="min-w-0">
                       <h3 className="text-sm font-semibold">What was ordered</h3>
                       <p className="text-xs text-muted-foreground">
-                        Products and packages in this checkout
+                        Products, packages, and the supplier for each line
                       </p>
                     </div>
                   </div>
                   <ul className="divide-y divide-border/60">
                     {order.items.map((item, index) => {
                       const lineTotal = item.price * item.quantity;
+                      const supplier = resolveSupplier(item);
+                      const supplierPhoneNumber = supplier ? supplierPhone(supplier) : '';
                       return (
                         <li
                           key={`${item.productId}-${item.size ?? ''}-${item.color ?? ''}-${index}`}
@@ -389,6 +480,42 @@ export function AdminOrderDialog({ order, onClose }: AdminOrderDialogProps) {
                                     .filter(Boolean)
                                     .join(' · ') || 'Standard item'}
                                 </p>
+                                {supplier || supplierPhoneNumber ? (
+                                    <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                                      <p className="flex min-w-0 items-center gap-1 text-xs text-foreground/80">
+                                        <Store className="h-3 w-3 shrink-0 text-muted-foreground" />
+                                        <span className="truncate font-medium">
+                                          {supplier
+                                            ? supplierDisplayName(supplier)
+                                            : 'Supplier unknown'}
+                                        </span>
+                                      </p>
+                                      {supplierPhoneNumber ? (
+                                        <>
+                                          <a
+                                            href={buildTelLink(supplierPhoneNumber)}
+                                            className="truncate text-xs font-semibold text-primary hover:underline"
+                                          >
+                                            {formatE164Display(supplierPhoneNumber)}
+                                          </a>
+                                          <PhoneLinks
+                                            phone={supplierPhoneNumber}
+                                            whatsapp={supplier?.whatsapp}
+                                            message={`Hi, this is ShiQueen about order ${formatOrderReference(order.id)} — ${item.name}`}
+                                          />
+                                        </>
+                                      ) : (
+                                        <span className="text-[11px] text-muted-foreground">
+                                          No phone on file
+                                        </span>
+                                      )}
+                                    </div>
+                                ) : (
+                                  <p className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
+                                    <Store className="h-3 w-3 shrink-0" />
+                                    Supplier unknown
+                                  </p>
+                                )}
                                 <p className="mt-1 break-all font-mono text-[10px] text-muted-foreground">
                                   {item.productId}
                                   {item.packageId ? ` · pkg ${item.packageId}` : ''}
@@ -409,6 +536,69 @@ export function AdminOrderDialog({ order, onClose }: AdminOrderDialogProps) {
                     })}
                   </ul>
                 </section>
+
+                {suppliersOnOrder.length > 0 ? (
+                  <section className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+                    <div className="flex items-center gap-3 border-b border-border/60 bg-muted/20 px-3 py-3 sm:px-4">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                        <Store className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <h3 className="text-sm font-semibold">Suppliers</h3>
+                        <p className="text-xs text-muted-foreground">
+                          Call the supplier for each product on this order
+                        </p>
+                      </div>
+                    </div>
+                    <ul className="divide-y divide-border/60">
+                      {suppliersOnOrder.map(({ supplier, items }) => {
+                        const phone = supplierPhone(supplier);
+                        const name = supplierDisplayName(supplier);
+                        return (
+                          <li key={supplier.id} className="px-3 py-3.5 sm:px-4">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold [overflow-wrap:anywhere]">
+                                  {name}
+                                </p>
+                                {supplier.contactName && supplier.contactName !== name ? (
+                                  <p className="text-xs text-muted-foreground">
+                                    {supplier.contactName}
+                                  </p>
+                                ) : null}
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  {items.map((item) => `${item.name} × ${item.quantity}`).join(' · ')}
+                                </p>
+                              </div>
+                              <div className="shrink-0">
+                                {phone ? (
+                                  <div className="flex flex-col items-start gap-1 sm:items-end">
+                                    <a
+                                      href={buildTelLink(phone)}
+                                      className="text-sm font-semibold text-primary hover:underline"
+                                    >
+                                      {formatE164Display(phone)}
+                                    </a>
+                                    <div className="flex items-center gap-1">
+                                      <CopyChip label="Supplier phone" value={phone} />
+                                      <PhoneLinks
+                                        phone={phone}
+                                        whatsapp={supplier.whatsapp}
+                                        message={`Hi ${name}, this is ShiQueen about order ${formatOrderReference(order.id)}.`}
+                                      />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-muted-foreground">No phone on file</p>
+                                )}
+                              </div>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </section>
+                ) : null}
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   {/* Customer */}
@@ -448,7 +638,7 @@ export function AdminOrderDialog({ order, onClose }: AdminOrderDialogProps) {
                           <div className="flex shrink-0 items-center gap-1">
                             <CopyChip label="Phone" value={phone} />
                             <a
-                              href={`tel:${phone}`}
+                              href={buildTelLink(phone)}
                               className="text-[11px] font-semibold text-primary hover:underline"
                             >
                               Call
@@ -584,7 +774,7 @@ export function AdminOrderDialog({ order, onClose }: AdminOrderDialogProps) {
                 <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
                   {phone && (
                     <a
-                      href={`tel:${phone}`}
+                      href={buildTelLink(phone)}
                       className="inline-flex h-11 w-full items-center justify-center rounded-lg border border-border bg-background px-3 text-sm font-medium transition hover:bg-muted sm:h-9 sm:w-auto"
                     >
                       Call customer

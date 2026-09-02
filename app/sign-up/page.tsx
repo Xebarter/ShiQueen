@@ -12,16 +12,20 @@ import { getAuthErrorMessage } from '@/lib/auth-errors';
 import { AuthDivider, AuthShell } from '@/components/auth/auth-shell';
 import { AuthGuestOnly } from '@/components/auth/auth-guest-only';
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
+import { PhoneSignIn } from '@/components/auth/phone-sign-in';
 import { PasswordField } from '@/components/auth/password-field';
 import toast from 'react-hot-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Mail } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function SignUp() {
+  const [emailOpen, setEmailOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [phoneBusy, setPhoneBusy] = useState(false);
   const { signUp, signInWithGoogle, refreshProfile } = useAuth();
   const router = useRouter();
 
@@ -34,7 +38,12 @@ export default function SignUp() {
     router.push(getPostAuthPath(nextProfile));
   };
 
-  const isBusy = loading || googleLoading;
+  const isBusy = loading || googleLoading || phoneBusy;
+
+  const handlePhoneSuccess = async ({ created }: { created: boolean }) => {
+    toast.success(created ? 'Account created' : 'Welcome back');
+    await goAfterAuth();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,7 +88,7 @@ export default function SignUp() {
   return (
     <AuthShell
       heading="Create your account"
-      subheading="Shop fashion, packages, and book trusted services — all in one place."
+      subheading="Use your phone to shop fashion, packages, and book trusted services."
       footer={
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{' '}
@@ -91,6 +100,14 @@ export default function SignUp() {
     >
       <AuthGuestOnly>
         <div className="space-y-5">
+          <PhoneSignIn
+            disabled={loading || googleLoading}
+            onBusyChange={setPhoneBusy}
+            onSuccess={handlePhoneSuccess}
+          />
+
+          <AuthDivider />
+
           <GoogleSignInButton
             loading={googleLoading}
             disabled={isBusy}
@@ -98,81 +115,97 @@ export default function SignUp() {
             label="Continue with Google"
           />
 
-          <AuthDivider />
+          {emailOpen ? (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-sm font-medium text-foreground">
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-11 rounded-xl text-base md:text-sm"
+                  required
+                  disabled={isBusy}
+                />
+              </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-sm font-medium text-foreground">
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                autoComplete="email"
-                placeholder="you@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-11 rounded-xl text-base md:text-sm"
-                required
+              <div className="space-y-1.5">
+                <Label htmlFor="password" className="text-sm font-medium text-foreground">
+                  Password
+                </Label>
+                <PasswordField
+                  id="password"
+                  value={password}
+                  onChange={setPassword}
+                  autoComplete="new-password"
+                  disabled={isBusy}
+                />
+                <p className="text-xs text-muted-foreground">At least 6 characters</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">
+                  Confirm password
+                </Label>
+                <PasswordField
+                  id="confirmPassword"
+                  value={confirmPassword}
+                  onChange={setConfirmPassword}
+                  placeholder="Confirm password"
+                  autoComplete="new-password"
+                  disabled={isBusy}
+                />
+              </div>
+
+              <Button
+                type="submit"
+                variant="outline"
+                className="mt-1 h-11 w-full rounded-xl text-sm font-semibold"
                 disabled={isBusy}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-sm font-medium text-foreground">
-                Password
-              </Label>
-              <PasswordField
-                id="password"
-                value={password}
-                onChange={setPassword}
-                autoComplete="new-password"
-                disabled={isBusy}
-              />
-              <p className="text-xs text-muted-foreground">At least 6 characters</p>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">
-                Confirm password
-              </Label>
-              <PasswordField
-                id="confirmPassword"
-                value={confirmPassword}
-                onChange={setConfirmPassword}
-                placeholder="Confirm password"
-                autoComplete="new-password"
-                disabled={isBusy}
-              />
-            </div>
-
-            <Button
-              type="submit"
-              className="mt-1 h-11 w-full rounded-xl text-sm font-semibold shadow-md shadow-primary/15"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating account…
+                  </>
+                ) : (
+                  'Create account with email'
+                )}
+              </Button>
+            </form>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setEmailOpen(true)}
               disabled={isBusy}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating account…
-                </>
-              ) : (
-                'Create account'
+              className={cn(
+                'flex h-11 w-full items-center justify-center gap-3 rounded-xl border border-border/80 bg-background px-4',
+                'text-sm font-semibold text-foreground shadow-sm transition',
+                'hover:border-border hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50',
+                'disabled:pointer-events-none disabled:opacity-50'
               )}
-            </Button>
+            >
+              <Mail className="h-[18px] w-[18px] shrink-0" />
+              Continue with email
+            </button>
+          )}
 
-            <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
-              By continuing you agree to our{' '}
-              <Link href="/terms" className="underline-offset-2 hover:underline">
-                Terms
-              </Link>{' '}
-              and{' '}
-              <Link href="/privacy" className="underline-offset-2 hover:underline">
-                Privacy Policy
-              </Link>
-              .
-            </p>
-          </form>
+          <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+            By continuing you agree to our{' '}
+            <Link href="/terms" className="underline-offset-2 hover:underline">
+              Terms
+            </Link>{' '}
+            and{' '}
+            <Link href="/privacy" className="underline-offset-2 hover:underline">
+              Privacy Policy
+            </Link>
+            .
+          </p>
         </div>
       </AuthGuestOnly>
     </AuthShell>

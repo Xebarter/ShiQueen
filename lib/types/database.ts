@@ -73,6 +73,8 @@ export interface OrderItem {
   /** Distinguishes catalog products vs service listings inside expanded packages. */
   itemType?: 'product' | 'service' | 'custom';
   serviceId?: string;
+  /** Snapshot of the catalog supplier at checkout. */
+  supplierId?: string;
 }
 
 export interface ShippingAddress {

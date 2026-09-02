@@ -2,14 +2,18 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Phone, PhoneOff, ShoppingBag, Sparkles } from 'lucide-react';
+import { Bell, Phone, PhoneOff, ShoppingBag, Sparkles } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { subscribeOrdersForSupplier } from '@/lib/firebase/orders';
 import { subscribeServiceBookingsForProvider } from '@/lib/firebase/service-bookings';
 import { resolveUserPreferences } from '@/lib/account-settings';
 import { formatUGX } from '@/lib/wholesale-data';
 import { PROVIDER_HOME_HREF, SUPPLIER_HOME_HREF } from '@/lib/pwa/paths';
-import { showPartnerNotification } from '@/lib/pwa/messaging';
+import {
+  registerPartnerPushToken,
+  requestPartnerNotificationPermission,
+  showPartnerNotification,
+} from '@/lib/pwa/messaging';
 import { startPartnerRing, stopPartnerRing } from '@/lib/pwa/sound';
 import type { Order } from '@/lib/types/database';
 import type { ServiceBooking } from '@/lib/types/services';
@@ -24,19 +28,32 @@ type IncomingCall = {
   href: string;
 };
 
+const PROMPT_KEY = 'shequeen-partner-notify-prompt';
+
 function silenceRing() {
   stopPartnerRing();
 }
 
 export function PartnerAlerts() {
-  const { supplierId, providerId, profile } = useAuth();
+  const { user, supplierId, providerId, profile } = useAuth();
   const prefs = resolveUserPreferences(profile?.preferences);
   const enabled = prefs.pushAlerts !== false;
   const router = useRouter();
   const [incoming, setIncoming] = useState<IncomingCall | null>(null);
+  const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default');
+  const [promptHidden, setPromptHidden] = useState(true);
   const seenOrders = useRef<Set<string> | null>(null);
   const seenBookings = useRef<Set<string> | null>(null);
   const incomingRef = useRef<IncomingCall | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      setPermission('unsupported');
+      return;
+    }
+    setPermission(Notification.permission);
+    setPromptHidden(window.localStorage.getItem(PROMPT_KEY) === 'hidden');
+  }, []);
 
   useEffect(() => {
     incomingRef.current = incoming;
@@ -146,11 +163,18 @@ export function PartnerAlerts() {
       seenOrders.current = ids;
       const newest = fresh[0];
       if (!newest) return;
+      const theirItems = newest.items.filter((item) => item.supplierId === supplierId);
+      const theirTotal = theirItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      const preview = theirItems
+        .map((item) => item.name)
+        .filter(Boolean)
+        .slice(0, 2)
+        .join(', ');
       presentIncoming({
         id: newest.id,
         kind: 'order',
         title: 'Incoming order',
-        body: `${newest.customerName || 'A customer'} · ${formatUGX(newest.total)}`,
+        body: `${newest.customerName || 'A customer'}${preview ? ` · ${preview}` : ''} · ${formatUGX(theirTotal || newest.total)}`,
         href: SUPPLIER_HOME_HREF,
       });
     });
@@ -178,7 +202,54 @@ export function PartnerAlerts() {
     });
   }, [enabled, providerId]);
 
-  if (!incoming) return null;
+  if (!incoming) {
+    const showPrompt =
+      enabled && (Boolean(supplierId) || Boolean(providerId)) && permission === 'default' && !promptHidden;
+    if (!showPrompt) return null;
+    return (
+      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-[70] flex justify-center px-3 md:bottom-6">
+        <div className="pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-xl border border-border/70 bg-card p-3 shadow-lg">
+          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <Bell className="h-4 w-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold">Order alerts</p>
+            <p className="text-xs text-muted-foreground">
+              Get a notification on this device when a customer orders your products.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                onClick={() => {
+                  void (async () => {
+                    const next = await requestPartnerNotificationPermission();
+                    setPermission(next);
+                    if (next === 'granted' && user?.uid) {
+                      await registerPartnerPushToken(user.uid);
+                    }
+                    window.localStorage.setItem(PROMPT_KEY, 'hidden');
+                    setPromptHidden(true);
+                  })();
+                }}
+              >
+                Enable
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  window.localStorage.setItem(PROMPT_KEY, 'hidden');
+                  setPromptHidden(true);
+                }}
+              >
+                Not now
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const Icon = incoming.kind === 'order' ? ShoppingBag : Sparkles;
 

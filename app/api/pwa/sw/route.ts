@@ -92,13 +92,14 @@ if (FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.messagingSenderId && FIREBASE_CONF
       const type = payload.data?.type || '';
       const tag = payload.data?.tag || type || 'shequeen';
       const isIncoming = type === 'order' || type === 'booking';
+      const isAdminOrder = type === 'admin_order';
       return self.registration.showNotification(title, {
         body,
         icon: '/web-app-manifest-192x192.png',
         badge: '/web-app-manifest-192x192.png',
         tag,
         renotify: true,
-        requireInteraction: isIncoming,
+        requireInteraction: isIncoming || isAdminOrder,
         data: { url, type },
         vibrate: isIncoming
           ? [420, 160, 420, 900, 420, 160, 420, 900]

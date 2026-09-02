@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth-context';
 import { BrandLogo } from '@/components/brand-logo';
 import { ADMIN_NAV_ITEMS, isAdminNavActive } from '@/components/admin/admin-nav-items';
 import { AdminMobileDrawer } from '@/components/admin/admin-mobile-drawer';
+import { InstallAppButton } from '@/components/pwa/install-app-button';
 import { LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
@@ -67,6 +68,7 @@ export function AdminSidebar() {
                 {user.email}
               </p>
             )}
+            <InstallAppButton variant="sidebar" />
             <Button
               variant="outline"
               className="min-h-11 w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/20"

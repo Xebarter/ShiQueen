@@ -1,10 +1,23 @@
+import { formatE164Display } from '@/lib/phone-utils';
+
 export function getDisplayName(
   displayName?: string | null,
-  email?: string | null
+  email?: string | null,
+  phone?: string | null
 ): string {
   if (displayName?.trim()) return displayName.trim();
   if (email) return email.split('@')[0] ?? 'Member';
+  if (phone?.trim()) return formatE164Display(phone);
   return 'Member';
+}
+
+export function getAccountHandle(
+  email?: string | null,
+  phone?: string | null
+): string {
+  if (email?.trim()) return email.trim();
+  if (phone?.trim()) return formatE164Display(phone);
+  return 'Account';
 }
 
 export function getInitials(name: string): string {
@@ -15,12 +28,16 @@ export function getInitials(name: string): string {
     .join('');
 }
 
-/** First letter of the email local-part (before @). */
-export function getEmailInitial(email?: string | null): string {
-  if (!email?.trim()) return '?';
-  const local = email.trim().split('@')[0] || email.trim();
-  const match = local.match(/[a-zA-Z0-9]/);
-  return match ? match[0].toUpperCase() : '?';
+/** First letter of the email local-part (before @), or last digit of a phone. */
+export function getEmailInitial(email?: string | null, phone?: string | null): string {
+  if (email?.trim()) {
+    const local = email.trim().split('@')[0] || email.trim();
+    const match = local.match(/[a-zA-Z0-9]/);
+    return match ? match[0].toUpperCase() : '?';
+  }
+  const digits = phone?.replace(/\D/g, '') ?? '';
+  if (digits) return digits.slice(-1);
+  return '?';
 }
 
 /** Google-style bright avatar colors — stable per letter. */

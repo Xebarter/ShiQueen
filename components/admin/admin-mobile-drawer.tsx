@@ -6,6 +6,7 @@ import { ExternalLink, LogOut } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useAdminShell } from '@/components/admin/admin-shell';
 import { ADMIN_NAV_ITEMS, isAdminNavActive } from '@/components/admin/admin-nav-items';
+import { InstallAppButton } from '@/components/pwa/install-app-button';
 import { getEmailInitial, getAvatarColorsForLetter } from '@/lib/user-display';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -116,6 +117,8 @@ export function AdminMobileDrawer() {
               </p>
             </div>
           )}
+
+          <InstallAppButton variant="drawer" />
 
           <div className="grid grid-cols-2 gap-1.5">
             <Link

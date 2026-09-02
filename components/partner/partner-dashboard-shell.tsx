@@ -16,7 +16,6 @@ import { ExternalLink, LogOut, Menu, X, type LucideIcon } from 'lucide-react';
 import { BrandLogo } from '@/components/brand-logo';
 import { Button } from '@/components/ui/button';
 import { EmailVerificationBanner } from '@/components/partner/email-verification-banner';
-import { PartnerPwaRuntime } from '@/components/pwa/partner-pwa-runtime';
 import {
   getPartnerPageTitle,
   getPartnerTabIndex,
@@ -628,7 +627,6 @@ function PartnerDashboardChromeInner(props: PartnerDashboardChromeProps) {
         </main>
       </div>
       <PartnerTabBar tabs={props.tabs} homeHref={props.homeHref} premium={premium} />
-      <PartnerPwaRuntime />
     </div>
   );
 }

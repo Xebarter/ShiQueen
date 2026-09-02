@@ -1,58 +1,28 @@
-'use client';
+import type { Metadata } from 'next';
+import { AdminAppLayout } from '@/components/admin/admin-app-layout';
+import { BRAND_ASSETS, BRAND_NAME, BRAND_THEME } from '@/lib/brand';
 
-import { AdminSidebar } from '@/components/admin-sidebar';
-import { AdminShellProvider } from '@/components/admin/admin-shell';
-import { AdminMobileHeader } from '@/components/admin/admin-mobile-header';
-import { AdminMobileMain } from '@/components/admin/admin-mobile-main';
-import { AdminPwaRuntime } from '@/components/pwa/admin-pwa-runtime';
-import { useAuth } from '@/lib/auth-context';
-import { montserrat } from '@/lib/fonts';
-import { cn } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+export const metadata: Metadata = {
+  applicationName: `${BRAND_NAME} Admin`,
+  robots: { index: false, follow: false },
+  manifest: BRAND_ASSETS.adminManifest,
+  icons: {
+    apple: BRAND_ASSETS.appleTouchIcon,
+  },
+  appleWebApp: {
+    capable: true,
+    title: `${BRAND_NAME} Admin`,
+    statusBarStyle: 'default',
+  },
+  other: {
+    'theme-color': BRAND_THEME.themeColor,
+  },
+};
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user, isAdmin, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/');
-    } else if (!loading && user && !isAdmin) {
-      router.push('/');
-    }
-  }, [user, isAdmin, loading, router]);
-
-  if (loading) {
-    return (
-      <div className={cn(montserrat.className, 'admin-app flex min-h-[100dvh] items-center justify-center')}>
-        <div className="text-center">
-          <Loader2 className="inline-block h-8 w-8 animate-spin text-primary" />
-          <p className="mt-4 text-sm text-muted-foreground">Loading admin dashboard…</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user || !isAdmin) {
-    return null;
-  }
-
-  return (
-    <AdminShellProvider>
-      <div className={cn(montserrat.className, 'admin-app flex min-h-[100dvh] flex-col bg-background')}>
-        <AdminMobileHeader />
-        <div className="flex min-h-0 flex-1 md:flex-row">
-          <AdminSidebar />
-          <AdminMobileMain>{children}</AdminMobileMain>
-        </div>
-        <AdminPwaRuntime />
-      </div>
-    </AdminShellProvider>
-  );
+  return <AdminAppLayout>{children}</AdminAppLayout>;
 }

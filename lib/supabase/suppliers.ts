@@ -463,11 +463,13 @@ export async function linkSupplierRegistration(
       role: nextRole,
       supplierId,
       displayName: contactName,
+      phone,
     });
   } else {
     await createUserProfile(uid, email, contactName, {
       role: 'supplier',
       supplierId,
+      phone,
     });
   }
 

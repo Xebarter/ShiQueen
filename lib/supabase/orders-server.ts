@@ -1,3 +1,4 @@
+import { resolveOrderSuppliers } from '@/lib/orders/resolve-suppliers';
 import { getSupabaseAdmin, isSupabaseAdminConfigured } from '@/lib/supabase/admin';
 import { stripUndefined } from '@/lib/supabase/sanitize';
 import { TABLES } from '@/lib/supabase/tables';
@@ -106,8 +107,22 @@ export async function createOrderServer(order: CreateServerOrderInput): Promise<
 
   const supabase = getSupabaseAdmin();
   const { id } = order;
+  const attributed = await resolveOrderSuppliers(supabase, order.items).catch(() => ({
+    items: order.items,
+    supplierIds: order.supplierIds ?? [],
+  }));
+  const supplierIds =
+    order.supplierIds && order.supplierIds.length > 0
+      ? order.supplierIds
+      : attributed.supplierIds;
 
-  const { error } = await supabase.from(TABLES.orders).insert(createOrderInputToRow(order));
+  const { error } = await supabase.from(TABLES.orders).insert(
+    createOrderInputToRow({
+      ...order,
+      items: attributed.items,
+      supplierIds,
+    })
+  );
   if (error) throw error;
 
   void import('@/lib/fcm/partner-alerts-server').then(

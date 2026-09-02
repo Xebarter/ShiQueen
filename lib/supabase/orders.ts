@@ -1,3 +1,4 @@
+import { resolveOrderSuppliers } from '@/lib/orders/resolve-suppliers';
 import { getSupabaseClient } from '@/lib/supabase/client';
 import { subscribeTable, type Unsubscribe } from '@/lib/supabase/realtime';
 import { stripUndefined } from '@/lib/supabase/sanitize';
@@ -55,33 +56,17 @@ function orderToRow(data: Partial<Order> & { id?: string }): Record<string, unkn
   });
 }
 
-async function collectSupplierIds(items: OrderItem[]): Promise<string[]> {
+async function collectSupplierAttribution(
+  items: OrderItem[]
+): Promise<{ items: OrderItem[]; supplierIds: string[] }> {
   const supabase = getSupabaseClient();
-  if (!supabase) return [];
-  const ids = new Set<string>();
-
-  await Promise.all(
-    items.map(async (item) => {
-      if (item.productId) {
-        const { data } = await supabase
-          .from(TABLES.products)
-          .select('supplier_id')
-          .eq('id', item.productId)
-          .maybeSingle();
-        if (data?.supplier_id) ids.add(String(data.supplier_id));
-      }
-      if (item.packageId) {
-        const { data } = await supabase
-          .from(TABLES.packages)
-          .select('supplier_id')
-          .eq('id', item.packageId)
-          .maybeSingle();
-        if (data?.supplier_id) ids.add(String(data.supplier_id));
-      }
-    })
-  );
-
-  return [...ids];
+  if (!supabase) {
+    const supplierIds = [
+      ...new Set(items.map((item) => item.supplierId).filter((id): id is string => Boolean(id))),
+    ];
+    return { items, supplierIds };
+  }
+  return resolveOrderSuppliers(supabase, items);
 }
 
 async function fetchOrders(): Promise<Order[]> {
@@ -123,13 +108,18 @@ export async function createOrder(order: Omit<Order, 'createdAt' | 'updatedAt'>)
   if (!supabase) throw new Error('Supabase not initialized');
 
   const { id, ...data } = order;
+  const attributed = await collectSupplierAttribution(data.items);
   const supplierIds =
-    data.supplierIds && data.supplierIds.length > 0
-      ? data.supplierIds
-      : await collectSupplierIds(data.items);
+    data.supplierIds && data.supplierIds.length > 0 ? data.supplierIds : attributed.supplierIds;
 
   const { error } = await supabase.from(TABLES.orders).insert(
-    orderToRow({ ...data, id, supplierIds, status: data.status ?? 'pending' })
+    orderToRow({
+      ...data,
+      id,
+      items: attributed.items,
+      supplierIds,
+      status: data.status ?? 'pending',
+    })
   );
   if (error) throw error;
 

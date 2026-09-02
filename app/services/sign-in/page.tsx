@@ -7,6 +7,7 @@ import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthDivider, AuthShell } from '@/components/auth/auth-shell';
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
+import { PhoneSignIn } from '@/components/auth/phone-sign-in';
 import { PasswordField } from '@/components/auth/password-field';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +28,7 @@ function ProviderSignInForm() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [phoneBusy, setPhoneBusy] = useState(false);
 
   const nextPath = () => {
     const next = searchParams.get('next') || '/services/dashboard/bookings';
@@ -68,13 +70,13 @@ function ProviderSignInForm() {
     }
   };
 
-  const busy = loading || googleLoading;
+  const busy = loading || googleLoading || phoneBusy;
 
   return (
     <AuthShell
       eyebrow="Services partner"
       heading="Welcome back"
-      subheading="Sign in to manage bookings, listings, and your services dashboard."
+      subheading="Sign in with your phone to manage bookings, listings, and your services dashboard."
       footer={
         canShowProviderApplications(flags) ? (
         <p className="text-center text-sm text-muted-foreground">
@@ -90,6 +92,15 @@ function ProviderSignInForm() {
       }
     >
       <div className="space-y-5">
+        <PhoneSignIn
+          disabled={loading || googleLoading}
+          onBusyChange={setPhoneBusy}
+          onSuccess={async ({ created }) => {
+            toast.success(created ? 'Account created — complete your provider application' : 'Welcome back');
+            await finish();
+          }}
+        />
+        <AuthDivider />
         <GoogleSignInButton
           loading={googleLoading}
           disabled={busy}
@@ -106,7 +117,6 @@ function ProviderSignInForm() {
             }
           }}
         />
-        <AuthDivider />
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email" className="text-sm font-medium">
@@ -138,7 +148,8 @@ function ProviderSignInForm() {
           </div>
           <Button
             type="submit"
-            className="h-11 w-full rounded-xl text-sm font-semibold shadow-md shadow-primary/15"
+            className="h-11 w-full rounded-xl text-sm font-semibold"
+            variant="outline"
             disabled={busy}
           >
             {loading ? (

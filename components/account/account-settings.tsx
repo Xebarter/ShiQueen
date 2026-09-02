@@ -38,7 +38,7 @@ import type {
   UserProfile,
   UserSavedAddress,
 } from '@/lib/types/database';
-import { getDisplayName } from '@/lib/user-display';
+import { getAccountHandle, getDisplayName } from '@/lib/user-display';
 import { cn } from '@/lib/utils';
 
 type SettingsTab = 'profile' | 'address' | 'preferences' | 'security';
@@ -190,7 +190,12 @@ export function AccountSettings({
   const [tab, setTab] = useState<SettingsTab>('profile');
   const signInMethod = getSignInProvider(user);
   const isEmailAccount = signInMethod === 'Email';
-  const displayName = getDisplayName(profile?.displayName ?? user.displayName, user.email);
+  const displayName = getDisplayName(
+    profile?.displayName ?? user.displayName,
+    user.email,
+    profile?.phone ?? user.phoneNumber
+  );
+  const accountHandle = getAccountHandle(user.email, profile?.phone ?? user.phoneNumber);
   const memberSince = profile?.createdAt
     ? profile.createdAt
     : user.metadata.creationTime
@@ -198,7 +203,7 @@ export function AccountSettings({
       : null;
 
   const [name, setName] = useState(profile?.displayName ?? user.displayName ?? '');
-  const [phone, setPhone] = useState(profile?.phone ?? '');
+  const [phone, setPhone] = useState(profile?.phone ?? user.phoneNumber ?? '');
   const [address, setAddress] = useState<UserSavedAddress>(
     profile?.defaultAddress ?? emptySavedAddress()
   );
@@ -216,12 +221,12 @@ export function AccountSettings({
 
   useEffect(() => {
     setName(profile?.displayName ?? user.displayName ?? '');
-    setPhone(profile?.phone ?? '');
+    setPhone(profile?.phone ?? user.phoneNumber ?? '');
     setAddress(
       profile?.defaultAddress ?? {
         ...emptySavedAddress(),
         fullName: profile?.displayName ?? user.displayName ?? '',
-        phone: profile?.phone ?? '',
+        phone: profile?.phone ?? user.phoneNumber ?? '',
       }
     );
     setPreferences(resolveUserPreferences(profile?.preferences));
@@ -350,7 +355,12 @@ export function AccountSettings({
 
           <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
-              <AccountAvatar email={user.email} variant="email-letter" size="lg" />
+              <AccountAvatar
+                email={user.email}
+                phone={profile?.phone ?? user.phoneNumber}
+                variant="email-letter"
+                size="lg"
+              />
               <div className="min-w-0">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
                   Settings
@@ -358,7 +368,7 @@ export function AccountSettings({
                 <h2 className="mt-1 truncate text-xl font-semibold tracking-tight sm:text-2xl">
                   {displayName}
                 </h2>
-                <p className="mt-0.5 truncate text-sm text-muted-foreground">{user.email}</p>
+                <p className="mt-0.5 truncate text-sm text-muted-foreground">{accountHandle}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-background/80 px-2.5 py-1 text-[11px] font-medium ring-1 ring-border/60">
                     <Shield className="h-3 w-3 text-primary" />
@@ -469,6 +479,7 @@ export function AccountSettings({
                 <Input
                   id="settings-email"
                   value={user.email ?? ''}
+                  placeholder={user.phoneNumber ? 'Signed in with phone' : undefined}
                   disabled
                   className={fieldClassName('opacity-70')}
                 />

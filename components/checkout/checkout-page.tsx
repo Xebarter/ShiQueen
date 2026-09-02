@@ -424,7 +424,7 @@ function EmptyCheckout() {
 
 export function CheckoutPage() {
   const { items, total, clearCart, itemCount } = useCart();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { products } = useProducts();
   const { packages } = useWholesale();
   const { activeListings } = useServices();
@@ -437,11 +437,22 @@ export function CheckoutPage() {
   const [payMode, setPayMode] = useState<GiftPayMode>('self');
   const [form, setForm] = useState({
     fullName: '',
-    phone: '',
+    phone: profile?.phone || user?.phoneNumber || '',
     email: user?.email || '',
     address: '',
     city: 'Kampala',
   });
+
+  useEffect(() => {
+    const nextPhone = profile?.phone || user?.phoneNumber || '';
+    const nextEmail = user?.email || '';
+    if (!nextPhone && !nextEmail) return;
+    setForm((prev) => ({
+      ...prev,
+      phone: prev.phone || nextPhone,
+      email: prev.email || nextEmail,
+    }));
+  }, [profile?.phone, user?.phoneNumber, user?.email]);
 
   useEffect(() => {
     if (enabledMethods.length === 0) return;

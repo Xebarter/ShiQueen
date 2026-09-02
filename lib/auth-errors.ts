@@ -7,6 +7,23 @@ export function getAuthErrorMessage(error: unknown): string {
   switch (code) {
     case 'auth/invalid-email':
       return 'Please enter a valid email address.';
+    case 'auth/invalid-phone-number':
+    case 'auth/missing-phone-number':
+      return 'Enter a valid Uganda mobile number, like 07XX XXX XXX.';
+    case 'auth/invalid-verification-code':
+    case 'auth/invalid-verification-id':
+    case 'auth/missing-verification-code':
+      return 'That code is incorrect. Check the SMS and try again.';
+    case 'auth/code-expired':
+    case 'auth/session-expired':
+      return 'That code expired. Request a new one.';
+    case 'auth/captcha-check-failed':
+    case 'auth/invalid-app-credential':
+      return 'Phone verification could not start. Refresh the page and try again.';
+    case 'auth/quota-exceeded':
+      return 'SMS limit reached. Try again later or use another sign-in method.';
+    case 'auth/operation-not-allowed':
+      return 'Phone sign-in is not enabled yet. Try Google or email.';
     case 'auth/user-disabled':
       return 'This account has been disabled. Contact support for help.';
     case 'invalid_credentials':

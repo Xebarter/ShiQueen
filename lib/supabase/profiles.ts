@@ -99,13 +99,14 @@ function buildOfflineProfile(
   email: string,
   displayName?: string,
   photoURL?: string,
-  extras?: Pick<UserProfile, 'role' | 'supplierId' | 'providerId'>
+  extras?: Pick<UserProfile, 'role' | 'supplierId' | 'providerId' | 'phone'>
 ): UserProfile {
   return {
     uid,
     email,
     displayName,
     photoURL,
+    phone: extras?.phone,
     role: extras?.role ?? resolveUserRole(email),
     supplierId: extras?.supplierId,
     providerId: extras?.providerId,
@@ -143,7 +144,7 @@ export async function createUserProfile(
   uid: string,
   email: string,
   displayName?: string,
-  options?: { role?: UserRole; supplierId?: string; providerId?: string; photoURL?: string }
+  options?: { role?: UserRole; supplierId?: string; providerId?: string; photoURL?: string; phone?: string }
 ): Promise<UserProfile> {
   const supabase = getSupabaseClient();
   if (!supabase) throw new Error('Supabase not initialized');
@@ -156,6 +157,7 @@ export async function createUserProfile(
     uid,
     email,
     displayName,
+    phone: options?.phone,
     photoURL: options?.photoURL,
     role: requestedRole,
     supplierId: options?.supplierId,
@@ -166,6 +168,7 @@ export async function createUserProfile(
     id: profile.uid,
     email: profile.email,
     display_name: profile.displayName ?? null,
+    phone: profile.phone ?? null,
     photo_url: profile.photoURL ?? null,
     role: insertRole,
     supplier_id: profile.supplierId ?? null,
@@ -193,7 +196,8 @@ export async function ensureUserProfile(
   uid: string,
   email: string,
   displayName?: string,
-  photoURL?: string
+  photoURL?: string,
+  phone?: string
 ): Promise<UserProfile> {
   try {
     const existing = await getUserProfile(uid);
@@ -201,17 +205,21 @@ export async function ensureUserProfile(
     if (existing) {
       const incomingName = displayName?.trim() || '';
       const incomingPhoto = photoURL?.trim() || '';
+      const incomingPhone = phone?.trim() || '';
       const nextDisplayName = incomingName || existing.displayName;
       const nextPhotoURL = incomingPhoto || existing.photoURL;
+      const nextPhone = incomingPhone || existing.phone;
       const shouldSyncProfile =
         (Boolean(incomingName) && incomingName !== (existing.displayName ?? '')) ||
-        (Boolean(incomingPhoto) && incomingPhoto !== (existing.photoURL ?? ''));
+        (Boolean(incomingPhoto) && incomingPhoto !== (existing.photoURL ?? '')) ||
+        (Boolean(incomingPhone) && incomingPhone !== (existing.phone ?? ''));
 
       if (shouldSyncProfile) {
         try {
           await updateUserProfile(uid, {
             ...(incomingName ? { displayName: incomingName } : {}),
             ...(incomingPhoto ? { photoURL: incomingPhoto } : {}),
+            ...(incomingPhone ? { phone: incomingPhone } : {}),
           });
         } catch (error) {
           if (!isSupabaseOfflineError(error)) throw error;
@@ -225,6 +233,7 @@ export async function ensureUserProfile(
             ...existing,
             displayName: nextDisplayName,
             photoURL: nextPhotoURL,
+            phone: nextPhone,
             role: 'admin',
             updatedAt: new Date(),
           };
@@ -234,6 +243,7 @@ export async function ensureUserProfile(
               ...existing,
               displayName: nextDisplayName,
               photoURL: nextPhotoURL,
+              phone: nextPhone,
               role: 'admin',
               updatedAt: new Date(),
             };
@@ -246,15 +256,16 @@ export async function ensureUserProfile(
         ...existing,
         displayName: nextDisplayName,
         photoURL: nextPhotoURL,
+        phone: nextPhone,
         updatedAt: shouldSyncProfile ? new Date() : existing.updatedAt,
       };
     }
 
-    return createUserProfile(uid, email, displayName, { photoURL });
+    return createUserProfile(uid, email, displayName, { photoURL, phone });
   } catch (error) {
     if (isSupabaseOfflineError(error)) {
-      console.warn('[ShiQueen] Supabase offline — using local profile for', email);
-      return buildOfflineProfile(uid, email, displayName, photoURL);
+      console.warn('[ShiQueen] Supabase offline — using local profile for', email || phone);
+      return buildOfflineProfile(uid, email, displayName, photoURL, { phone });
     }
     throw error;
   }

@@ -46,7 +46,7 @@ import { getStoredWishlist, removeFromStoredWishlist, getDiscountPercent } from 
 import { useProducts } from '@/lib/products-context';
 import { Order, type OrderItem, Product } from '@/lib/types/database';
 import { formatUGX } from '@/lib/wholesale-data';
-import { getDisplayName } from '@/lib/user-display';
+import { getAccountHandle, getDisplayName } from '@/lib/user-display';
 import { resolveListingImage } from '@/lib/services-utils';
 import { ShareProductButton } from '@/components/shared/share-button';
 import { cn } from '@/lib/utils';
@@ -547,11 +547,18 @@ export function AccountDashboard() {
     orderId: string;
   } | null>(null);
 
-  const displayName = getDisplayName(profile?.displayName ?? user?.displayName, user?.email);
+  const displayName = getDisplayName(
+    profile?.displayName ?? user?.displayName,
+    user?.email,
+    profile?.phone ?? user?.phoneNumber
+  );
+  const accountHandle = getAccountHandle(user?.email, profile?.phone ?? user?.phoneNumber);
   const memberSince = profile?.createdAt ?? (user?.metadata.creationTime ? new Date(user.metadata.creationTime) : null);
-  const signInMethod = user?.providerData.some((provider) => provider.providerId === 'google.com')
-    ? 'Google'
-    : 'Email & password';
+  const signInMethod = user?.providerData.some((provider) => provider.providerId === 'phone')
+    ? 'Phone'
+    : user?.providerData.some((provider) => provider.providerId === 'google.com')
+      ? 'Google'
+      : 'Email & password';
 
   const wishlistProducts = useMemo(
     () =>
@@ -696,7 +703,7 @@ export function AccountDashboard() {
             activeSection={activeSection}
             onNavigate={navigateSection}
             displayName={displayName}
-            email={user.email}
+            email={accountHandle}
             signingOut={signingOut}
             onLogout={handleLogout}
           />
@@ -707,7 +714,7 @@ export function AccountDashboard() {
               activeSection={activeSection}
               onNavigate={navigateSection}
               displayName={displayName}
-              email={user.email}
+              email={accountHandle}
               memberSinceLabel={memberSinceLabel}
               signingOut={signingOut}
               onLogout={handleLogout}

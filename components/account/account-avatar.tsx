@@ -10,6 +10,7 @@ import {
 type AccountAvatarProps = {
   displayName?: string | null;
   email?: string | null;
+  phone?: string | null;
   photoURL?: string | null;
   size?: 'sm' | 'md' | 'lg';
   /** Single email letter with a unique bright color per letter (Google-style). */
@@ -26,12 +27,13 @@ const SIZES = {
 export function AccountAvatar({
   displayName,
   email,
+  phone,
   photoURL,
   size = 'sm',
   variant = 'default',
   className,
 }: AccountAvatarProps) {
-  const name = getDisplayName(displayName, email);
+  const name = getDisplayName(displayName, email, phone);
   const { size: sizeClass, text, image } = SIZES[size];
 
   if (photoURL) {
@@ -48,7 +50,7 @@ export function AccountAvatar({
   }
 
   if (variant === 'email-letter') {
-    const initial = getEmailInitial(email);
+    const initial = getEmailInitial(email, phone);
     const colors = getAvatarColorsForLetter(initial);
 
     return (

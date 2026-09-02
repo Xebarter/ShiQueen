@@ -44,6 +44,7 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithGoogleCredential: (idToken: string) => Promise<void>;
+  finishPhoneSignIn: (user: User, isNewUser?: boolean) => Promise<{ created: boolean }>;
   sendPasswordReset: (email: string) => Promise<void>;
   resendVerificationEmail: () => Promise<void>;
   logout: () => Promise<void>;
@@ -52,17 +53,23 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function hasAuthIdentity(user: User | null | undefined): boolean {
+  return Boolean(user?.email || user?.phoneNumber);
+}
+
 function buildAuthFallbackProfile(
   uid: string,
   email: string,
   displayName?: string,
-  photoURL?: string
+  photoURL?: string,
+  phone?: string
 ): UserProfile {
   return {
     uid,
     email,
     displayName,
     photoURL,
+    phone,
     role: resolveUserRole(email),
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -70,20 +77,24 @@ function buildAuthFallbackProfile(
 }
 
 async function loadUserProfile(currentUser: User): Promise<UserProfile> {
+  const email = currentUser.email ?? '';
+  const phone = currentUser.phoneNumber ?? undefined;
   try {
     return await ensureUserProfile(
       currentUser.uid,
-      currentUser.email!,
+      email,
       currentUser.displayName ?? undefined,
-      currentUser.photoURL ?? undefined
+      currentUser.photoURL ?? undefined,
+      phone
     );
   } catch (error) {
     console.error('Failed to load user profile:', error);
     return buildAuthFallbackProfile(
       currentUser.uid,
-      currentUser.email!,
+      email,
       currentUser.displayName ?? undefined,
-      currentUser.photoURL ?? undefined
+      currentUser.photoURL ?? undefined,
+      phone
     );
   }
 }
@@ -151,6 +162,7 @@ async function ensureSupabaseAuthClaim(user: User): Promise<void> {
 /** Stamp the auth claim, then restore role from the previous Firebase uid (same email). */
 async function syncFirebaseUserWithSupabase(user: User): Promise<void> {
   await ensureSupabaseAuthClaim(user);
+  if (!user.email) return;
   try {
     const token = await user.getIdToken();
     await fetch('/api/auth/relink-profile', {
@@ -200,7 +212,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const currentUser = auth.currentUser;
       setUser(currentUser);
 
-      if (currentUser?.email) {
+      if (hasAuthIdentity(currentUser)) {
         await syncFirebaseUserWithSupabase(currentUser);
         const userProfile = await loadUserProfile(currentUser);
         if (mounted) setProfile(userProfile);
@@ -217,7 +229,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const currentUser = firebaseUser ?? auth.currentUser;
       setUser(currentUser);
 
-      if (currentUser?.email) {
+      if (hasAuthIdentity(currentUser)) {
         await syncFirebaseUserWithSupabase(currentUser);
         const userProfile = await loadUserProfile(currentUser);
         if (mounted) setProfile(userProfile);
@@ -344,6 +356,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const finishPhoneSignIn = async (
+    phoneUser: User,
+    isNewUser?: boolean
+  ): Promise<{ created: boolean }> => {
+    await syncFirebaseUserWithSupabase(phoneUser);
+    await ensureUserProfile(
+      phoneUser.uid,
+      phoneUser.email ?? '',
+      phoneUser.displayName ?? undefined,
+      phoneUser.photoURL ?? undefined,
+      phoneUser.phoneNumber ?? undefined
+    );
+    return { created: Boolean(isNewUser) };
+  };
+
   const sendPasswordReset = async (email: string) => {
     const auth = getFirebaseAuth();
     if (!auth) throw new Error('Firebase Auth not initialized');
@@ -360,7 +387,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshProfile = async () => {
     const auth = getFirebaseAuth();
     const currentUser = auth?.currentUser;
-    if (!auth || !currentUser?.email) {
+    if (!auth || !hasAuthIdentity(currentUser)) {
       setProfile(null);
       return;
     }
@@ -401,6 +428,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signUp,
         signInWithGoogle,
         signInWithGoogleCredential,
+        finishPhoneSignIn,
         sendPasswordReset,
         resendVerificationEmail,
         logout,
