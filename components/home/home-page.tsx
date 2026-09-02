@@ -15,9 +15,11 @@ import { HeroMarketingSlot } from '@/components/home/hero-marketing-slot';
 import { ShopCategoryStrip } from '@/components/shop/shop-category-strip';
 import { CatalogBottomCta } from '@/components/shop/catalog-bottom-cta';
 import { SEO_HOME_TITLE } from '@/lib/seo/site';
+import { useFeatureFlags } from '@/lib/feature-flags-context';
 
 export function HomePage({ children }: { children?: ReactNode }) {
   const { products, loading } = usePublicProducts();
+  const { flags } = useFeatureFlags();
   const {
     sections,
     wishlistIds,
@@ -71,10 +73,14 @@ export function HomePage({ children }: { children?: ReactNode }) {
                 </h1>
                 {children}
                 <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
-                  <Link href="/packages" className="font-medium text-primary hover:underline">
-                    Bundles
-                  </Link>
-                  <span aria-hidden>·</span>
+                  {flags.packages ? (
+                    <>
+                      <Link href="/packages" className="font-medium text-primary hover:underline">
+                        Bundles
+                      </Link>
+                      <span aria-hidden>·</span>
+                    </>
+                  ) : null}
                   <Link href="/shop" className="hover:text-foreground">
                     Shop all
                   </Link>
@@ -102,7 +108,7 @@ export function HomePage({ children }: { children?: ReactNode }) {
             onQuickView={setQuickViewProduct}
             viewedIds={viewedIds}
             showCategoryShowcases
-            afterFlashDeals={<PackageSpotlightSection context="home" />}
+            afterFlashDeals={flags.packages ? <PackageSpotlightSection context="home" /> : undefined}
           />
         ) : (
           <section className="py-20 text-center">

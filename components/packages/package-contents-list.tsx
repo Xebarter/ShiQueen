@@ -17,6 +17,7 @@ import {
   isCustomPackageItem,
   isServicePackageItem,
 } from '@/lib/package-utils';
+import { useFeature } from '@/lib/feature-flags-context';
 
 interface PackageContentsListProps {
   pkg: Package;
@@ -35,6 +36,7 @@ export function PackageContentsList({
   services = [],
   showLinks = true,
 }: PackageContentsListProps) {
+  const servicesEnabled = useFeature('services');
   return (
     <div className="space-y-3">
       {pkg.items.map((item, index) => {
@@ -79,7 +81,7 @@ export function PackageContentsList({
 
         const href =
           showLinks && !isCustom
-            ? isService && service?.slug
+            ? isService && service?.slug && servicesEnabled
               ? `/services/${service.slug}`
               : !isService && products.some((p) => p.id === item.productId)
                 ? `/products/${item.productId}`

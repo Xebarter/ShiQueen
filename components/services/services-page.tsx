@@ -17,6 +17,8 @@ import { useServices } from '@/lib/services-context';
 import { useServicesSearch } from '@/lib/hooks/use-services-search';
 import { useTrackSearchQuery } from '@/lib/hooks/use-track-search-query';
 import { useHistoryOverlay } from '@/lib/hooks/use-history-overlay';
+import { useFeatureFlags } from '@/lib/feature-flags-context';
+import { canShowProviderApplications } from '@/lib/feature-flags';
 import {
   getFeaturedServices,
   getPopularServices,
@@ -26,6 +28,7 @@ import type { ServiceListing } from '@/lib/types/services';
 
 export function ServicesPage() {
   const { activeCategories, activeListings, activeProviders, loading } = useServices();
+  const { flags } = useFeatureFlags();
   const search = useServicesSearch();
   useTrackSearchQuery(search.query, 'services');
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -130,12 +133,14 @@ export function ServicesPage() {
 
         <section className="border-t border-border bg-secondary/30 py-8 md:py-10">
           <div className="mx-auto flex max-w-[90rem] flex-col gap-3 px-3 sm:flex-row sm:px-4 lg:px-5">
-            <Link href="/services/sign-up" className="flex-1">
-              <Button size="lg" className="w-full gap-2">
-                List services
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
+            {canShowProviderApplications(flags) ? (
+              <Link href="/services/sign-up" className="flex-1">
+                <Button size="lg" className="w-full gap-2">
+                  List services
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            ) : null}
             <Link href="/shop" className="flex-1">
               <Button size="lg" variant="outline" className="w-full gap-2">
                 Shop

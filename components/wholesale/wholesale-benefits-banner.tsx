@@ -8,6 +8,7 @@ import { getWholesaleUnitPrice } from '@/lib/wholesale-catalog';
 import { formatUGX } from '@/lib/wholesale-data';
 import type { Product } from '@/lib/types/database';
 import { cn } from '@/lib/utils';
+import { useFeature } from '@/lib/feature-flags-context';
 
 type WholesaleHeroProps = {
   catalogSize: number;
@@ -73,6 +74,7 @@ export function WholesaleHero({
   search,
   className,
 }: WholesaleHeroProps) {
+  const packagesEnabled = useFeature('packages');
   const tiles = featured.filter(Boolean).slice(0, 4);
 
   return (
@@ -116,10 +118,14 @@ export function WholesaleHero({
               {catalogSize} products · volume rates · free shipping
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-              <Link href="/packages" className="font-medium text-primary hover:underline">
-                Bundles
-              </Link>
-              <span aria-hidden>·</span>
+              {packagesEnabled ? (
+                <>
+                  <Link href="/packages" className="font-medium text-primary hover:underline">
+                    Bundles
+                  </Link>
+                  <span aria-hidden>·</span>
+                </>
+              ) : null}
               <Link href="/wholesale/account" className="hover:text-foreground">
                 Wholesale account
               </Link>

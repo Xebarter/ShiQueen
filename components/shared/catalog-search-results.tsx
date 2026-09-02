@@ -22,6 +22,7 @@ import {
   resolvePackageSavings,
 } from '@/lib/package-utils';
 import { trackPackageView } from '@/lib/package-merchandising';
+import { useFeatureFlags } from '@/lib/feature-flags-context';
 
 interface CatalogSearchResultsProps {
   hits: CatalogSearchHit[];
@@ -45,6 +46,7 @@ export function CatalogSearchResults({
   const { activeListings, activeProviders } = useServices();
   const { setSelectedPackage } = useWholesale();
   const { addItem } = useCart();
+  const { flags } = useFeatureFlags();
   const [quickViewPkg, setQuickViewPkg] = useState<Package | null>(null);
 
   const activePackages = useMemo(() => packages, [packages]);
@@ -56,6 +58,16 @@ export function CatalogSearchResults({
   const providerById = useMemo(
     () => new Map(activeProviders.map((p) => [p.id, p])),
     [activeProviders]
+  );
+
+  const visibleHits = useMemo(
+    () =>
+      hits.filter((hit) => {
+        if (hit.type === 'package') return flags.packages;
+        if (hit.type === 'service') return flags.services;
+        return true;
+      }),
+    [flags.packages, flags.services, hits]
   );
 
   const handleAddPackageToCart = useCallback(
@@ -91,12 +103,14 @@ export function CatalogSearchResults({
     );
   }
 
-  if (hits.length === 0) {
+  if (visibleHits.length === 0) {
     return (
       emptyMessage ?? (
         <div className="text-center py-16">
           <p className="text-muted-foreground">
-            No products, bundles, or services match your search
+            {flags.packages || flags.services
+              ? 'No products, bundles, or services match your search'
+              : 'No products match your search'}
           </p>
         </div>
       )
@@ -106,7 +120,7 @@ export function CatalogSearchResults({
   return (
     <>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 md:gap-3">
-        {hits.map((hit, index) => {
+        {visibleHits.map((hit, index) => {
           if (hit.type === 'product') {
             return (
               <HomeProductCard

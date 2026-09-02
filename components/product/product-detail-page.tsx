@@ -24,6 +24,7 @@ import { ProductImage, isRemoteProductImage } from '@/components/product-image';
 import { ShareProductButton } from '@/components/shared/share-button';
 import { useCart } from '@/lib/cart-context';
 import { usePublicProducts } from '@/lib/hooks/use-public-catalog';
+import { useFeature } from '@/lib/feature-flags-context';
 import { formatUGX, getProductWholesaleTiers } from '@/lib/wholesale-data';
 import { cn } from '@/lib/utils';
 import { shopCategoryPath } from '@/lib/seo/shop-categories';
@@ -90,6 +91,7 @@ export function ProductDetailPage() {
   const id = params.id as string;
   const goBack = useSmartBack('/shop');
   const { getProductById, loading } = usePublicProducts();
+  const wholesaleEnabled = useFeature('wholesale');
   const product = getProductById(id);
 
   const [quantity, setQuantity] = useState(1);
@@ -310,7 +312,7 @@ export function ProductDetailPage() {
                 {product.description}
               </p>
 
-              {product.isWholesaleEnabled && (
+              {wholesaleEnabled && product.isWholesaleEnabled && (
                 <div className="mt-6 rounded-xl border border-primary/20 bg-primary/5 p-4 sm:p-6">
                   <h3 className="mb-3 text-sm font-semibold text-primary sm:mb-4 sm:text-base">
                     Wholesale pricing available

@@ -29,6 +29,9 @@ import {
   isPackageCartItem,
   resolvePackageSavings,
 } from '@/lib/package-utils';
+import { useCommerceSettings } from '@/lib/commerce-settings-context';
+import type { OrderQuote } from '@/lib/commerce-settings';
+import { OrderQuoteLines } from '@/components/checkout/order-quote-lines';
 import { cn } from '@/lib/utils';
 
 function cartItemKey(item: CartItem): string {
@@ -271,12 +274,12 @@ function CartItemCard({
 }
 
 function OrderSummaryCard({
-  total,
+  quote,
   itemCount,
   wholesaleSavings,
   className,
 }: {
-  total: number;
+  quote: OrderQuote;
   itemCount: number;
   wholesaleSavings: number;
   className?: string;
@@ -296,33 +299,21 @@ function OrderSummaryCard({
           <div>
             <h2 className="text-lg font-medium tracking-tight">Order summary</h2>
             <p className="text-sm text-muted-foreground">
-              {itemCount} {itemCount === 1 ? 'item' : 'items'} · Free shipping
+              {itemCount} {itemCount === 1 ? 'item' : 'items'}
+              {quote.delivery.free ? ' · Free shipping' : ''}
             </p>
           </div>
         </div>
       </div>
 
       <div className="space-y-3 px-5 py-5 text-base sm:px-6">
-        <div className="flex justify-between text-muted-foreground">
-          <span>Subtotal</span>
-          <span className="font-medium text-foreground">{formatUGX(total)}</span>
-        </div>
-        {wholesaleSavings > 0 && (
-          <div className="flex justify-between text-accent">
-            <span>Wholesale savings</span>
-            <span className="font-medium">{formatUGX(wholesaleSavings)}</span>
-          </div>
-        )}
-        <div className="flex justify-between text-muted-foreground">
-          <span>Shipping</span>
-          <span className="font-medium text-emerald-600">Free</span>
-        </div>
+        <OrderQuoteLines quote={quote} wholesaleSavings={wholesaleSavings} shippingLabel="Shipping" />
       </div>
 
       <div className="mx-5 mb-5 rounded-2xl bg-primary px-5 py-4 text-primary-foreground sm:mx-6 sm:mb-6">
         <div className="flex items-center justify-between">
           <span className="text-base font-medium opacity-90">Total</span>
-          <span className="text-2xl font-semibold tracking-tight">{formatUGX(total)}</span>
+          <span className="text-2xl font-semibold tracking-tight">{formatUGX(quote.total)}</span>
         </div>
       </div>
 
@@ -425,11 +416,13 @@ export function CartPage() {
   const { items, removeItem, updateQuantity, total, clearCart, itemCount } = useCart();
   const { getProductById, products } = useProducts();
   const { packages } = useWholesale();
+  const { quoteTotals } = useCommerceSettings();
   const retailPrices = useMemo(
     () => getRetailPricesMap(productsToCatalog(products)),
     [products]
   );
   const wholesaleSavings = getWholesaleSavings(items);
+  const quote = quoteTotals(total);
   const packageItems = useMemo(
     () => items.filter((item) => isPackageCartItem(item)),
     [items]
@@ -555,7 +548,7 @@ export function CartPage() {
 
             <aside className="lg:sticky lg:top-24 lg:self-start">
               <OrderSummaryCard
-                total={total}
+                quote={quote}
                 itemCount={itemCount}
                 wholesaleSavings={wholesaleSavings}
               />
@@ -568,9 +561,11 @@ export function CartPage() {
         <div className="mb-3 flex items-center justify-between">
           <div>
             <p className="text-xs text-muted-foreground">Total · {itemCount} items</p>
-            <p className="text-xl font-semibold tracking-tight text-primary">{formatUGX(total)}</p>
+            <p className="text-xl font-semibold tracking-tight text-primary">{formatUGX(quote.total)}</p>
           </div>
-          <p className="text-xs font-medium text-emerald-600">Free shipping</p>
+          <p className="text-xs font-medium text-emerald-600">
+            {quote.delivery.free ? 'Free shipping' : formatUGX(quote.shipping)}
+          </p>
         </div>
         <Link href="/checkout" className="block">
           <Button className="h-12 w-full rounded-xl text-base font-semibold shadow-lg shadow-primary/20">

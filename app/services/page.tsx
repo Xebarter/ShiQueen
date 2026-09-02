@@ -4,10 +4,14 @@ import { ServicesPage } from '@/components/services/services-page';
 import { NoscriptPageSummary } from '@/components/seo/noscript-page-summary';
 import { breadcrumbJsonLd, JsonLd } from '@/lib/seo/json-ld';
 import { PAGE_SEO } from '@/lib/seo/site';
+import { assertPublicFeature } from '@/lib/supabase/feature-flags-server';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = PAGE_SEO.services;
 
-export default function ServicesRoute() {
+export default async function ServicesRoute() {
+  await assertPublicFeature('services');
   return (
     <>
       <JsonLd

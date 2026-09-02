@@ -1,25 +1,28 @@
-import { PUBLIC_CRAWL_LINKS } from '@/lib/seo/public-nav';
+import { getPublicCrawlLinks } from '@/lib/seo/public-nav';
+import { getFeatureFlags } from '@/lib/supabase/feature-flags-server';
 
 type Link = { href: string; label: string };
 
-export function NoscriptPageSummary({
+export async function NoscriptPageSummary({
   title,
   description,
-  links = [...PUBLIC_CRAWL_LINKS],
+  links,
 }: {
   title: string;
   description: string;
   links?: readonly Link[];
 }) {
+  const resolvedLinks = links ?? getPublicCrawlLinks(await getFeatureFlags());
+
   return (
     <noscript>
       <article>
         <h1>{title}</h1>
         <p>{description}</p>
-        {links.length > 0 ? (
+        {resolvedLinks.length > 0 ? (
           <nav aria-label="ShiQueen">
             <ul>
-              {links.map((link) => (
+              {resolvedLinks.map((link) => (
                 <li key={link.href}>
                   <a href={link.href}>{link.label}</a>
                 </li>
@@ -31,3 +34,4 @@ export function NoscriptPageSummary({
     </noscript>
   );
 }
+

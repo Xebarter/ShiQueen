@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth-context';
+import { useFeature } from '@/lib/feature-flags-context';
 import { getAuthErrorMessage } from '@/lib/auth-errors';
 import { isSupplierProfile } from '@/lib/auth-redirect';
 
@@ -27,6 +28,7 @@ function SupplierSignInForm() {
     loading: authLoading,
     isSupplier,
   } = useAuth();
+  const supplierApplicationsEnabled = useFeature('supplierApplications');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -94,6 +96,7 @@ function SupplierSignInForm() {
       heading="Welcome back"
       subheading="Sign in to manage orders, catalog, and your supplier dashboard."
       footer={
+        supplierApplicationsEnabled ? (
         <p className="text-center text-sm text-muted-foreground">
           New supplier?{' '}
           <Link
@@ -103,6 +106,7 @@ function SupplierSignInForm() {
             Apply here
           </Link>
         </p>
+        ) : undefined
       }
     >
       <div className="space-y-5">

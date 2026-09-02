@@ -18,6 +18,7 @@ import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useFeature } from '@/lib/feature-flags-context';
 import { Label } from '@/components/ui/label';
 import {
   CONTACT_PHONE_DISPLAY,
@@ -63,6 +64,7 @@ const inputClass =
   'h-11 rounded-xl border-border/70 bg-muted/30 transition focus:border-primary/40 focus:bg-background focus:ring-2 focus:ring-primary/10';
 
 export function ContactPage() {
+  const servicesEnabled = useFeature('services');
   const [loading, setLoading] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [formData, setFormData] = useState({
@@ -222,12 +224,14 @@ export function ContactPage() {
                   <span className="font-medium text-foreground">Closed</span>
                 </li>
               </ul>
-              <p className="mt-4 text-xs text-muted-foreground">
-                Provider listings?{' '}
-                <Link href="/services" className="font-medium text-primary hover:underline">
-                  Browse services
-                </Link>
-              </p>
+              {servicesEnabled ? (
+                <p className="mt-4 text-xs text-muted-foreground">
+                  Provider listings?{' '}
+                  <Link href="/services" className="font-medium text-primary hover:underline">
+                    Browse services
+                  </Link>
+                </p>
+              ) : null}
             </div>
           </aside>
 

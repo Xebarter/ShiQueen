@@ -1,10 +1,14 @@
 import { BulkOrdersPage } from '@/components/wholesale/bulk-orders-page';
 import { NoscriptPageSummary } from '@/components/seo/noscript-page-summary';
 import { PAGE_SEO } from '@/lib/seo/site';
+import { assertPublicFeature } from '@/lib/supabase/feature-flags-server';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = PAGE_SEO.wholesale;
 
-export default function WholesalePage() {
+export default async function WholesalePage() {
+  await assertPublicFeature('wholesale');
   return (
     <>
       <BulkOrdersPage />

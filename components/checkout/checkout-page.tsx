@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -31,7 +31,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useProducts } from '@/lib/products-context';
 import { useWholesale } from '@/lib/wholesale-context';
 import { useServices } from '@/lib/services-context';
-import { createOrder, generateOrderId } from '@/lib/firebase/orders';
+import { createOrder } from '@/lib/firebase/orders';
 import { expandPackageCartItems, isPackageCartItem } from '@/lib/package-utils';
 import { SendPaymentLinkCard } from '@/components/checkout/send-payment-link-card';
 import { GiftPayChoice, type GiftPayMode } from '@/components/payments/gift-pay-choice';
@@ -39,6 +39,9 @@ import { getWholesaleSavings } from '@/lib/wholesale-cart';
 import { formatUGX } from '@/lib/wholesale-data';
 import type { PaymentMethod, ShippingAddress } from '@/lib/types/database';
 import { PAYMENT_METHOD_LABELS } from '@/lib/payments/labels';
+import { useCommerceSettings } from '@/lib/commerce-settings-context';
+import type { OrderQuote } from '@/lib/commerce-settings';
+import { OrderQuoteLines } from '@/components/checkout/order-quote-lines';
 import { cn } from '@/lib/utils';
 
 const PAYMENT_OPTIONS: {
@@ -66,12 +69,6 @@ const PAYMENT_OPTIONS: {
     icon: Wallet,
   },
 ];
-
-const TRUST_BADGES = [
-  { icon: ShieldCheck, label: 'Secure checkout' },
-  { icon: Truck, label: 'Free delivery' },
-  { icon: Lock, label: 'Data protected' },
-] as const;
 
 const fieldClass =
   'h-12 rounded-xl border-border/80 bg-background px-4 text-base shadow-sm transition-all placeholder:text-muted-foreground/70 focus-visible:border-primary/40 focus-visible:ring-4 focus-visible:ring-primary/10 md:text-base';
@@ -261,24 +258,24 @@ function CheckoutItemRow({ item }: { item: CartItem }) {
 
 function OrderSummaryPanel({
   items,
-  total,
-  orderTotal,
+  quote,
   itemCount,
   wholesaleSavings,
   loading,
   submitLabel,
   paymentMethod,
   payMode,
+  canPay,
 }: {
   items: CartItem[];
-  total: number;
-  orderTotal: number;
+  quote: OrderQuote;
   itemCount: number;
   wholesaleSavings: number;
   loading: boolean;
   submitLabel: string;
   paymentMethod: PaymentMethod;
   payMode: GiftPayMode;
+  canPay: boolean;
 }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-lg shadow-primary/5 ring-1 ring-primary/5">
@@ -314,23 +311,7 @@ function OrderSummaryPanel({
       </ul>
 
       <div className="space-y-2.5 border-t border-border/50 px-5 py-4 text-sm sm:px-6">
-        <div className="flex justify-between text-muted-foreground">
-          <span>Subtotal</span>
-          <span className="font-medium text-foreground">{formatUGX(total)}</span>
-        </div>
-        {wholesaleSavings > 0 && (
-          <div className="flex justify-between text-accent">
-            <span>Wholesale savings</span>
-            <span className="font-medium">−{formatUGX(wholesaleSavings)}</span>
-          </div>
-        )}
-        <div className="flex justify-between text-muted-foreground">
-          <span>Delivery</span>
-          <span className="inline-flex items-center gap-1 font-medium text-emerald-600">
-            <Truck className="h-3.5 w-3.5" />
-            Free
-          </span>
-        </div>
+        <OrderQuoteLines quote={quote} wholesaleSavings={wholesaleSavings} />
       </div>
 
       <div className="mx-5 mb-4 rounded-2xl bg-gradient-to-r from-primary to-primary/90 px-5 py-4 text-primary-foreground shadow-inner sm:mx-6">
@@ -343,7 +324,7 @@ function OrderSummaryPanel({
                 : PAYMENT_METHOD_LABELS[paymentMethod]}
             </p>
           </div>
-          <p className="text-2xl font-bold tracking-tight tabular-nums">{formatUGX(orderTotal)}</p>
+          <p className="text-2xl font-bold tracking-tight tabular-nums">{formatUGX(quote.total)}</p>
         </div>
       </div>
 
@@ -359,7 +340,7 @@ function OrderSummaryPanel({
               type="submit"
               form="checkout-form"
               className="h-12 w-full rounded-xl text-base font-semibold shadow-lg shadow-primary/25 transition hover:shadow-xl hover:shadow-primary/30"
-              disabled={loading}
+              disabled={loading || !canPay}
               size="lg"
             >
               {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
@@ -447,9 +428,12 @@ export function CheckoutPage() {
   const { products } = useProducts();
   const { packages } = useWholesale();
   const { activeListings } = useServices();
+  const { quoteTotals, enabledMethods } = useCommerceSettings();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('mobile_money');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
+    enabledMethods[0] ?? 'mobile_money'
+  );
   const [payMode, setPayMode] = useState<GiftPayMode>('self');
   const [form, setForm] = useState({
     fullName: '',
@@ -459,16 +443,45 @@ export function CheckoutPage() {
     city: 'Kampala',
   });
 
+  useEffect(() => {
+    if (enabledMethods.length === 0) return;
+    if (!enabledMethods.includes(paymentMethod)) {
+      setPaymentMethod(enabledMethods[0]);
+    }
+  }, [enabledMethods, paymentMethod]);
+
+  useEffect(() => {
+    const giftOk = enabledMethods.some((method) => method === 'mobile_money' || method === 'card');
+    if (!giftOk && payMode === 'gift') {
+      setPayMode('self');
+    }
+  }, [enabledMethods, payMode]);
+
   if (items.length === 0) {
     return <EmptyCheckout />;
   }
 
-  const orderTotal = total;
+  const quote = quoteTotals(total);
+  const orderTotal = quote.total;
+  const paymentOptions = PAYMENT_OPTIONS.filter((option) => enabledMethods.includes(option.id));
+  const canGift = enabledMethods.some((method) => method === 'mobile_money' || method === 'card');
   const orderItems = expandPackageCartItems(items, packages, products, activeListings);
   const wholesaleSavings = getWholesaleSavings(items);
   const isWholesaleOrder = items.some((item) => item.quantity >= 10);
   const isPackageOrder = items.some((item) => item.id.startsWith('pkg-'));
   const orderType = isPackageOrder ? 'package' : isWholesaleOrder ? 'wholesale' : 'retail';
+  const trustBadges = [
+    { icon: ShieldCheck, label: 'Secure checkout' },
+    {
+      icon: Truck,
+      label: quote.delivery.free
+        ? 'Free delivery'
+        : quote.delivery.estimatedDays
+          ? `Delivery ${quote.delivery.estimatedDays}`
+          : 'Delivery',
+    },
+    { icon: Lock, label: 'Data protected' },
+  ] as const;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -479,6 +492,10 @@ export function CheckoutPage() {
     e.preventDefault();
     if (payMode === 'gift') {
       toast.error('Share a payment link below, or switch to “I’ll pay”.');
+      return;
+    }
+    if (!enabledMethods.includes(paymentMethod)) {
+      toast.error('This payment method is not available.');
       return;
     }
     setLoading(true);
@@ -498,9 +515,9 @@ export function CheckoutPage() {
               email: form.email,
               phone: form.phone,
               items: orderItems,
-              subtotal: total,
-              tax: 0,
-              total: orderTotal,
+              subtotal: quote.subtotal,
+              tax: quote.tax,
+              total: quote.total,
               shippingAddress,
               orderType,
               useStkPush: true,
@@ -521,6 +538,9 @@ export function CheckoutPage() {
           requiresClientOrder?: boolean;
           offlineFallback?: boolean;
           message?: string;
+          subtotal?: number;
+          tax?: number;
+          total?: number;
           stk?: { status?: string; details?: { message?: string } };
         };
 
@@ -546,9 +566,9 @@ export function CheckoutPage() {
             customerName,
             email: form.email,
             items: orderItems,
-            subtotal: total,
-            tax: 0,
-            total: orderTotal,
+            subtotal: data.subtotal ?? quote.subtotal,
+            tax: data.tax ?? quote.tax,
+            total: data.total ?? quote.total,
             shippingAddress,
             status: 'pending',
             orderType,
@@ -605,9 +625,9 @@ export function CheckoutPage() {
               email: form.email,
               phone: form.phone,
               items: orderItems,
-              subtotal: total,
-              tax: 0,
-              total: orderTotal,
+              subtotal: quote.subtotal,
+              tax: quote.tax,
+              total: quote.total,
               shippingAddress,
               orderType,
             }),
@@ -625,6 +645,9 @@ export function CheckoutPage() {
           transToken?: string;
           transRef?: string;
           requiresClientOrder?: boolean;
+          subtotal?: number;
+          tax?: number;
+          total?: number;
         };
 
         try {
@@ -644,9 +667,9 @@ export function CheckoutPage() {
             customerName,
             email: form.email,
             items: orderItems,
-            subtotal: total,
-            tax: 0,
-            total: orderTotal,
+            subtotal: data.subtotal ?? quote.subtotal,
+            tax: data.tax ?? quote.tax,
+            total: data.total ?? quote.total,
             shippingAddress,
             status: 'pending',
             orderType,
@@ -665,22 +688,52 @@ export function CheckoutPage() {
         throw new Error('No card checkout URL was returned. Please try again.');
       }
 
-      const orderId = generateOrderId();
-      await createOrder({
-        id: orderId,
-        userId: user?.uid ?? null,
-        customerName,
-        email: form.email,
-        items: orderItems,
-        subtotal: total,
-        tax: 0,
-        total: orderTotal,
-        shippingAddress,
-        status: 'pending',
-        orderType,
-        paymentMethod: 'cash_on_delivery',
-        paymentStatus: 'cod_pending',
-      });
+      let response: Response;
+      try {
+        response = await fetch('/api/checkout/cod', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user?.uid ?? null,
+            customerName,
+            email: form.email,
+            phone: form.phone,
+            items: orderItems,
+            shippingAddress,
+            orderType,
+          }),
+        });
+      } catch {
+        throw new Error(
+          'Could not reach the payment server. Make sure the dev server is running and try again.'
+        );
+      }
+
+      let data: {
+        error?: string;
+        orderId?: string;
+        requiresClientOrder?: boolean;
+        order?: Parameters<typeof createOrder>[0];
+      };
+
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error('Payment server returned an invalid response. Please try again.');
+      }
+
+      if (!response.ok) {
+        throw new Error(data.error ?? 'Failed to place cash on delivery order');
+      }
+
+      if (data.requiresClientOrder && data.order) {
+        await createOrder(data.order);
+      }
+
+      const orderId = data.orderId;
+      if (!orderId) {
+        throw new Error('No order was created. Please try again.');
+      }
 
       toast.success('Order placed successfully!');
       clearCart();
@@ -744,7 +797,7 @@ export function CheckoutPage() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {TRUST_BADGES.map(({ icon: Icon, label }) => (
+              {trustBadges.map(({ icon: Icon, label }) => (
                 <span
                   key={label}
                   className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card/80 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur-sm"
@@ -829,9 +882,17 @@ export function CheckoutPage() {
                   <div className="flex items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] px-4 py-3">
                     <Truck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                     <p className="text-sm text-foreground/90">
-                      <span className="font-medium text-emerald-700">Free delivery</span>
+                      {quote.delivery.free ? (
+                        <span className="font-medium text-emerald-700">Free delivery</span>
+                      ) : (
+                        <span className="font-medium text-emerald-700">
+                          Delivery {formatUGX(quote.shipping)}
+                        </span>
+                      )}
                       {' · '}
-                      Standard delivery across Kampala &amp; surrounding areas.
+                      {quote.delivery.estimatedDays
+                        ? `${quote.delivery.estimatedDays} across Kampala & surrounding areas.`
+                        : 'Standard delivery across Kampala & surrounding areas.'}
                     </p>
                   </div>
                 </div>
@@ -843,14 +904,20 @@ export function CheckoutPage() {
                 title="Who is paying?"
                 subtitle="Pay yourself, or send a secure link so someone else can cover this order."
               >
-                <GiftPayChoice mode={payMode} onChange={setPayMode} />
+                {canGift ? (
+                  <GiftPayChoice mode={payMode} onChange={setPayMode} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Online payment links are off. Place the order yourself with the methods below.
+                  </p>
+                )}
 
-                {payMode === 'gift' ? (
+                {payMode === 'gift' && canGift ? (
                   <div className="mt-5">
                     <SendPaymentLinkCard
                       cartItems={items}
                       orderItems={orderItems}
-                      subtotal={total}
+                      subtotal={quote.subtotal}
                       total={orderTotal}
                       orderType={orderType}
                       deliveryDetails={{
@@ -863,9 +930,14 @@ export function CheckoutPage() {
                       senderUserId={user?.uid ?? null}
                     />
                   </div>
+                ) : paymentOptions.length === 0 ? (
+                  <p className="mt-5 rounded-xl border border-border/70 bg-muted/40 px-4 py-4 text-sm text-muted-foreground">
+                    Checkout is temporarily unavailable because no payment methods are enabled.
+                    Please contact the store.
+                  </p>
                 ) : (
                   <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                    {PAYMENT_OPTIONS.map(({ id, label, hint, icon: Icon }) => {
+                    {paymentOptions.map(({ id, label, hint, icon: Icon }) => {
                       const selected = paymentMethod === id;
                       return (
                         <button
@@ -939,14 +1011,14 @@ export function CheckoutPage() {
             <div className="sticky top-24">
               <OrderSummaryPanel
                 items={items}
-                total={total}
-                orderTotal={orderTotal}
+                quote={quote}
                 itemCount={itemCount}
                 wholesaleSavings={wholesaleSavings}
                 loading={loading}
                 submitLabel={submitLabel}
                 paymentMethod={paymentMethod}
                 payMode={payMode}
+                canPay={paymentOptions.length > 0}
               />
             </div>
           </aside>
@@ -969,7 +1041,7 @@ export function CheckoutPage() {
           </div>
           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700">
             <Truck className="h-3 w-3" />
-            Free delivery
+            {quote.delivery.free ? 'Free delivery' : formatUGX(quote.shipping)}
           </span>
         </div>
         {payMode === 'gift' ? (
@@ -990,7 +1062,7 @@ export function CheckoutPage() {
             type="submit"
             form="checkout-form"
             className="h-12 w-full rounded-xl text-base font-semibold shadow-lg shadow-primary/25"
-            disabled={loading}
+            disabled={loading || paymentOptions.length === 0}
             size="lg"
           >
             {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}

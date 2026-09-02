@@ -6,6 +6,8 @@ import { GoogleOneTap } from '@/components/auth/google-one-tap'
 import { CartProvider } from '@/lib/cart-context'
 import { ProductsProvider } from '@/lib/products-context'
 import { MarketingAdsProvider } from '@/lib/marketing-ads-context'
+import { FeatureFlagsProvider } from '@/lib/feature-flags-context'
+import { CommerceSettingsProvider } from '@/lib/commerce-settings-context'
 import { WholesaleProvider } from '@/lib/wholesale-context'
 import { ServicesProvider } from '@/lib/services-context'
 import { SuppliersProvider } from '@/lib/suppliers-context'
@@ -123,6 +125,8 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
         <AuthProvider>
+          <FeatureFlagsProvider>
+          <CommerceSettingsProvider>
           <ProductsProvider>
             <MarketingAdsProvider>
             <CartProvider>
@@ -138,6 +142,8 @@ export default function RootLayout({
             </CartProvider>
             </MarketingAdsProvider>
           </ProductsProvider>
+          </CommerceSettingsProvider>
+          </FeatureFlagsProvider>
         </AuthProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

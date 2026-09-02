@@ -17,6 +17,7 @@ import toast from 'react-hot-toast';
 import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
+import { useFeature } from '@/lib/feature-flags-context';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getSharedBookingById, markSharedBookingPaid } from '@/lib/firebase/shared-bookings';
@@ -34,6 +35,8 @@ interface SharedBookingPayPageProps {
 
 export function SharedBookingPayPage({ token }: SharedBookingPayPageProps) {
   const router = useRouter();
+  const servicesEnabled = useFeature('services');
+  const catalogHref = servicesEnabled ? '/services' : '/shop';
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
   const [view, setView] = useState<SharedBookingPublicView | null>(null);
@@ -177,8 +180,8 @@ export function SharedBookingPayPage({ token }: SharedBookingPayPageProps) {
             <p className="mt-2 text-sm text-muted-foreground">
               {error ?? 'This link could not be found.'}
             </p>
-            <Link href="/services" className="mt-6 inline-block">
-              <Button className="rounded-xl">Browse services</Button>
+            <Link href={catalogHref} className="mt-6 inline-block">
+              <Button className="rounded-xl">{servicesEnabled ? 'Browse services' : 'Browse shop'}</Button>
             </Link>
           </div>
         ) : view.status === 'paid' ? (
@@ -336,11 +339,11 @@ export function SharedBookingPayPage({ token }: SharedBookingPayPageProps) {
             </form>
 
             <Link
-              href="/services"
+              href={catalogHref}
               className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to services
+              {servicesEnabled ? 'Back to services' : 'Back to shop'}
             </Link>
           </div>
         )}

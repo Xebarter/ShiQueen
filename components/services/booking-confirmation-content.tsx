@@ -17,9 +17,11 @@ import { Button } from '@/components/ui/button';
 import { getServiceBookingById } from '@/lib/firebase/service-bookings';
 import type { ServiceBooking } from '@/lib/types/services';
 import { formatUGX } from '@/lib/wholesale-data';
+import { useFeature } from '@/lib/feature-flags-context';
 
 function BookingConfirmationInner() {
   const searchParams = useSearchParams();
+  const servicesEnabled = useFeature('services');
   const bookingId = searchParams.get('bookingId');
   const paymentParam = searchParams.get('payment');
   const isGift = searchParams.get('gift') === '1';
@@ -140,10 +142,10 @@ function BookingConfirmationInner() {
           </div>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <Link href="/services">
+            <Link href={servicesEnabled ? '/services' : '/shop'}>
               <Button size="lg" className="gap-2 rounded-xl">
                 <Sparkles className="h-4 w-4" />
-                Browse more services
+                {servicesEnabled ? 'Browse more services' : 'Browse the shop'}
               </Button>
             </Link>
             <Link href="/contact">

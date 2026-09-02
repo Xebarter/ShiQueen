@@ -4,12 +4,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Package } from '@/lib/types/wholesale';
-import {
-  formatUGX,
-  calculateTax,
-  calculateTotalWithTax,
-} from '@/lib/wholesale-data';
+import { formatUGX } from '@/lib/wholesale-data';
 import { resolvePackageSavings } from '@/lib/package-utils';
+import { useCommerceSettings } from '@/lib/commerce-settings-context';
 import { Plus, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -35,14 +32,16 @@ export function PackagePricingPanel({
   const [internalQuantity, setInternalQuantity] = useState(1);
   const quantity = controlledQuantity ?? internalQuantity;
   const setQuantity = onQuantityChange ?? setInternalQuantity;
+  const { quoteTotals } = useCommerceSettings();
 
   const { retailTotal, packagePrice, savingsAmount, savingsPercentage } =
     resolvePackageSavings(pkg, retailPrices);
 
   const subtotal = packagePrice * quantity;
   const totalSavings = savingsAmount * quantity;
-  const tax = calculateTax(subtotal);
-  const total = calculateTotalWithTax(subtotal);
+  const quote = quoteTotals(subtotal);
+  const tax = quote.tax;
+  const total = quote.subtotal + quote.tax;
 
   return (
     <div
@@ -109,10 +108,12 @@ export function PackagePricingPanel({
           <span className="text-muted-foreground">Subtotal</span>
           <span className="tabular-nums">{formatUGX(subtotal)}</span>
         </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Tax (18%)</span>
-          <span className="tabular-nums">{formatUGX(tax)}</span>
-        </div>
+        {quote.taxQuote.enabled ? (
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">{quote.taxQuote.label}</span>
+            <span className="tabular-nums">{formatUGX(tax)}</span>
+          </div>
+        ) : null}
         <div className="flex justify-between border-t border-border pt-3 font-semibold">
           <span>Total</span>
           <span className="tabular-nums">{formatUGX(total)}</span>

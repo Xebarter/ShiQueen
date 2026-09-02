@@ -7,6 +7,7 @@ import { ServiceCard } from '@/components/services/service-card';
 import { getProviderById } from '@/lib/services-utils';
 import type { ServiceListing, ServiceProvider } from '@/lib/types/services';
 import { BRAND_NAME } from '@/lib/brand';
+import { useFeature } from '@/lib/feature-flags-context';
 
 interface ServicesHeroProps {
   listings: ServiceListing[];
@@ -28,6 +29,7 @@ function HeroCardSkeleton() {
 }
 
 export function ServicesHero({ listings, providers, loading, onBook }: ServicesHeroProps) {
+  const packagesEnabled = useFeature('packages');
   const mosaic = listings.slice(0, 4);
 
   return (
@@ -78,10 +80,14 @@ export function ServicesHero({ listings, providers, loading, onBook }: ServicesH
               <Link href="/shop" className="hover:text-foreground">
                 Shop
               </Link>
-              <span aria-hidden>·</span>
-              <Link href="/packages" className="hover:text-foreground">
-                Bundles
-              </Link>
+              {packagesEnabled ? (
+                <>
+                  <span aria-hidden>·</span>
+                  <Link href="/packages" className="hover:text-foreground">
+                    Bundles
+                  </Link>
+                </>
+              ) : null}
             </div>
           </motion.div>
         </div>

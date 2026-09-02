@@ -13,6 +13,7 @@ import {
 import { MerchandisingSections, ProductCardVariant } from '@/lib/hooks/use-product-merchandising';
 import { getByCategories } from '@/lib/home-merchandising';
 import { CATEGORY_GROUPS } from '@/lib/home-merchandising';
+import { useFeature } from '@/lib/feature-flags-context';
 
 interface MerchandisingBlocksProps {
   products: Product[];
@@ -37,6 +38,7 @@ export function MerchandisingBlocks({
   viewedIds,
   afterFlashDeals,
 }: MerchandisingBlocksProps) {
+  const wholesaleEnabled = useFeature('wholesale');
   const cardProps = {
     onQuickView,
     wishlistIds,
@@ -191,7 +193,7 @@ export function MerchandisingBlocks({
         </ProductSection>
       )}
 
-      {sections.wholesale.length > 0 && (
+      {wholesaleEnabled && sections.wholesale.length > 0 && (
         <ProductSection title="Wholesale" href="/wholesale" className="bg-primary/5">
           {renderGrid(sections.wholesale, 'grid-cols-2 md:grid-cols-3 lg:grid-cols-6', 'compact')}
         </ProductSection>

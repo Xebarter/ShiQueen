@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useCart } from '@/lib/cart-context';
 import { useAuth } from '@/lib/auth-context';
 import { ShoppingCart, Menu, X, Heart } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { SearchBar } from './search-bar';
 import { BrandLogo } from './brand-logo';
@@ -17,10 +17,9 @@ import {
 } from '@/components/header/mobile-drawer';
 import { cn } from '@/lib/utils';
 import { getStoredWishlist } from '@/lib/home-merchandising';
-import { MAIN_NAV_LINKS } from '@/lib/site-nav';
+import { getMainNavLinks } from '@/lib/site-nav';
+import { useFeatureFlags } from '@/lib/feature-flags-context';
 import { useHistoryOverlay } from '@/lib/hooks/use-history-overlay';
-
-const NAV_LINKS = MAIN_NAV_LINKS;
 
 function NavLink({
   href,
@@ -118,7 +117,9 @@ function MobileMenuButton({
 export function Header() {
   const { itemCount } = useCart();
   const { user } = useAuth();
+  const { flags } = useFeatureFlags();
   const pathname = usePathname();
+  const navLinks = useMemo(() => getMainNavLinks(flags), [flags]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [isPhoneLayout, setIsPhoneLayout] = useState(false);
@@ -272,7 +273,7 @@ export function Header() {
             <BrandLogo variant="header" />
 
             <nav className="hidden items-center gap-1 lg:flex xl:gap-2">
-              {NAV_LINKS.map((link) => (
+              {navLinks.map((link) => (
                 <NavLink
                   key={link.href}
                   href={link.href}
@@ -329,7 +330,7 @@ export function Header() {
         {/* Tablet nav */}
         <nav className="hidden border-t border-border/40 bg-muted/20 md:flex lg:hidden">
           <div className="mx-auto flex w-full max-w-7xl items-center justify-center gap-2 overflow-x-auto px-4 py-2 scrollbar-hide">
-            {NAV_LINKS.map((link) => (
+            {navLinks.map((link) => (
               <NavLink
                 key={link.href}
                 href={link.href}

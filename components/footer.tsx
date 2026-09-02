@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { Mail, Phone, MapPin } from 'lucide-react';
 import { BrandLogo } from './brand-logo';
@@ -6,6 +8,7 @@ import {
   CONTACT_PHONE_HREF,
   contactWhatsAppHref,
 } from '@/lib/contact-info';
+import { useFeatureFlags } from '@/lib/feature-flags-context';
 import { cn } from '@/lib/utils';
 
 const WHATSAPP_HREF = contactWhatsAppHref();
@@ -84,6 +87,17 @@ const SOCIAL_LINKS = [
 ] as const;
 
 export function Footer() {
+  const { flags } = useFeatureFlags();
+  const taglineParts = [
+    'Products',
+    flags.packages ? 'packages' : null,
+    flags.services ? 'trusted services' : null,
+  ].filter(Boolean);
+  const tagline =
+    taglineParts.length === 1
+      ? 'Products for the modern woman.'
+      : `${taglineParts.slice(0, -1).join(', ')}, and ${taglineParts[taglineParts.length - 1]} for the modern woman.`;
+
   return (
     <footer className="bg-secondary text-secondary-foreground mt-20 border-t border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -92,7 +106,7 @@ export function Footer() {
           <div>
             <BrandLogo variant="footer" className="mb-4" />
             <p className="text-sm text-muted-foreground">
-              Products, packages, and trusted services for the modern woman.
+              {tagline}
             </p>
             <div className="mt-5 flex flex-wrap items-center gap-2">
               {SOCIAL_LINKS.map(({ label, href, icon: Icon }) => (
@@ -119,26 +133,39 @@ export function Footer() {
                   All Products
                 </Link>
               </li>
-              <li>
-                <Link href="/services" className="hover:text-foreground transition">
-                  Services
-                </Link>
-              </li>
+              {flags.packages ? (
+                <li>
+                  <Link href="/packages" className="hover:text-foreground transition">
+                    Packages
+                  </Link>
+                </li>
+              ) : null}
+              {flags.services ? (
+                <li>
+                  <Link href="/services" className="hover:text-foreground transition">
+                    Services
+                  </Link>
+                </li>
+              ) : null}
               <li>
                 <Link href="/shop?new=true" className="hover:text-foreground transition">
                   New Arrivals
                 </Link>
               </li>
-              <li>
-                <Link href="/wholesale" className="hover:text-foreground transition">
-                  Wholesale
-                </Link>
-              </li>
-              <li>
-                <Link href="/suppliers" className="hover:text-foreground transition">
-                  Sell with us
-                </Link>
-              </li>
+              {flags.wholesale ? (
+                <li>
+                  <Link href="/wholesale" className="hover:text-foreground transition">
+                    Wholesale
+                  </Link>
+                </li>
+              ) : null}
+              {flags.supplierApplications ? (
+                <li>
+                  <Link href="/suppliers" className="hover:text-foreground transition">
+                    Sell with us
+                  </Link>
+                </li>
+              ) : null}
             </ul>
           </div>
 

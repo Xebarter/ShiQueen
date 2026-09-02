@@ -20,6 +20,7 @@ import { ProductImage, isRemoteProductImage } from '@/components/product-image';
 import { PackageCoverDisplay } from '@/components/packages/package-cover-display';
 import { usePublicProducts, usePublicPackages } from '@/lib/hooks/use-public-catalog';
 import { useServices } from '@/lib/services-context';
+import { useFeatureFlags } from '@/lib/feature-flags-context';
 import {
   buildPackageCatalogMaps,
   getPackageCoverImages,
@@ -234,6 +235,7 @@ export function SearchBar({ className }: { className?: string }) {
   const { products } = usePublicProducts();
   const { packages } = usePublicPackages();
   const { activeListings, activeProviders } = useServices();
+  const { flags } = useFeatureFlags();
   const { search, loading, catalogCount } = useCatalogSearch();
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -527,10 +529,11 @@ export function SearchBar({ className }: { className?: string }) {
       {trimmedQuery && !loading && results.length === 0 && (
         <div className="px-5 py-8 text-center">
           <p className="text-sm text-muted-foreground">
-            No products, bundles, or services found for &ldquo;{trimmedQuery}&rdquo;
+            No {flags.packages || flags.services ? 'products, bundles, or services' : 'products'} found
+            for &ldquo;{trimmedQuery}&rdquo;
           </p>
           <p className="mt-1.5 text-xs text-muted-foreground">
-            Try a different name, category, or bundle occasion
+            Try a different name or category
           </p>
         </div>
       )}
@@ -554,7 +557,17 @@ export function SearchBar({ className }: { className?: string }) {
           autoComplete="off"
           autoCorrect="off"
           spellCheck={false}
-          placeholder={loading ? 'Loading catalog…' : 'Search products, bundles & services…'}
+          placeholder={
+            loading
+              ? 'Loading catalog…'
+              : flags.packages && flags.services
+                ? 'Search products, bundles & services…'
+                : flags.packages
+                  ? 'Search products & bundles…'
+                  : flags.services
+                    ? 'Search products & services…'
+                    : 'Search products…'
+          }
           value={query}
           onChange={(event) => {
             setQuery(event.target.value);

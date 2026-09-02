@@ -3,6 +3,7 @@ import { generateOrderId } from '@/lib/order-utils';
 import { isFirebaseAdminConfigured } from '@/lib/firebase/admin-config';
 import { cardCheckoutRedirectUrl, isCardGatewayConfigured } from '@/lib/card-gateway/config';
 import { createCardPaymentToken } from '@/lib/card-gateway/client';
+import { quoteEnabledCheckout } from '@/lib/supabase/commerce-settings-server';
 import type { OrderItem, ShippingAddress } from '@/lib/types/database';
 
 export const runtime = 'nodejs';
@@ -35,8 +36,17 @@ export async function POST(request: NextRequest) {
 
     const body = (await request.json()) as InitiateBody;
 
-    if (!body.email || !body.phone || !body.items?.length || !body.total) {
+    if (!body.email || !body.phone || !body.items?.length) {
       return NextResponse.json({ error: 'Missing required checkout fields.' }, { status: 400 });
+    }
+
+    const quoted = await quoteEnabledCheckout(body.items, 'card');
+    if (!quoted.ok) {
+      return NextResponse.json({ error: quoted.error }, { status: quoted.status });
+    }
+    const { quote } = quoted;
+    if (quote.total <= 0) {
+      return NextResponse.json({ error: 'Order total must be greater than zero.' }, { status: 400 });
     }
 
     const orderId = body.orderId ?? generateOrderId();
@@ -46,7 +56,7 @@ export async function POST(request: NextRequest) {
       : 'ShiQueen order';
 
     const created = await createCardPaymentToken({
-      amount: body.total,
+      amount: quote.total,
       companyRef: orderId,
       description,
       customerName: body.customerName,
@@ -66,9 +76,9 @@ export async function POST(request: NextRequest) {
         customerName: body.customerName,
         email: body.email,
         items: body.items,
-        subtotal: body.subtotal,
-        tax: body.tax,
-        total: body.total,
+        subtotal: quote.subtotal,
+        tax: quote.tax,
+        total: quote.total,
         shippingAddress: body.shippingAddress,
         orderType: body.orderType,
         paymentMethod: 'card',
@@ -84,6 +94,9 @@ export async function POST(request: NextRequest) {
       transToken: created.transToken,
       transRef: created.transRef,
       requiresClientOrder,
+      subtotal: quote.subtotal,
+      tax: quote.tax,
+      total: quote.total,
     });
   } catch (error) {
     console.error('[ShiQueen] card initiate:', error);

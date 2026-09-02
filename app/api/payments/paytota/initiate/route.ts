@@ -8,6 +8,8 @@ import {
   normalizeUgandaPhone,
 } from '@/lib/paytota/client';
 import { getPaytotaConfig, getAppBaseUrl } from '@/lib/paytota/config';
+import { gatewayProductLines } from '@/lib/commerce-settings';
+import { quoteEnabledCheckout } from '@/lib/supabase/commerce-settings-server';
 import type { OrderItem, ShippingAddress } from '@/lib/types/database';
 
 export const runtime = 'nodejs';
@@ -32,8 +34,17 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as InitiateBody;
 
-    if (!body.email || !body.phone || !body.items?.length || !body.total) {
+    if (!body.email || !body.phone || !body.items?.length) {
       return NextResponse.json({ error: 'Missing required checkout fields.' }, { status: 400 });
+    }
+
+    const quoted = await quoteEnabledCheckout(body.items, 'mobile_money');
+    if (!quoted.ok) {
+      return NextResponse.json({ error: quoted.error }, { status: quoted.status });
+    }
+    const { quote } = quoted;
+    if (quote.total <= 0) {
+      return NextResponse.json({ error: 'Order total must be greater than zero.' }, { status: 400 });
     }
 
     const orderId = body.orderId ?? generateOrderId();
@@ -59,13 +70,7 @@ export async function POST(request: NextRequest) {
         },
         purchase: {
           currency: 'UGX',
-          products: [
-            ...body.items.map((item) => ({
-              name: item.name.slice(0, 120),
-              price: String(Math.round(item.price * item.quantity)),
-            })),
-            ...(body.tax > 0 ? [{ name: 'Tax', price: String(Math.round(body.tax)) }] : []),
-          ],
+          products: gatewayProductLines(body.items, quote),
         },
         reference: orderId,
         success_redirect: `${config.successRedirect}?${redirectQuery}`,
@@ -80,9 +85,9 @@ export async function POST(request: NextRequest) {
           customerName: body.customerName,
           email: body.email,
           items: body.items,
-          subtotal: body.subtotal,
-          tax: body.tax,
-          total: body.total,
+          subtotal: quote.subtotal,
+          tax: quote.tax,
+          total: quote.total,
           shippingAddress: body.shippingAddress,
           orderType: body.orderType,
           paymentMethod: 'mobile_money' as const,
@@ -98,6 +103,9 @@ export async function POST(request: NextRequest) {
           orderId,
           offlineFallback: true,
           requiresClientOrder,
+          subtotal: quote.subtotal,
+          tax: quote.tax,
+          total: quote.total,
           message:
             'Paytota is unreachable right now. Your order was saved — our team will contact you for mobile money payment.',
           returnUrl: `${appBaseUrl}/order-confirmation?orderId=${encodeURIComponent(orderId)}&payment=offline`,
@@ -114,9 +122,9 @@ export async function POST(request: NextRequest) {
         customerName: body.customerName,
         email: body.email,
         items: body.items,
-        subtotal: body.subtotal,
-        tax: body.tax,
-        total: body.total,
+        subtotal: quote.subtotal,
+        tax: quote.tax,
+        total: quote.total,
         shippingAddress: body.shippingAddress,
         orderType: body.orderType,
         paymentMethod: 'mobile_money',
@@ -142,6 +150,9 @@ export async function POST(request: NextRequest) {
       status: purchase.status,
       stk: stkResult,
       requiresClientOrder,
+      subtotal: quote.subtotal,
+      tax: quote.tax,
+      total: quote.total,
       returnUrl: `${appBaseUrl}/order-confirmation?orderId=${encodeURIComponent(orderId)}`,
     });
   } catch (error) {

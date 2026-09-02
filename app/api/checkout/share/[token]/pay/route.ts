@@ -17,6 +17,8 @@ import {
 } from '@/lib/firebase/shared-checkouts-server';
 import { createOrderServer } from '@/lib/firebase/orders-server';
 import { resolveSharedCheckoutStatus } from '@/lib/shared-checkout-utils';
+import { gatewayProductLines, type OrderQuote } from '@/lib/commerce-settings';
+import { quoteEnabledCheckout } from '@/lib/supabase/commerce-settings-server';
 import type { OrderItem, ShippingAddress } from '@/lib/types/database';
 import type { SharedCheckout } from '@/lib/types/shared-checkout';
 
@@ -49,6 +51,7 @@ async function initiateGiftPayment(params: {
   orderId: string;
   payer: { fullName: string; email: string; phone: string };
   checkout: ClientCheckoutSnapshot;
+  quote: OrderQuote;
 }) {
   const appBaseUrl = getAppBaseUrl();
   const config = getPaytotaConfig();
@@ -68,10 +71,7 @@ async function initiateGiftPayment(params: {
     },
     purchase: {
       currency: 'UGX',
-      products: params.checkout.orderItems.map((item) => ({
-        name: item.name.slice(0, 120),
-        price: String(Math.round(item.price * item.quantity)),
-      })),
+      products: gatewayProductLines(params.checkout.orderItems, params.quote),
     },
     reference: params.orderId,
     success_redirect: `${config.successRedirect}?${redirectQuery}`,
@@ -197,9 +197,17 @@ export async function POST(request: NextRequest, context: RouteContext) {
       };
     }
 
-    const wantsCard = body.paymentMethod === 'card';
+    const method = body.paymentMethod === 'card' ? 'card' : 'mobile_money';
+    const quoted = await quoteEnabledCheckout(checkout.orderItems, method);
+    if (!quoted.ok) {
+      return NextResponse.json({ error: quoted.error }, { status: quoted.status });
+    }
+    const { quote } = quoted;
+    if (quote.total <= 0) {
+      return NextResponse.json({ error: 'Order total must be greater than zero.' }, { status: 400 });
+    }
 
-    if (wantsCard) {
+    if (method === 'card') {
       if (!isCardGatewayConfigured()) {
         return NextResponse.json(
           {
@@ -211,7 +219,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       }
 
       const created = await createCardPaymentToken({
-        amount: checkout.total,
+        amount: quote.total,
         companyRef: orderId,
         description: `ShiQueen gift · ${checkout.recipientName}`.slice(0, 120),
         customerName: body.fullName,
@@ -229,9 +237,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
           customerName: checkout.recipientName,
           email: checkout.shippingAddress.email,
           items: checkout.orderItems,
-          subtotal: checkout.subtotal,
-          tax: 0,
-          total: checkout.total,
+          subtotal: quote.subtotal,
+          tax: quote.tax,
+          total: quote.total,
           shippingAddress: checkout.shippingAddress,
           orderType: checkout.orderType,
           paymentMethod: 'card',
@@ -249,6 +257,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
         requiresClientOrder,
         requiresClientCheckoutUpdate: requiresClientOrder,
         markSharedCheckoutPaid: false,
+        subtotal: quote.subtotal,
+        tax: quote.tax,
+        total: quote.total,
         order: requiresClientOrder
           ? {
               id: orderId,
@@ -256,9 +267,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
               customerName: checkout.recipientName,
               email: checkout.shippingAddress.email,
               items: checkout.orderItems,
-              subtotal: checkout.subtotal,
-              tax: 0,
-              total: checkout.total,
+              subtotal: quote.subtotal,
+              tax: quote.tax,
+              total: quote.total,
               shippingAddress: checkout.shippingAddress,
               status: 'pending' as const,
               orderType: checkout.orderType,
@@ -281,6 +292,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
           phone: body.phone,
         },
         checkout,
+        quote,
       });
     } catch (purchaseError) {
       if (isPaytotaNetworkError(purchaseError)) {
@@ -305,9 +317,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
         customerName: checkout.recipientName,
         email: checkout.shippingAddress.email,
         items: checkout.orderItems,
-        subtotal: checkout.subtotal,
-        tax: 0,
-        total: checkout.total,
+        subtotal: quote.subtotal,
+        tax: quote.tax,
+        total: quote.total,
         shippingAddress: checkout.shippingAddress,
         orderType: checkout.orderType,
         paymentMethod: 'mobile_money',
@@ -331,6 +343,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
       requiresClientCheckoutUpdate: requiresClientOrder,
       markSharedCheckoutPaid: markPaidOnServer,
       returnUrl,
+      subtotal: quote.subtotal,
+      tax: quote.tax,
+      total: quote.total,
       order: requiresClientOrder
         ? {
             id: orderId,
@@ -338,9 +353,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
             customerName: checkout.recipientName,
             email: checkout.shippingAddress.email,
             items: checkout.orderItems,
-            subtotal: checkout.subtotal,
-            tax: 0,
-            total: checkout.total,
+            subtotal: quote.subtotal,
+            tax: quote.tax,
+            total: quote.total,
             shippingAddress: checkout.shippingAddress,
             status: markPaidOnServer ? ('processing' as const) : ('pending' as const),
             orderType: checkout.orderType,

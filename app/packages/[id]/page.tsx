@@ -13,12 +13,16 @@ import { breadcrumbJsonLd, JsonLd, productJsonLd } from '@/lib/seo/json-ld';
 import { pageMetadata } from '@/lib/seo/site';
 import { toAbsoluteUrl } from '@/lib/site-url';
 import { BRAND_NAME } from '@/lib/brand';
+import { assertPublicFeature } from '@/lib/supabase/feature-flags-server';
+
+export const dynamic = 'force-dynamic';
 
 type PageProps = {
   params: Promise<{ id: string }>;
 };
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  await assertPublicFeature('packages');
   const { id } = await params;
   const pkg = await getPackageForSeo(id);
 
@@ -38,6 +42,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function PackageDetail({ params }: PageProps) {
+  await assertPublicFeature('packages');
   const { id } = await params;
   const pkg = await getPackageForSeo(id);
   const imageUrl = pkg ? await resolvePackageOgImage(pkg) : undefined;

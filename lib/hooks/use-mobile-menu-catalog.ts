@@ -10,6 +10,7 @@ import {
   resolveListingImage,
 } from '@/lib/services-utils';
 import { usePublicProducts, usePublicPackages } from '@/lib/hooks/use-public-catalog';
+import { useFeatureFlags } from '@/lib/feature-flags-context';
 import { useServices } from '@/lib/services-context';
 import type { Product } from '@/lib/types/database';
 import type { ServiceListing, ServiceProvider } from '@/lib/types/services';
@@ -65,6 +66,7 @@ export function useMobileMenuCatalog() {
   const { products } = usePublicProducts();
   const { packages } = usePublicPackages();
   const { activeListings, activeCategories, activeProviders } = useServices();
+  const { flags } = useFeatureFlags();
 
   return useMemo(() => {
     const shopCategories: MobileMenuCategory[] = SHOP_CATEGORY_DEFS.map((cat) => {
@@ -82,28 +84,30 @@ export function useMobileMenuCatalog() {
       };
     });
 
-    const serviceCategories: MobileMenuCategory[] = [...activeCategories]
-      .filter((cat) => cat.isActive)
-      .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
-      .filter((cat) => countCategoryServices(cat.id, activeListings) > 0)
-      .map((cat) => {
-        const listing = pickBestListing(
-          activeListings,
-          activeProviders,
-          (l) => l.categoryId === cat.id
-        );
-        const image = listing
-          ? resolveListingImage(listing, getProviderById(activeProviders, listing.providerId))
-          : null;
+    const serviceCategories: MobileMenuCategory[] = flags.services
+      ? [...activeCategories]
+          .filter((cat) => cat.isActive)
+          .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
+          .filter((cat) => countCategoryServices(cat.id, activeListings) > 0)
+          .map((cat) => {
+            const listing = pickBestListing(
+              activeListings,
+              activeProviders,
+              (l) => l.categoryId === cat.id
+            );
+            const image = listing
+              ? resolveListingImage(listing, getProviderById(activeProviders, listing.providerId))
+              : null;
 
-        return {
-          id: cat.id,
-          label: cat.name,
-          href: `/services/category/${cat.id}`,
-          image: image && isRemoteProductImage(image) ? image : null,
-          productName: listing?.name,
-        };
-      });
+            return {
+              id: cat.id,
+              label: cat.name,
+              href: `/services/category/${cat.id}`,
+              image: image && isRemoteProductImage(image) ? image : null,
+              productName: listing?.name,
+            };
+          })
+      : [];
 
     const shopHero = getTrending(products, 1)[0];
     const shopDestination: MobileMenuDestination = {
@@ -162,11 +166,18 @@ export function useMobileMenuCatalog() {
         : null,
     };
 
+    const destinations: MobileMenuDestination[] = [
+      shopDestination,
+      ...(flags.packages ? [packagesDestination] : []),
+      ...(flags.services ? [servicesDestination] : []),
+      ...(flags.wholesale ? [wholesaleDestination] : []),
+    ];
+
     return {
       shopCategories,
       serviceCategories,
-      destinations: [shopDestination, packagesDestination, servicesDestination, wholesaleDestination],
+      destinations,
       productCount: products.length,
     };
-  }, [products, packages, activeListings, activeCategories, activeProviders]);
+  }, [products, packages, activeListings, activeCategories, activeProviders, flags]);
 }

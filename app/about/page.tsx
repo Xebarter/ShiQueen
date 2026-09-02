@@ -4,10 +4,13 @@ import { Footer } from '@/components/footer';
 import { Button } from '@/components/ui/button';
 import { PAGE_SEO } from '@/lib/seo/site';
 import { breadcrumbJsonLd, JsonLd } from '@/lib/seo/json-ld';
+import { getFeatureFlags } from '@/lib/supabase/feature-flags-server';
 
 export const metadata = PAGE_SEO.about;
 
-export default function About() {
+export default async function About() {
+  const flags = await getFeatureFlags();
+
   const values = [
     {
       title: 'Quality',
@@ -34,18 +37,28 @@ export default function About() {
       href: '/shop',
       label: 'Shop now',
     },
-    {
-      title: 'Packages',
-      description: 'Curated beauty packages and product-plus-service bundles with real savings versus buying separately.',
-      href: '/packages',
-      label: 'View packages',
-    },
-    {
-      title: 'Beauty bookings',
-      description: 'Book makeup artists, hair salon, nails, bridal makeup, and styling across Kampala.',
-      href: '/services',
-      label: 'Book a service',
-    },
+    ...(flags.packages
+      ? [
+          {
+            title: 'Packages',
+            description:
+              'Curated beauty packages and product-plus-service bundles with real savings versus buying separately.',
+            href: '/packages',
+            label: 'View packages',
+          },
+        ]
+      : []),
+    ...(flags.services
+      ? [
+          {
+            title: 'Beauty bookings',
+            description:
+              'Book makeup artists, hair salon, nails, bridal makeup, and styling across Kampala.',
+            href: '/services',
+            label: 'Book a service',
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -107,7 +120,7 @@ export default function About() {
       <section className="py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-4xl font-light mb-12">What you can do here</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className={`grid grid-cols-1 gap-8 ${offers.length > 1 ? 'md:grid-cols-3' : ''}`}>
             {offers.map((offer) => (
               <div key={offer.title} className="rounded-2xl border border-border/60 bg-card p-6">
                 <h3 className="text-lg font-semibold mb-2">{offer.title}</h3>

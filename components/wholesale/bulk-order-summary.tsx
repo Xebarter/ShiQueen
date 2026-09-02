@@ -10,7 +10,6 @@ import {
   ShieldCheck,
   ShoppingBag,
   Trash2,
-  Truck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { isRemoteProductImage } from '@/components/product-image';
@@ -18,6 +17,9 @@ import { CartItem } from '@/lib/cart-context';
 import { getWholesaleDiscountForItem } from '@/lib/wholesale-cart';
 import { formatUGX } from '@/lib/wholesale-data';
 import { cn } from '@/lib/utils';
+import { useFeature } from '@/lib/feature-flags-context';
+import { useCommerceSettings } from '@/lib/commerce-settings-context';
+import { OrderQuoteLines } from '@/components/checkout/order-quote-lines';
 
 function cartLineKey(item: CartItem): string {
   return [item.id, item.size, item.color, item.wholesale ? 'wholesale' : 'retail']
@@ -109,7 +111,10 @@ export function BulkOrderSummary({
   id,
   className,
 }: BulkOrderSummaryProps) {
+  const packagesEnabled = useFeature('packages');
+  const { quoteTotals } = useCommerceSettings();
   const hasItems = items.length > 0;
+  const quote = quoteTotals(subtotal);
 
   return (
     <div
@@ -146,19 +151,7 @@ export function BulkOrderSummary({
           </div>
 
           <div className="space-y-2 border-t border-border/60 px-4 py-4 text-sm sm:px-5">
-            <div className="flex justify-between gap-3 text-muted-foreground">
-              <span>Subtotal</span>
-              <span className="font-semibold tabular-nums text-foreground">
-                {formatUGX(subtotal)}
-              </span>
-            </div>
-            <div className="flex justify-between gap-3 text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5">
-                <Truck className="h-3.5 w-3.5" />
-                Shipping
-              </span>
-              <span className="font-medium text-emerald-700">Free</span>
-            </div>
+            <OrderQuoteLines quote={quote} shippingLabel="Shipping" />
             {totalSavings > 0 ? (
               <div className="flex justify-between gap-3 rounded-lg bg-primary/5 px-3 py-2.5">
                 <span className="text-xs font-medium text-primary">Wholesale savings</span>
@@ -177,7 +170,7 @@ export function BulkOrderSummary({
                 </p>
               </div>
               <p className="text-xl font-semibold tabular-nums tracking-tight">
-                {formatUGX(subtotal)}
+                {formatUGX(quote.total)}
               </p>
             </div>
           </div>
@@ -195,17 +188,19 @@ export function BulkOrderSummary({
               )}
               Proceed to checkout
             </Button>
-            <div className="grid grid-cols-2 gap-2">
+            <div className={cn('grid gap-2', packagesEnabled ? 'grid-cols-2' : 'grid-cols-1')}>
               <Link href="/cart" className="block">
                 <Button variant="outline" className="h-10 w-full rounded-lg text-xs font-medium">
                   Full cart
                 </Button>
               </Link>
-              <Link href="/packages" className="block">
-                <Button variant="outline" className="h-10 w-full rounded-lg text-xs font-medium">
-                  Packages
-                </Button>
-              </Link>
+              {packagesEnabled ? (
+                <Link href="/packages" className="block">
+                  <Button variant="outline" className="h-10 w-full rounded-lg text-xs font-medium">
+                    Packages
+                  </Button>
+                </Link>
+              ) : null}
             </div>
             <button
               type="button"
@@ -217,7 +212,7 @@ export function BulkOrderSummary({
             </button>
             <p className="flex items-center justify-center gap-1.5 pt-1 text-[11px] text-muted-foreground">
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-700" />
-              Secure checkout · Free shipping
+              Secure checkout{quote.delivery.free ? ' · Free shipping' : ''}
             </p>
           </div>
         </>

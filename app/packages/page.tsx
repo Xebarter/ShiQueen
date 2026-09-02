@@ -4,10 +4,14 @@ import { PackagesPage } from '@/components/packages/packages-page';
 import { NoscriptPageSummary } from '@/components/seo/noscript-page-summary';
 import { breadcrumbJsonLd, JsonLd } from '@/lib/seo/json-ld';
 import { PAGE_SEO } from '@/lib/seo/site';
+import { assertPublicFeature } from '@/lib/supabase/feature-flags-server';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = PAGE_SEO.packages;
 
-export default function Packages() {
+export default async function Packages() {
+  await assertPublicFeature('packages');
   return (
     <>
       <JsonLd

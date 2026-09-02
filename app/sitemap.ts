@@ -7,19 +7,27 @@ import {
   listServiceCategoriesForSitemap,
   listServicesForSitemap,
 } from '@/lib/seo/catalog-server';
+import { getFeatureFlags } from '@/lib/supabase/feature-flags-server';
 
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const origin = getSiteUrl();
   const now = new Date();
+  const flags = await getFeatureFlags();
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: origin, lastModified: now, changeFrequency: 'daily', priority: 1 },
     { url: `${origin}/shop`, lastModified: now, changeFrequency: 'daily', priority: 0.95 },
-    { url: `${origin}/packages`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
-    { url: `${origin}/services`, lastModified: now, changeFrequency: 'daily', priority: 0.9 },
-    { url: `${origin}/wholesale`, lastModified: now, changeFrequency: 'weekly', priority: 0.7 },
+    ...(flags.packages
+      ? [{ url: `${origin}/packages`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.9 }]
+      : []),
+    ...(flags.services
+      ? [{ url: `${origin}/services`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.9 }]
+      : []),
+    ...(flags.wholesale
+      ? [{ url: `${origin}/wholesale`, lastModified: now, changeFrequency: 'weekly' as const, priority: 0.7 }]
+      : []),
     { url: `${origin}/about`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${origin}/contact`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${origin}/faq`, lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
@@ -38,9 +46,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const [products, packages, services, serviceCategories] = await Promise.all([
     listProductsForSitemap().catch(() => []),
-    listPackagesForSitemap().catch(() => []),
-    listServicesForSitemap().catch(() => []),
-    listServiceCategoriesForSitemap().catch(() => []),
+    flags.packages ? listPackagesForSitemap().catch(() => []) : Promise.resolve([]),
+    flags.services ? listServicesForSitemap().catch(() => []) : Promise.resolve([]),
+    flags.services ? listServiceCategoriesForSitemap().catch(() => []) : Promise.resolve([]),
   ]);
 
   return [

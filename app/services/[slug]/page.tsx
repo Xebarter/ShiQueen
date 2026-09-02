@@ -10,6 +10,9 @@ import { isFirebaseAdminConfigured } from '@/lib/firebase/admin-config';
 import { breadcrumbJsonLd, JsonLd, serviceJsonLd } from '@/lib/seo/json-ld';
 import { pageMetadata } from '@/lib/seo/site';
 import { BRAND_NAME } from '@/lib/brand';
+import { assertPublicFeature } from '@/lib/supabase/feature-flags-server';
+
+export const dynamic = 'force-dynamic';
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -20,6 +23,7 @@ function listingImage(gallery?: string[]): string | undefined {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  await assertPublicFeature('services');
   const { slug } = await params;
   const listing = await getServiceListingBySlugForSeo(slug);
 
@@ -39,6 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ServiceDetailRoute({ params }: Props) {
+  await assertPublicFeature('services');
   const { slug } = await params;
   const listing = await getServiceListingBySlugForSeo(slug);
   const pathSlug = listing?.slug || listing?.id || slug;

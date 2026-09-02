@@ -16,6 +16,7 @@ import { useWholesale } from '@/lib/wholesale-context';
 import { usePublicProducts, usePublicPackages } from '@/lib/hooks/use-public-catalog';
 import { useCart } from '@/lib/cart-context';
 import { useServices } from '@/lib/services-context';
+import { useFeature } from '@/lib/feature-flags-context';
 import {
   buildPackageCatalogMaps,
   getPackageImage,
@@ -88,6 +89,7 @@ export function PackageSpotlightSection({
   limit = 6,
   className = 'bg-primary/5',
 }: PackageSpotlightSectionProps) {
+  const packagesEnabled = useFeature('packages');
   const { setSelectedPackage, loading: wholesaleLoading } = useWholesale();
   const { packages } = usePublicPackages();
   const { products, loading: productsLoading } = usePublicProducts();
@@ -152,6 +154,8 @@ export function PackageSpotlightSection({
     trackPackageView(pkg.id);
     setQuickViewPkg(pkg);
   }, []);
+
+  if (!packagesEnabled) return null;
 
   if (!loading && spotlightPackages.length === 0) {
     return null;

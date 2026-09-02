@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth-context';
+import { useFeatureFlags } from '@/lib/feature-flags-context';
+import { canShowProviderApplications } from '@/lib/feature-flags';
 import { getAuthErrorMessage } from '@/lib/auth-errors';
 import { isServiceProviderProfile } from '@/lib/auth-redirect';
 
@@ -20,6 +22,7 @@ function ProviderSignInForm() {
   const searchParams = useSearchParams();
   const { signInOrCreate, signInWithGoogle, refreshProfile, user, isServiceProvider, loading: authLoading } =
     useAuth();
+  const { flags } = useFeatureFlags();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -73,6 +76,7 @@ function ProviderSignInForm() {
       heading="Welcome back"
       subheading="Sign in to manage bookings, listings, and your services dashboard."
       footer={
+        canShowProviderApplications(flags) ? (
         <p className="text-center text-sm text-muted-foreground">
           New provider?{' '}
           <Link
@@ -82,6 +86,7 @@ function ProviderSignInForm() {
             Apply here
           </Link>
         </p>
+        ) : undefined
       }
     >
       <div className="space-y-5">

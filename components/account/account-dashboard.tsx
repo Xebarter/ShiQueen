@@ -40,6 +40,7 @@ import { ProductReviewFormModal } from '@/components/product/product-review-form
 import { useAuth } from '@/lib/auth-context';
 import { useCart } from '@/lib/cart-context';
 import { useServices } from '@/lib/services-context';
+import { useFeatureFlags } from '@/lib/feature-flags-context';
 import { subscribeUserOrders } from '@/lib/firebase/orders';
 import { getStoredWishlist, removeFromStoredWishlist, getDiscountPercent } from '@/lib/home-merchandising';
 import { useProducts } from '@/lib/products-context';
@@ -531,6 +532,7 @@ export function AccountDashboard() {
   const { user, profile, logout, loading, isAdmin, isSupplier, isServiceProvider, refreshProfile } = useAuth();
   const { products, getProductById, loading: productsLoading } = useProducts();
   const { activeListings, activeProviders } = useServices();
+  const { flags } = useFeatureFlags();
   const { addItem } = useCart();
   const router = useRouter();
 
@@ -657,8 +659,8 @@ export function AccountDashboard() {
 
   const quickLinks = [
     { label: 'Browse shop', href: '/shop', icon: ShoppingBag },
-    { label: 'Packages', href: '/packages', icon: Crown },
-    { label: 'Wholesale', href: '/wholesale', icon: Truck },
+    ...(flags.packages ? [{ label: 'Packages', href: '/packages', icon: Crown }] : []),
+    ...(flags.wholesale ? [{ label: 'Wholesale', href: '/wholesale', icon: Truck }] : []),
     { label: 'Search history', href: '/account#search', icon: Clock },
     ...(isAdmin ? [{ label: 'Admin dashboard', href: '/admin', icon: Shield }] : []),
     ...(isSupplier ? [{ label: 'Supplier dashboard', href: '/suppliers/orders', icon: Truck }] : []),
@@ -872,12 +874,14 @@ export function AccountDashboard() {
                           <Link href="/shop" className={buttonVariants()}>
                             Browse the shop
                           </Link>
-                          <Link
-                            href="/packages"
-                            className={buttonVariants({ variant: 'outline' })}
-                          >
-                            Explore packages
-                          </Link>
+                          {flags.packages ? (
+                            <Link
+                              href="/packages"
+                              className={buttonVariants({ variant: 'outline' })}
+                            >
+                              Explore packages
+                            </Link>
+                          ) : null}
                         </div>
                       }
                     />

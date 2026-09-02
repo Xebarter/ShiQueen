@@ -7,6 +7,7 @@ import { createServiceSearchIndex } from '@/lib/service-search';
 import { mergeCatalogSearchHits, type CatalogSearchHit } from '@/lib/catalog-search';
 import { usePublicProducts, usePublicPackages } from '@/lib/hooks/use-public-catalog';
 import { useServices } from '@/lib/services-context';
+import { useFeatureFlags } from '@/lib/feature-flags-context';
 import { buildPackageCatalogMaps } from '@/lib/package-utils';
 
 export function useCatalogSearch() {
@@ -18,12 +19,20 @@ export function useCatalogSearch() {
     activeCategories,
     loading: servicesLoading,
   } = useServices();
+  const { flags } = useFeatureFlags();
 
-  const activePackages = useMemo(() => packages, [packages]);
+  const activePackages = useMemo(
+    () => (flags.packages ? packages : []),
+    [flags.packages, packages]
+  );
+  const searchableListings = useMemo(
+    () => (flags.services ? activeListings : []),
+    [flags.services, activeListings]
+  );
 
   const { productNames } = useMemo(
-    () => buildPackageCatalogMaps(products, activeListings, activePackages),
-    [activePackages, products, activeListings]
+    () => buildPackageCatalogMaps(products, searchableListings, activePackages),
+    [activePackages, products, searchableListings]
   );
 
   const productIndex = useMemo(() => createProductSearchIndex(products), [products]);
@@ -32,8 +41,8 @@ export function useCatalogSearch() {
     [activePackages, productNames]
   );
   const serviceIndex = useMemo(
-    () => createServiceSearchIndex(activeListings, activeProviders, activeCategories),
-    [activeListings, activeProviders, activeCategories]
+    () => createServiceSearchIndex(searchableListings, activeProviders, activeCategories),
+    [searchableListings, activeProviders, activeCategories]
   );
 
   const search = useCallback(

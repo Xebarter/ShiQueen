@@ -23,6 +23,8 @@ import type { SharedCheckout, SharedCheckoutPublicView } from '@/lib/types/share
 import { generateOrderId } from '@/lib/order-utils';
 import { toSharedCheckoutPublicView } from '@/lib/shared-checkout-utils';
 import { formatUGX } from '@/lib/wholesale-data';
+import { useCommerceSettings } from '@/lib/commerce-settings-context';
+import { OrderQuoteLines } from '@/components/checkout/order-quote-lines';
 
 const fieldClass =
   'h-12 rounded-xl border-border/80 bg-background px-4 text-base shadow-sm transition-all placeholder:text-muted-foreground/70 focus-visible:border-primary/40 focus-visible:ring-4 focus-visible:ring-primary/10 md:text-base';
@@ -40,6 +42,17 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({ fullName: '', email: '', phone: '' });
   const [payMethod, setPayMethod] = useState<'mobile_money' | 'card'>('mobile_money');
+  const { quoteTotals, enabledMethods } = useCommerceSettings();
+
+  useEffect(() => {
+    const methods = enabledMethods.filter(
+      (method): method is 'mobile_money' | 'card' => method === 'mobile_money' || method === 'card'
+    );
+    if (methods.length === 0) return;
+    if (!methods.includes(payMethod)) {
+      setPayMethod(methods[0]);
+    }
+  }, [enabledMethods, payMethod]);
 
   const loadCheckout = useCallback(async () => {
     setLoading(true);
@@ -85,6 +98,11 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!checkout || checkout.status !== 'pending') return;
+    if (payMethod !== 'mobile_money' && payMethod !== 'card') return;
+    if (!enabledMethods.includes(payMethod)) {
+      toast.error('This payment method is not available.');
+      return;
+    }
 
     setPaying(true);
     try {
@@ -265,6 +283,11 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
     );
   }
 
+  const quote = quoteTotals(checkout.subtotal);
+  const giftMethods = enabledMethods.filter(
+    (method): method is 'mobile_money' | 'card' => method === 'mobile_money' || method === 'card'
+  );
+
   return (
     <main className="pb-28 md:pb-0">
       <Header />
@@ -304,13 +327,16 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
                 &ldquo;{checkout.senderMessage}&rdquo;
               </blockquote>
             )}
-            <div className="px-6 py-4">
+            <div className="space-y-2 px-6 py-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Amount to pay
               </p>
-              <p className="mt-1 text-3xl font-semibold tracking-tight text-primary">
-                {formatUGX(checkout.total)}
+              <p className="text-3xl font-semibold tracking-tight text-primary">
+                {formatUGX(quote.total)}
               </p>
+              <div className="space-y-1.5 pt-2 text-sm">
+                <OrderQuoteLines quote={quote} />
+              </div>
             </div>
           </div>
 
@@ -366,22 +392,30 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
               </div>
               <div className="space-y-4 p-6">
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {(
-                    [
-                      {
-                        id: 'mobile_money' as const,
-                        label: 'Mobile money',
-                        hint: 'MTN or Airtel',
-                        icon: Smartphone,
-                      },
-                      {
-                        id: 'card' as const,
-                        label: 'Card',
-                        hint: 'Visa or Mastercard',
-                        icon: CreditCard,
-                      },
-                    ] as const
-                  ).map((option) => {
+                  {giftMethods.length === 0 ? (
+                    <p className="text-sm text-muted-foreground sm:col-span-2">
+                      Online payment is temporarily unavailable. Ask the sender to use a different
+                      method.
+                    </p>
+                  ) : (
+                    (
+                      [
+                        {
+                          id: 'mobile_money' as const,
+                          label: 'Mobile money',
+                          hint: 'MTN or Airtel',
+                          icon: Smartphone,
+                        },
+                        {
+                          id: 'card' as const,
+                          label: 'Card',
+                          hint: 'Visa or Mastercard',
+                          icon: CreditCard,
+                        },
+                      ] as const
+                    )
+                      .filter((option) => giftMethods.includes(option.id))
+                      .map((option) => {
                     const selected = payMethod === option.id;
                     return (
                       <button
@@ -401,7 +435,8 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
                         </span>
                       </button>
                     );
-                  })}
+                      })
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="fullName">Full name</Label>
@@ -453,11 +488,11 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
               <Button
                 type="submit"
                 className="h-12 w-full rounded-xl text-base font-semibold shadow-lg shadow-primary/20"
-                disabled={paying}
+                disabled={paying || giftMethods.length === 0}
                 size="lg"
               >
                 {paying && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                Pay {formatUGX(checkout.total)}
+                Pay {formatUGX(quote.total)}
               </Button>
             </div>
           </form>
@@ -469,10 +504,10 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
           type="submit"
           form="gift-pay-form"
           className="h-12 w-full rounded-xl text-base font-semibold shadow-lg shadow-primary/20"
-          disabled={paying}
+          disabled={paying || giftMethods.length === 0}
         >
           {paying && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-          Pay {formatUGX(checkout.total)}
+          Pay {formatUGX(quote.total)}
         </Button>
       </div>
 

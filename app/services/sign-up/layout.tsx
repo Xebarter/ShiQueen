@@ -1,4 +1,7 @@
 import { noIndexMetadata } from '@/lib/seo/site';
+import { assertProviderApplications } from '@/lib/supabase/feature-flags-server';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = noIndexMetadata(
   'List your services',
@@ -6,6 +9,7 @@ export const metadata = noIndexMetadata(
   '/services/sign-up'
 );
 
-export default function ServicesSignUpLayout({ children }: { children: React.ReactNode }) {
+export default async function ServicesSignUpLayout({ children }: { children: React.ReactNode }) {
+  await assertProviderApplications();
   return children;
 }

@@ -8,6 +8,7 @@ import {
   inferOrderTypeFromCart,
 } from '@/lib/shared-checkout-utils';
 import { toAbsoluteUrl } from '@/lib/site-url';
+import { quoteServerOrderTotals } from '@/lib/supabase/commerce-settings-server';
 import type { CartItem } from '@/lib/cart-context';
 import type { OrderItem, ShippingAddress } from '@/lib/types/database';
 
@@ -56,6 +57,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const quoted = await quoteServerOrderTotals(body.orderItems);
+    const quote = quoted.quote;
+    if (quote.total <= 0) {
+      return NextResponse.json({ error: 'Order total must be greater than zero.' }, { status: 400 });
+    }
+
     const shippingAddress: ShippingAddress = buildShippingAddressFromForm({
       fullName: body.fullName,
       email: body.email,
@@ -80,8 +87,8 @@ export async function POST(request: NextRequest) {
         checkout: {
           cartItems: body.cartItems,
           orderItems: body.orderItems,
-          subtotal: body.subtotal,
-          total: body.total,
+          subtotal: quote.subtotal,
+          total: quote.total,
           orderType,
           recipientName: body.fullName.trim(),
           shippingAddress,
@@ -96,8 +103,8 @@ export async function POST(request: NextRequest) {
       id: token,
       cartItems: body.cartItems,
       orderItems: body.orderItems,
-      subtotal: body.subtotal,
-      total: body.total,
+      subtotal: quote.subtotal,
+      total: quote.total,
       orderType,
       recipientName: body.fullName.trim(),
       shippingAddress,
