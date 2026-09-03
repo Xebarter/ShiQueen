@@ -12,6 +12,7 @@ interface GiftPayChoiceProps {
   giftLabel?: string;
   selfDescription?: string;
   giftDescription?: string;
+  showTitle?: boolean;
   className?: string;
 }
 
@@ -22,11 +23,14 @@ export function GiftPayChoice({
   giftLabel = 'Someone else will pay',
   selfDescription = 'Pay now with mobile money or card',
   giftDescription = 'Tap once to share a secure payment link',
+  showTitle = true,
   className,
 }: GiftPayChoiceProps) {
   return (
     <div className={cn('space-y-3', className)}>
-      <p className="text-sm font-semibold tracking-tight">Who is paying?</p>
+      {showTitle ? (
+        <p className="text-sm font-semibold tracking-tight">Who is paying?</p>
+      ) : null}
       <div className="grid gap-3 sm:grid-cols-2">
         <button
           type="button"

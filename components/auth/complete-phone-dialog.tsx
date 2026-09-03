@@ -112,21 +112,17 @@ export function CompletePhoneDialog() {
             <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-[0_12px_28px_-12px_oklch(0.40_0.13_340_/_0.7)]">
               <Smartphone className="h-6 w-6" strokeWidth={1.75} />
             </span>
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary/80">
-              Complete your profile
-            </p>
             <h2
               id={titleId}
               className="font-[family-name:var(--font-brand)] text-[1.7rem] font-medium leading-tight tracking-tight text-foreground sm:text-[1.9rem]"
             >
-              Add your phone number
+              Add your number
             </h2>
             <p
               id={descriptionId}
-              className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground sm:text-[15px]"
+              className="mt-2 text-sm text-muted-foreground sm:text-[15px]"
             >
-              We’ll use it for deliveries, bookings, and important account updates — whether you
-              shop with us or run a shop on ShiQueen.
+              For deliveries and bookings.
             </p>
           </div>
 
@@ -154,9 +150,6 @@ export function CompletePhoneDialog() {
                 autoFocus
               />
             </div>
-            <p className="text-xs text-muted-foreground">
-              Uganda mobile numbers only. We never share your number.
-            </p>
           </div>
 
           <Button
@@ -170,7 +163,7 @@ export function CompletePhoneDialog() {
                 Saving…
               </>
             ) : (
-              'Save number'
+              'Save'
             )}
           </Button>
         </form>

@@ -53,19 +53,19 @@ const PAYMENT_OPTIONS: {
   {
     id: 'mobile_money',
     label: PAYMENT_METHOD_LABELS.mobile_money,
-    hint: 'MTN or Airtel · STK push',
+    hint: 'MTN or Airtel',
     icon: Smartphone,
   },
   {
     id: 'card',
     label: PAYMENT_METHOD_LABELS.card,
-    hint: 'Visa, Mastercard · secure checkout',
+    hint: 'Visa, Mastercard',
     icon: CreditCard,
   },
   {
     id: 'cash_on_delivery',
     label: PAYMENT_METHOD_LABELS.cash_on_delivery,
-    hint: 'Pay when your order arrives',
+    hint: 'Pay on delivery',
     icon: Wallet,
   },
 ];
@@ -317,10 +317,10 @@ function OrderSummaryPanel({
       <div className="mx-5 mb-4 rounded-2xl bg-gradient-to-r from-primary to-primary/90 px-5 py-4 text-primary-foreground shadow-inner sm:mx-6">
         <div className="flex items-end justify-between gap-3">
           <div>
-            <p className="text-sm font-medium opacity-90">Total due</p>
+            <p className="text-sm font-medium opacity-90">Total</p>
             <p className="text-xs opacity-75">
               {payMode === 'gift'
-                ? 'Someone else will pay'
+                ? 'Someone else'
                 : PAYMENT_METHOD_LABELS[paymentMethod]}
             </p>
           </div>
@@ -331,8 +331,7 @@ function OrderSummaryPanel({
       <div className="hidden px-5 pb-5 sm:block sm:px-6 sm:pb-6">
         {payMode === 'gift' ? (
           <p className="rounded-xl border border-accent/25 bg-accent/10 px-4 py-3 text-center text-sm text-muted-foreground">
-            Use <span className="font-medium text-foreground">Share payment link</span> above —
-            no need to place the order yourself.
+            Use <span className="font-medium text-foreground">Share link</span> above.
           </p>
         ) : (
           <>
@@ -348,7 +347,7 @@ function OrderSummaryPanel({
             </Button>
             <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
               <Lock className="h-3 w-3" />
-              Encrypted & secure payment
+              Secure
             </p>
           </>
         )}
@@ -406,13 +405,13 @@ function EmptyCheckout() {
             <ShoppingBag className="h-9 w-9" />
           </span>
           <h1 className="text-3xl font-light tracking-tight sm:text-4xl">Your cart is empty</h1>
-          <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-            Add something beautiful from our shop, then return here to checkout.
+          <p className="mt-3 text-base text-muted-foreground">
+            Add items from the shop.
           </p>
           <Link href="/shop" className="mt-8 inline-block">
             <Button className="h-12 gap-2 rounded-xl px-8 text-base font-semibold shadow-lg shadow-primary/20">
               <ArrowLeft className="h-4 w-4" />
-              Browse the shop
+              Shop
             </Button>
           </Link>
         </div>
@@ -482,7 +481,7 @@ export function CheckoutPage() {
   const isPackageOrder = items.some((item) => item.id.startsWith('pkg-'));
   const orderType = isPackageOrder ? 'package' : isWholesaleOrder ? 'wholesale' : 'retail';
   const trustBadges = [
-    { icon: ShieldCheck, label: 'Secure checkout' },
+    { icon: ShieldCheck, label: 'Secure' },
     {
       icon: Truck,
       label: quote.delivery.free
@@ -491,7 +490,7 @@ export function CheckoutPage() {
           ? `Delivery ${quote.delivery.estimatedDays}`
           : 'Delivery',
     },
-    { icon: Lock, label: 'Data protected' },
+    { icon: Lock, label: 'Private' },
   ] as const;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -762,13 +761,11 @@ export function CheckoutPage() {
   const submitLabel =
     loading
       ? paymentMethod === 'card'
-        ? 'Opening secure checkout…'
+        ? 'Opening checkout…'
         : 'Processing…'
       : paymentMethod === 'cash_on_delivery'
         ? `Place order · ${formatUGX(orderTotal)}`
-        : paymentMethod === 'card'
-          ? `Pay ${formatUGX(orderTotal)} by card`
-          : `Pay ${formatUGX(orderTotal)}`;
+        : `Pay ${formatUGX(orderTotal)}`;
 
   return (
     <main className="min-h-screen bg-background pb-32 md:pb-0">
@@ -790,21 +787,14 @@ export function CheckoutPage() {
             className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to cart
+            Back
           </Link>
 
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-primary/80">
-                ShiQueen checkout
-              </p>
-              <h1 className="mt-2 text-3xl font-light tracking-tight text-foreground sm:text-4xl lg:text-[2.5rem]">
-                Complete your order
+              <h1 className="text-3xl font-light tracking-tight text-foreground sm:text-4xl lg:text-[2.5rem]">
+                Checkout
               </h1>
-              <p className="mt-2 max-w-lg text-base leading-relaxed text-muted-foreground">
-                You&apos;re almost there — confirm delivery details and choose how you&apos;d like
-                to pay.
-              </p>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -832,14 +822,13 @@ export function CheckoutPage() {
               <SectionCard
                 step={1}
                 icon={User}
-                title="Delivery details"
-                subtitle="Where should we send your order? We'll only use this for delivery updates."
+                title="Delivery"
               >
                 <div className="space-y-5">
                   <FormField
                     id="fullName"
                     name="fullName"
-                    label="Full name"
+                    label="Name"
                     value={form.fullName}
                     onChange={handleChange}
                     placeholder="Jane Nakato"
@@ -850,7 +839,7 @@ export function CheckoutPage() {
                     <FormField
                       id="phone"
                       name="phone"
-                      label="Phone number"
+                      label="Phone"
                       type="tel"
                       value={form.phone}
                       onChange={handleChange}
@@ -860,7 +849,7 @@ export function CheckoutPage() {
                     <FormField
                       id="email"
                       name="email"
-                      label="Email address"
+                      label="Email"
                       type="email"
                       value={form.email}
                       onChange={handleChange}
@@ -872,7 +861,7 @@ export function CheckoutPage() {
                   <FormField
                     id="address"
                     name="address"
-                    label="Street address"
+                    label="Address"
                     value={form.address}
                     onChange={handleChange}
                     placeholder="Street, building, area"
@@ -902,8 +891,8 @@ export function CheckoutPage() {
                       )}
                       {' · '}
                       {quote.delivery.estimatedDays
-                        ? `${quote.delivery.estimatedDays} across Kampala & surrounding areas.`
-                        : 'Standard delivery across Kampala & surrounding areas.'}
+                        ? quote.delivery.estimatedDays
+                        : 'Kampala & nearby'}
                     </p>
                   </div>
                 </div>
@@ -912,14 +901,20 @@ export function CheckoutPage() {
               <SectionCard
                 step={2}
                 icon={Sparkles}
-                title="Who is paying?"
-                subtitle="Pay yourself, or send a secure link so someone else can cover this order."
+                title="Payment"
               >
                 {canGift ? (
-                  <GiftPayChoice mode={payMode} onChange={setPayMode} />
+                  <GiftPayChoice
+                    mode={payMode}
+                    onChange={setPayMode}
+                    giftLabel="Someone else"
+                    selfDescription="Mobile money or card"
+                    giftDescription="Share a link"
+                    showTitle={false}
+                  />
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    Online payment links are off. Place the order yourself with the methods below.
+                    Pay with a method below.
                   </p>
                 )}
 
@@ -943,8 +938,7 @@ export function CheckoutPage() {
                   </div>
                 ) : paymentOptions.length === 0 ? (
                   <p className="mt-5 rounded-xl border border-border/70 bg-muted/40 px-4 py-4 text-sm text-muted-foreground">
-                    Checkout is temporarily unavailable because no payment methods are enabled.
-                    Please contact the store.
+                    Payments are off. Contact the store.
                   </p>
                 ) : (
                   <div className="mt-5 grid gap-3 sm:grid-cols-3">
@@ -996,9 +990,9 @@ export function CheckoutPage() {
               {/* Mobile-only compact order preview */}
               <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm lg:hidden">
                 <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
-                  <span className="text-sm font-medium">Order preview</span>
+                  <span className="text-sm font-medium">Order</span>
                   <Link href="/cart" className="text-xs font-medium text-primary">
-                    Edit cart
+                    Edit
                   </Link>
                 </div>
                 <ul className="divide-y divide-border/50 px-4">
