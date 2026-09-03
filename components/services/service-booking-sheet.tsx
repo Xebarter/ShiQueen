@@ -64,7 +64,7 @@ export function ServiceBookingSheet({
   provider,
 }: ServiceBookingSheetProps) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const {
     authLoading,
     authPromptOpen,
@@ -88,8 +88,8 @@ export function ServiceBookingSheet({
   const [customerAddress, setCustomerAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [form, setForm] = useState({
-    fullName: '',
-    phone: '',
+    fullName: profile?.displayName || user?.displayName || '',
+    phone: profile?.phone || user?.phoneNumber || '',
     email: user?.email ?? '',
   });
   const [payMode, setPayMode] = useState<GiftPayMode>('self');
@@ -97,10 +97,17 @@ export function ServiceBookingSheet({
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user?.email) {
-      setForm((f) => ({ ...f, email: user.email ?? f.email }));
-    }
-  }, [user?.email]);
+    const nextName = profile?.displayName || user?.displayName || '';
+    const nextPhone = profile?.phone || user?.phoneNumber || '';
+    const nextEmail = user?.email || '';
+    if (!nextName && !nextPhone && !nextEmail) return;
+    setForm((f) => ({
+      ...f,
+      fullName: f.fullName || nextName,
+      phone: f.phone || nextPhone,
+      email: f.email || nextEmail,
+    }));
+  }, [profile?.displayName, profile?.phone, user?.displayName, user?.phoneNumber, user?.email]);
 
   useEffect(() => {
     if (!open) {

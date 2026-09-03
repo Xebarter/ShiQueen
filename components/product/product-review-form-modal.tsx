@@ -126,7 +126,11 @@ export function ProductReviewFormModal({
 
   if (!open) return null;
 
-  const displayName = getDisplayName(profile?.displayName, user?.email);
+  const displayName = getDisplayName(
+    profile?.displayName ?? user?.displayName,
+    user?.email,
+    profile?.phone ?? user?.phoneNumber
+  );
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();

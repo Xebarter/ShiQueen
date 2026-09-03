@@ -132,7 +132,7 @@ export function AccountMobileNav({
                 >
                   <div className="border-b border-border/50 bg-gradient-to-br from-primary/[0.06] via-card to-card px-4 py-3.5">
                     <div className="flex items-center gap-3">
-                      <AccountAvatar email={email} variant="email-letter" size="sm" />
+                      <AccountAvatar displayName={displayName} email={email} variant="email-letter" size="sm" />
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold tracking-tight">
                           {displayName}
@@ -230,7 +230,7 @@ export function AccountMobileNav({
           </p>
         </div>
 
-        <AccountAvatar email={email} variant="email-letter" size="sm" />
+        <AccountAvatar displayName={displayName} email={email} variant="email-letter" size="sm" />
       </header>
     </div>
   );

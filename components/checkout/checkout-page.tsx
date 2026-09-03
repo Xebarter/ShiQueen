@@ -450,23 +450,40 @@ export function CheckoutPage() {
   );
   const [payMode, setPayMode] = useState<GiftPayMode>('self');
   const [form, setForm] = useState({
-    fullName: '',
-    phone: profile?.phone || user?.phoneNumber || '',
+    fullName: profile?.displayName || user?.displayName || profile?.defaultAddress?.fullName || '',
+    phone: profile?.phone || user?.phoneNumber || profile?.defaultAddress?.phone || '',
     email: user?.email || '',
-    address: '',
-    city: 'Kampala',
+    address: profile?.defaultAddress?.address || '',
+    city: profile?.defaultAddress?.city || 'Kampala',
   });
 
   useEffect(() => {
-    const nextPhone = profile?.phone || user?.phoneNumber || '';
+    const nextName =
+      profile?.displayName || user?.displayName || profile?.defaultAddress?.fullName || '';
+    const nextPhone = profile?.phone || user?.phoneNumber || profile?.defaultAddress?.phone || '';
     const nextEmail = user?.email || '';
-    if (!nextPhone && !nextEmail) return;
+    const nextAddress = profile?.defaultAddress?.address || '';
+    const nextCity = profile?.defaultAddress?.city || '';
+    if (!nextName && !nextPhone && !nextEmail && !nextAddress) return;
     setForm((prev) => ({
       ...prev,
+      fullName: prev.fullName || nextName,
       phone: prev.phone || nextPhone,
       email: prev.email || nextEmail,
+      address: prev.address || nextAddress,
+      city: prev.city || nextCity || 'Kampala',
     }));
-  }, [profile?.phone, user?.phoneNumber, user?.email]);
+  }, [
+    profile?.displayName,
+    profile?.defaultAddress?.fullName,
+    profile?.defaultAddress?.phone,
+    profile?.defaultAddress?.address,
+    profile?.defaultAddress?.city,
+    profile?.phone,
+    user?.phoneNumber,
+    user?.displayName,
+    user?.email,
+  ]);
 
   useEffect(() => {
     try {

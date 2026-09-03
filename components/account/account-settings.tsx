@@ -356,6 +356,7 @@ export function AccountSettings({
           <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
               <AccountAvatar
+                displayName={displayName}
                 email={user.email}
                 phone={profile?.phone ?? user.phoneNumber}
                 variant="email-letter"

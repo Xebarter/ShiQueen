@@ -50,7 +50,7 @@ export function AccountAvatar({
   }
 
   if (variant === 'email-letter') {
-    const initial = getEmailInitial(email, phone);
+    const initial = getEmailInitial(email, phone, displayName);
     const colors = getAvatarColorsForLetter(initial);
 
     return (

@@ -11,6 +11,10 @@ export function getDisplayName(
   return 'Member';
 }
 
+export function normalizePersonName(value: string): string {
+  return value.trim().replace(/\s+/g, ' ');
+}
+
 export function getAccountHandle(
   email?: string | null,
   phone?: string | null
@@ -28,8 +32,14 @@ export function getInitials(name: string): string {
     .join('');
 }
 
-/** First letter of the email local-part (before @), or last digit of a phone. */
-export function getEmailInitial(email?: string | null, phone?: string | null): string {
+/** First letter of the name, else email local-part, else last digit of a phone. */
+export function getEmailInitial(
+  email?: string | null,
+  phone?: string | null,
+  name?: string | null
+): string {
+  const nameMatch = name?.trim().match(/[a-zA-Z]/);
+  if (nameMatch) return nameMatch[0].toUpperCase();
   if (email?.trim()) {
     const local = email.trim().split('@')[0] || email.trim();
     const match = local.match(/[a-zA-Z0-9]/);

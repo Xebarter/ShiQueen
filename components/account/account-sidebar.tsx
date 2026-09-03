@@ -45,7 +45,7 @@ export function AccountSidebar({
       <div className="overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/[0.06] via-card to-card shadow-sm ring-1 ring-black/[0.02]">
         <div className="border-b border-border/50 px-5 py-5">
           <div className="flex items-center gap-3">
-            <AccountAvatar email={email} variant="email-letter" size="md" />
+            <AccountAvatar displayName={displayName} email={email} variant="email-letter" size="md" />
             <div className="min-w-0">
               <p className="truncate font-semibold tracking-tight">{displayName}</p>
               <p className="truncate text-xs text-muted-foreground">{email}</p>

@@ -46,3 +46,32 @@ export function shouldPromptForPhone(options: {
   if (!isEmailOrGoogleSignIn(user)) return false;
   return !hasSavedAccountPhone(user, profile);
 }
+
+export function isPhoneSignIn(user: User | null | undefined): boolean {
+  if (!user) return false;
+  return user.providerData.some((provider) => provider.providerId === 'phone');
+}
+
+export function hasSavedAccountName(
+  user: User | null | undefined,
+  profile: UserProfile | null | undefined
+): boolean {
+  const name = (profile?.displayName || user?.displayName || '').trim();
+  if (name.length < 2) return false;
+  if (toE164UgandaPhone(name)) return false;
+  if (/^\+?\d[\d\s-]{6,}$/.test(name)) return false;
+  return true;
+}
+
+export function shouldPromptForName(options: {
+  user: User | null | undefined;
+  profile: UserProfile | null | undefined;
+  loading: boolean;
+  pathname?: string | null;
+}): boolean {
+  const { user, profile, loading, pathname } = options;
+  if (loading || !user || !profile) return false;
+  if (isAuthFlowPath(pathname)) return false;
+  if (!isPhoneSignIn(user)) return false;
+  return !hasSavedAccountName(user, profile);
+}
