@@ -35,6 +35,10 @@ import { createOrder } from '@/lib/firebase/orders';
 import { expandPackageCartItems, isPackageCartItem } from '@/lib/package-utils';
 import { SendPaymentLinkCard } from '@/components/checkout/send-payment-link-card';
 import { GiftPayChoice, type GiftPayMode } from '@/components/payments/gift-pay-choice';
+import {
+  ContinueAuthDialog,
+  useContinueAuthPrompt,
+} from '@/components/auth/continue-auth-dialog';
 import { getWholesaleSavings } from '@/lib/wholesale-cart';
 import { formatUGX } from '@/lib/wholesale-data';
 import type { PaymentMethod, ShippingAddress } from '@/lib/types/database';
@@ -70,7 +74,7 @@ const PAYMENT_OPTIONS: {
   },
 ];
 
-const fieldClass =
+const CHECKOUT_FORM_KEY = 'sq.checkout.form.v1';
   'h-12 rounded-xl border-border/80 bg-background px-4 text-base shadow-sm transition-all placeholder:text-muted-foreground/70 focus-visible:border-primary/40 focus-visible:ring-4 focus-visible:ring-primary/10 md:text-base';
 
 function SectionCard({
@@ -262,6 +266,8 @@ function OrderSummaryPanel({
   itemCount,
   wholesaleSavings,
   loading,
+  submitLocked,
+  signedIn,
   submitLabel,
   paymentMethod,
   payMode,
@@ -272,6 +278,8 @@ function OrderSummaryPanel({
   itemCount: number;
   wholesaleSavings: number;
   loading: boolean;
+  submitLocked?: boolean;
+  signedIn?: boolean;
   submitLabel: string;
   paymentMethod: PaymentMethod;
   payMode: GiftPayMode;
@@ -339,7 +347,7 @@ function OrderSummaryPanel({
               type="submit"
               form="checkout-form"
               className="h-12 w-full rounded-xl text-base font-semibold shadow-lg shadow-primary/25 transition hover:shadow-xl hover:shadow-primary/30"
-              disabled={loading || !canPay}
+              disabled={loading || submitLocked || !canPay}
               size="lg"
             >
               {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
@@ -347,7 +355,7 @@ function OrderSummaryPanel({
             </Button>
             <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
               <Lock className="h-3 w-3" />
-              Secure
+              {signedIn ? 'Secure checkout' : 'Sign in to complete your order'}
             </p>
           </>
         )}
@@ -424,6 +432,13 @@ function EmptyCheckout() {
 export function CheckoutPage() {
   const { items, total, clearCart, itemCount } = useCart();
   const { user, profile } = useAuth();
+  const {
+    authLoading,
+    authPromptOpen,
+    setAuthPromptOpen,
+    authIntent,
+    requireAuth,
+  } = useContinueAuthPrompt();
   const { products } = useProducts();
   const { packages } = useWholesale();
   const { activeListings } = useServices();
@@ -452,6 +467,33 @@ export function CheckoutPage() {
       email: prev.email || nextEmail,
     }));
   }, [profile?.phone, user?.phoneNumber, user?.email]);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(CHECKOUT_FORM_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as Partial<typeof form>;
+      setForm((prev) => ({
+        fullName: prev.fullName || saved.fullName || '',
+        phone: prev.phone || saved.phone || '',
+        email: prev.email || saved.email || '',
+        address: prev.address || saved.address || '',
+        city: prev.city || saved.city || 'Kampala',
+      }));
+    } catch {
+      /* ignore */
+    }
+    // Restore once on mount; profile effect still fills empty identity fields.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(CHECKOUT_FORM_KEY, JSON.stringify(form));
+    } catch {
+      /* ignore */
+    }
+  }, [form]);
 
   useEffect(() => {
     if (enabledMethods.length === 0) return;
@@ -504,6 +546,7 @@ export function CheckoutPage() {
       toast.error('Share a payment link below, or switch to “I’ll pay”.');
       return;
     }
+    if (!requireAuth('order')) return;
     if (!enabledMethods.includes(paymentMethod)) {
       toast.error('This payment method is not available.');
       return;
@@ -918,6 +961,12 @@ export function CheckoutPage() {
                   </p>
                 )}
 
+                {!user && !authLoading ? (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    You’ll be asked to sign in before paying or sharing a link.
+                  </p>
+                ) : null}
+
                 {payMode === 'gift' && canGift ? (
                   <div className="mt-5">
                     <SendPaymentLinkCard
@@ -1020,6 +1069,8 @@ export function CheckoutPage() {
                 itemCount={itemCount}
                 wholesaleSavings={wholesaleSavings}
                 loading={loading}
+                submitLocked={authLoading}
+                signedIn={Boolean(user)}
                 submitLabel={submitLabel}
                 paymentMethod={paymentMethod}
                 payMode={payMode}
@@ -1067,7 +1118,7 @@ export function CheckoutPage() {
             type="submit"
             form="checkout-form"
             className="h-12 w-full rounded-xl text-base font-semibold shadow-lg shadow-primary/25"
-            disabled={loading || paymentOptions.length === 0}
+            disabled={loading || authLoading || paymentOptions.length === 0}
             size="lg"
           >
             {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
@@ -1075,6 +1126,13 @@ export function CheckoutPage() {
           </Button>
         )}
       </div>
+
+      <ContinueAuthDialog
+        open={authPromptOpen}
+        onClose={() => setAuthPromptOpen(false)}
+        intent={authIntent}
+        nextPath="/checkout"
+      />
 
       <Footer />
     </main>

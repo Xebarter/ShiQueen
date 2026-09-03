@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth-context';
-import { getPostAuthPath } from '@/lib/auth-redirect';
+import { getPostAuthPath, getSafeAuthNextPath, withAuthNext } from '@/lib/auth-redirect';
 import { getAuthErrorMessage } from '@/lib/auth-errors';
 import { AuthDivider, AuthShell } from '@/components/auth/auth-shell';
 import { AuthGuestOnly } from '@/components/auth/auth-guest-only';
@@ -19,6 +19,14 @@ import { Loader2, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function SignUp() {
+  return (
+    <Suspense>
+      <SignUpContent />
+    </Suspense>
+  );
+}
+
+function SignUpContent() {
   const [emailOpen, setEmailOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,6 +36,8 @@ export default function SignUp() {
   const [phoneBusy, setPhoneBusy] = useState(false);
   const { signUp, signInWithGoogle, refreshProfile } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = getSafeAuthNextPath(searchParams.get('next'));
 
   const goAfterAuth = async () => {
     await refreshProfile();
@@ -35,7 +45,7 @@ export default function SignUp() {
     const { getFirebaseAuth } = await import('@/lib/firebase/auth');
     const uid = getFirebaseAuth()?.currentUser?.uid;
     const nextProfile = uid ? await getUserProfile(uid) : null;
-    router.push(getPostAuthPath(nextProfile));
+    router.push(nextPath ?? getPostAuthPath(nextProfile));
   };
 
   const isBusy = loading || googleLoading || phoneBusy;
@@ -92,13 +102,13 @@ export default function SignUp() {
       footer={
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{' '}
-          <Link href="/sign-in" className="font-semibold text-primary underline-offset-4 hover:underline">
+          <Link href={withAuthNext('/sign-in', nextPath)} className="font-semibold text-primary underline-offset-4 hover:underline">
             Sign in
           </Link>
         </p>
       }
     >
-      <AuthGuestOnly>
+      <AuthGuestOnly redirectTo={nextPath ?? undefined}>
         <div className="space-y-5">
           <PhoneSignIn
             disabled={loading || googleLoading}

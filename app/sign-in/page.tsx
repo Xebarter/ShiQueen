@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth-context';
-import { getPostAuthPath } from '@/lib/auth-redirect';
+import { getPostAuthPath, getSafeAuthNextPath, withAuthNext } from '@/lib/auth-redirect';
 import { getAuthErrorMessage } from '@/lib/auth-errors';
 import { AuthDivider, AuthShell } from '@/components/auth/auth-shell';
 import { AuthGuestOnly } from '@/components/auth/auth-guest-only';
@@ -21,6 +21,14 @@ import { cn } from '@/lib/utils';
 type EmailStep = 'identify' | 'password';
 
 export default function SignIn() {
+  return (
+    <Suspense>
+      <SignInContent />
+    </Suspense>
+  );
+}
+
+function SignInContent() {
   const [emailOpen, setEmailOpen] = useState(false);
   const [emailStep, setEmailStep] = useState('identify' as EmailStep);
   const [email, setEmail] = useState('');
@@ -30,6 +38,8 @@ export default function SignIn() {
   const [phoneBusy, setPhoneBusy] = useState(false);
   const { signInOrCreate, signInWithGoogle, refreshProfile } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = getSafeAuthNextPath(searchParams.get('next'));
 
   const isBusy = loading || googleLoading || phoneBusy;
   const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -40,7 +50,7 @@ export default function SignIn() {
     const { getFirebaseAuth } = await import('@/lib/firebase/auth');
     const uid = getFirebaseAuth()?.currentUser?.uid;
     const nextProfile = uid ? await getUserProfile(uid) : null;
-    router.push(getPostAuthPath(nextProfile));
+    router.push(nextPath ?? getPostAuthPath(nextProfile));
   };
 
   const handlePhoneSuccess = async ({ created }: { created: boolean }) => {
@@ -97,13 +107,13 @@ export default function SignIn() {
       footer={
         <p className="text-center text-sm text-muted-foreground">
           New to ShiQueen?{' '}
-          <Link href="/sign-up" className="font-semibold text-primary underline-offset-4 hover:underline">
+          <Link href={withAuthNext('/sign-up', nextPath)} className="font-semibold text-primary underline-offset-4 hover:underline">
             Create an account
           </Link>
         </p>
       }
     >
-      <AuthGuestOnly>
+      <AuthGuestOnly redirectTo={nextPath ?? undefined}>
         <div className="space-y-5">
           <PhoneSignIn
             disabled={loading || googleLoading}

@@ -21,6 +21,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { GiftPayChoice, type GiftPayMode } from '@/components/payments/gift-pay-choice';
 import { GiftPayLinkPanel } from '@/components/payments/gift-pay-link-panel';
+import {
+  ContinueAuthDialog,
+  useContinueAuthPrompt,
+} from '@/components/auth/continue-auth-dialog';
 import { useAuth } from '@/lib/auth-context';
 import { useServices } from '@/lib/services-context';
 import {
@@ -61,6 +65,13 @@ export function ServiceBookingSheet({
 }: ServiceBookingSheetProps) {
   const router = useRouter();
   const { user } = useAuth();
+  const {
+    authLoading,
+    authPromptOpen,
+    setAuthPromptOpen,
+    authIntent,
+    requireAuth,
+  } = useContinueAuthPrompt();
   const { availability } = useServices();
 
   useHistoryOverlay(open, onClose);
@@ -190,6 +201,7 @@ export function ServiceBookingSheet({
 
   const handleSelfPay = async () => {
     if (!validateSchedule() || !validateDetails()) return;
+    if (!requireAuth('booking')) return;
 
     setLoading(true);
     try {
@@ -281,6 +293,7 @@ export function ServiceBookingSheet({
 
   const handleShareGiftLink = async () => {
     if (!validateSchedule() || !validateDetails()) return;
+    if (!requireAuth('payment-link')) return;
 
     setLoading(true);
     try {
@@ -351,6 +364,7 @@ export function ServiceBookingSheet({
   };
 
   const handleCopyGiftLink = async () => {
+    if (!requireAuth('payment-link')) return;
     if (!shareUrl) return;
     try {
       await navigator.clipboard.writeText(shareUrl);
@@ -654,11 +668,17 @@ export function ServiceBookingSheet({
 
                   <GiftPayChoice mode={payMode} onChange={setPayMode} />
 
+                  {!user && !authLoading ? (
+                    <p className="text-xs text-muted-foreground">
+                      You’ll be asked to sign in before paying or sharing a link.
+                    </p>
+                  ) : null}
+
                   {payMode === 'self' ? (
                     <Button
                       type="button"
                       className="h-12 w-full gap-2 rounded-xl text-base font-semibold"
-                      disabled={loading}
+                      disabled={loading || authLoading}
                       onClick={handleSelfPay}
                     >
                       {loading ? (
@@ -675,11 +695,14 @@ export function ServiceBookingSheet({
                       recipientName={form.fullName.trim() || 'you'}
                       shareUrl={shareUrl}
                       expiresAt={expiresAt}
-                      loading={loading}
+                      loading={loading || authLoading}
                       canShare={!loading}
                       onShareLink={handleShareGiftLink}
                       onCopyLink={handleCopyGiftLink}
                       shareLabel="Share payment link"
+                      helperText={
+                        user ? undefined : 'Sign in to create and copy the payment link.'
+                      }
                     />
                   )}
                 </>
@@ -727,6 +750,12 @@ export function ServiceBookingSheet({
           </div>
         )}
       </div>
+      <ContinueAuthDialog
+        open={authPromptOpen}
+        onClose={() => setAuthPromptOpen(false)}
+        intent={authIntent}
+        nextPath={`/services/${listing.slug}`}
+      />
     </div>
   );
 }

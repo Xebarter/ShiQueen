@@ -19,11 +19,19 @@ export function getAuthErrorMessage(error: unknown): string {
       return 'That code expired. Request a new one.';
     case 'auth/captcha-check-failed':
     case 'auth/invalid-app-credential':
-      return 'Phone verification could not start. Refresh the page and try again.';
+      return 'Phone verification could not start on this site. Try Google or email.';
     case 'auth/quota-exceeded':
       return 'SMS limit reached. Try again later or use another sign-in method.';
-    case 'auth/operation-not-allowed':
+    case 'auth/operation-not-allowed': {
+      const message =
+        typeof error === 'object' && error !== null && 'message' in error
+          ? String((error as { message: string }).message)
+          : '';
+      if (/region/i.test(message)) {
+        return 'SMS is not enabled for Uganda yet. Use Google or email, or ask the store to turn on phone sign-in.';
+      }
       return 'Phone sign-in is not enabled yet. Try Google or email.';
+    }
     case 'auth/user-disabled':
       return 'This account has been disabled. Contact support for help.';
     case 'invalid_credentials':

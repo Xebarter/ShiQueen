@@ -25,3 +25,23 @@ export function isServiceProviderProfile(
   if (!profile) return false;
   return Boolean(profile.providerId) || profile.role === 'service_provider';
 }
+
+/** Same-origin relative path after sign-in. Rejects protocol-relative and auth loops. */
+export function getSafeAuthNextPath(next: string | null | undefined): string | null {
+  if (!next) return null;
+  const trimmed = next.trim();
+  if (!trimmed.startsWith('/') || trimmed.startsWith('//')) return null;
+  if (trimmed.includes('://')) return null;
+  if (trimmed.startsWith('/sign-in') || trimmed.startsWith('/sign-up')) return null;
+  if (trimmed.startsWith('/services/sign-in') || trimmed.startsWith('/suppliers/sign-in')) {
+    return null;
+  }
+  return trimmed;
+}
+
+export function withAuthNext(href: string, next: string | null | undefined): string {
+  const safe = getSafeAuthNextPath(next);
+  if (!safe) return href;
+  const join = href.includes('?') ? '&' : '?';
+  return `${href}${join}next=${encodeURIComponent(safe)}`;
+}

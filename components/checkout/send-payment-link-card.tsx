@@ -3,6 +3,10 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { GiftPayLinkPanel } from '@/components/payments/gift-pay-link-panel';
+import {
+  ContinueAuthDialog,
+  useContinueAuthPrompt,
+} from '@/components/auth/continue-auth-dialog';
 import type { CartItem } from '@/lib/cart-context';
 import type { OrderItem } from '@/lib/types/database';
 import { shareOrCopy } from '@/lib/share';
@@ -47,6 +51,14 @@ export function SendPaymentLinkCard({
   const [loading, setLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const {
+    user,
+    authLoading,
+    authPromptOpen,
+    setAuthPromptOpen,
+    authIntent,
+    requireAuth,
+  } = useContinueAuthPrompt();
 
   const canShare = isDeliveryComplete(deliveryDetails) && cartItems.length > 0;
 
@@ -65,7 +77,7 @@ export function SendPaymentLinkCard({
         phone: deliveryDetails.phone,
         address: deliveryDetails.address,
         city: deliveryDetails.city,
-        senderUserId,
+        senderUserId: senderUserId || user?.uid || null,
       }),
     });
 
@@ -103,6 +115,7 @@ export function SendPaymentLinkCard({
       toast.error('Please complete your delivery details first.');
       return;
     }
+    if (!requireAuth('payment-link')) return;
 
     setLoading(true);
     try {
@@ -126,6 +139,7 @@ export function SendPaymentLinkCard({
   };
 
   const handleCopyLink = async () => {
+    if (!requireAuth('payment-link')) return;
     if (!shareUrl) return;
     try {
       await navigator.clipboard.writeText(shareUrl);
@@ -136,6 +150,7 @@ export function SendPaymentLinkCard({
   };
 
   return (
+    <>
     <GiftPayLinkPanel
       className={className}
       amountLabel="Order total"
@@ -143,16 +158,27 @@ export function SendPaymentLinkCard({
       recipientName={deliveryDetails.fullName.trim() || 'you'}
       shareUrl={shareUrl}
       expiresAt={expiresAt}
-      loading={loading}
+      loading={loading || authLoading}
       canShare={canShare}
       onShareLink={handleShareLink}
       onCopyLink={handleCopyLink}
       shareLabel="Share payment link"
       helperText={
-        isDeliveryComplete(deliveryDetails)
-          ? undefined
-          : 'Fill in your name, phone, email, and delivery address above first.'
+        !isDeliveryComplete(deliveryDetails)
+          ? user
+            ? 'Fill in your name, phone, email, and delivery address above first.'
+            : 'Fill in delivery details, then sign in to create the payment link.'
+          : user
+            ? undefined
+            : 'Sign in to create and copy the payment link.'
       }
     />
+    <ContinueAuthDialog
+      open={authPromptOpen}
+      onClose={() => setAuthPromptOpen(false)}
+      intent={authIntent}
+      nextPath="/checkout"
+    />
+    </>
   );
 }
