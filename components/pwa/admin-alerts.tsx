@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Bell, X } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useSuppliers } from '@/lib/suppliers-context';
@@ -22,7 +23,14 @@ import {
   requestPartnerNotificationPermission,
   showPartnerNotification,
 } from '@/lib/pwa/messaging';
-import { playPartnerChime, vibratePartnerAlert } from '@/lib/pwa/sound';
+import {
+  INCOMING_VIBRATE_PATTERN,
+  playPartnerChime,
+  startPartnerRing,
+  stopPartnerRing,
+  vibratePartnerAlert,
+} from '@/lib/pwa/sound';
+import { FOREGROUND_PUSH_EVENT, type IncomingPushPayload } from '@/lib/pwa/incoming';
 import { subscribeContactMessages } from '@/lib/firebase/contact-messages';
 import { subscribeOrders } from '@/lib/firebase/orders';
 import { subscribeProductReviews } from '@/lib/firebase/product-reviews';
@@ -31,6 +39,10 @@ import type { ContactMessage } from '@/lib/types/contact-messages';
 import type { Order, ProductReview } from '@/lib/types/database';
 import type { BulkOrder, WholesaleAccount } from '@/lib/types/wholesale';
 import { Button } from '@/components/ui/button';
+import {
+  IncomingCallOverlay,
+  type IncomingAlert,
+} from '@/components/pwa/incoming-call-overlay';
 
 type Banner = {
   id: string;
@@ -45,14 +57,12 @@ function fireAlert(banner: Banner, notify: boolean) {
   playPartnerChime();
   vibratePartnerAlert();
   if (notify) {
-    const isOrder = banner.href.startsWith(ADMIN_ORDERS_HREF);
     void showPartnerNotification(banner.title, {
       body: banner.body,
       url: banner.href,
       tag: banner.id,
+      silent: false,
       renotify: true,
-      requireInteraction: isOrder,
-      vibrate: isOrder ? [180, 80, 180, 80, 240] : [120, 60, 120],
     });
   }
 }
@@ -63,11 +73,14 @@ function pendingIds(items: Array<{ id: string; approvalStatus?: string }>) {
 
 export function AdminAlerts() {
   const { user, isAdmin, profile } = useAuth();
+  const router = useRouter();
   const { suppliers, loading: suppliersLoading } = useSuppliers();
   const { providers, bookings, loading: servicesLoading } = useServices();
   const prefs = resolveUserPreferences(profile?.preferences);
   const enabled = isAdmin && prefs.pushAlerts !== false;
   const [banner, setBanner] = useState<Banner | null>(null);
+  const [incoming, setIncoming] = useState<IncomingAlert | null>(null);
+  const incomingRef = useRef<IncomingAlert | null>(null);
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default');
   const [promptHidden, setPromptHidden] = useState(true);
   const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
@@ -88,6 +101,35 @@ export function AdminAlerts() {
   const seenBookings = useRef<Set<string> | null>(null);
   const seenBulk = useRef<Set<string> | null>(null);
   const seenWholesale = useRef<Set<string> | null>(null);
+
+  useEffect(() => {
+    incomingRef.current = incoming;
+  }, [incoming]);
+
+  const silenceIncoming = () => {
+    stopPartnerRing();
+    setIncoming(null);
+  };
+
+  const presentIncoming = (next: IncomingAlert) => {
+    setBanner(null);
+    setIncoming(next);
+    startPartnerRing();
+    void showPartnerNotification(next.title, {
+      body: next.body,
+      url: next.href,
+      tag: `incoming-${next.kind}-${next.id}`,
+      silent: false,
+      renotify: true,
+      requireInteraction: true,
+      vibrate: [...INCOMING_VIBRATE_PATTERN],
+      data: { type: next.kind === 'booking' ? 'admin_booking' : 'admin_order', id: next.id, url: next.href },
+      actions: [
+        { action: 'accept', title: 'Accept' },
+        { action: 'decline', title: 'Decline' },
+      ],
+    });
+  };
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) {
@@ -161,6 +203,7 @@ export function AdminAlerts() {
   }, [enabled]);
 
   const showBanner = (next: Banner) => {
+    silenceIncoming();
     setBanner(next);
     fireAlert(next, true);
   };
@@ -276,9 +319,10 @@ export function AdminAlerts() {
     seenOrders.current = ids;
     const newest = fresh[0];
     if (!newest) return;
-    showBanner({
-      id: `admin-order-${newest.id}`,
-      title: fresh.length > 1 ? `${fresh.length} new orders` : 'New ShiQueen order',
+    presentIncoming({
+      id: newest.id,
+      kind: 'order',
+      title: fresh.length > 1 ? `${fresh.length} new orders` : 'Incoming order',
       body:
         fresh.length > 1
           ? `${newest.customerName} and ${fresh.length - 1} more`
@@ -298,14 +342,15 @@ export function AdminAlerts() {
     seenBookings.current = ids;
     const newest = fresh[0];
     if (!newest) return;
-    showBanner({
-      id: `admin-booking-${newest.id}`,
-      title: fresh.length > 1 ? `${fresh.length} new bookings` : 'New service booking',
+    presentIncoming({
+      id: newest.id,
+      kind: 'booking',
+      title: fresh.length > 1 ? `${fresh.length} new bookings` : 'Incoming booking',
       body:
         fresh.length > 1
           ? `${newest.customerName} and ${fresh.length - 1} more`
           : `${newest.customerName} booked ${newest.serviceName}`,
-      href: ADMIN_SERVICE_BOOKINGS_HREF,
+      href: `${ADMIN_SERVICE_BOOKINGS_HREF}&id=${encodeURIComponent(newest.id)}`,
     });
   }, [enabled, bookings, servicesLoading]);
 
@@ -349,10 +394,82 @@ export function AdminAlerts() {
     });
   }, [enabled, wholesaleAccounts, wholesaleLoading]);
 
+  useEffect(() => {
+    return () => stopPartnerRing();
+  }, []);
+
+  useEffect(() => {
+    if (!enabled) return;
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+
+    const onMessage = (event: MessageEvent) => {
+      const data = event.data as {
+        type?: string;
+        action?: string;
+        url?: string;
+        kind?: string;
+        title?: string;
+        body?: string;
+      } | null;
+      if (!data || data.type !== 'partner-incoming') return;
+      if (data.action === 'decline' || data.action === 'silence') {
+        silenceIncoming();
+        return;
+      }
+      if (data.action === 'ring') {
+        presentIncoming({
+          id: data.url || 'admin-incoming',
+          kind: data.kind === 'booking' ? 'booking' : 'order',
+          title: data.title || (data.kind === 'booking' ? 'Incoming booking' : 'Incoming order'),
+          body: data.body || 'A customer just checked out',
+          href: data.url || ADMIN_ORDERS_HREF,
+        });
+        return;
+      }
+      if (data.action === 'accept') {
+        const href = data.url || incomingRef.current?.href;
+        silenceIncoming();
+        if (href) router.push(href);
+      }
+    };
+
+    navigator.serviceWorker.addEventListener('message', onMessage);
+    return () => navigator.serviceWorker.removeEventListener('message', onMessage);
+  }, [enabled, router]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const onPush = (event: Event) => {
+      const detail = (event as CustomEvent<IncomingPushPayload>).detail;
+      if (detail?.type === 'admin_order') {
+        presentIncoming({
+          id: detail.tag || detail.url || 'admin-order',
+          kind: 'order',
+          title: detail.title || 'Incoming order',
+          body: detail.body || 'A customer placed an order',
+          href: detail.url || ADMIN_ORDERS_HREF,
+        });
+      }
+      if (detail?.type === 'admin_booking') {
+        presentIncoming({
+          id: detail.tag || detail.url || 'admin-booking',
+          kind: 'booking',
+          title: detail.title || 'Incoming booking',
+          body: detail.body || 'A customer booked a service',
+          href: detail.url || ADMIN_SERVICE_BOOKINGS_HREF,
+        });
+      }
+    };
+    window.addEventListener(FOREGROUND_PUSH_EVENT, onPush);
+    return () => window.removeEventListener(FOREGROUND_PUSH_EVENT, onPush);
+  }, [enabled]);
+
   const enableNotifications = async () => {
     const next = await requestPartnerNotificationPermission();
     setPermission(next);
     if (next === 'granted' && user?.uid) {
+      const { unlockPartnerAudio } = await import('@/lib/pwa/sound');
+      unlockPartnerAudio();
       await registerPartnerPushToken(user.uid);
     }
     window.localStorage.setItem(PROMPT_KEY, 'hidden');
@@ -399,20 +516,41 @@ export function AdminAlerts() {
             <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <Bell className="h-4 w-4" />
             </span>
-            <Link href={banner.href} className="min-w-0 flex-1" onClick={() => setBanner(null)}>
+            <Link
+              href={banner.href}
+              className="min-w-0 flex-1"
+              onClick={() => {
+                stopPartnerRing();
+                setBanner(null);
+              }}
+            >
               <p className="text-sm font-semibold">{banner.title}</p>
               <p className="text-xs text-muted-foreground">{banner.body}</p>
             </Link>
             <button
               type="button"
               className="rounded-full p-1 text-muted-foreground hover:bg-muted"
-              onClick={() => setBanner(null)}
+              onClick={() => {
+                stopPartnerRing();
+                setBanner(null);
+              }}
               aria-label="Dismiss alert"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
         </div>
+      ) : null}
+      {incoming ? (
+        <IncomingCallOverlay
+          incoming={incoming}
+          onAccept={() => {
+            const href = incomingRef.current?.href;
+            silenceIncoming();
+            if (href) router.push(href);
+          }}
+          onDecline={silenceIncoming}
+        />
       ) : null}
     </>
   );

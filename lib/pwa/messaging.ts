@@ -2,6 +2,7 @@
 
 import { addUserFcmToken } from '@/lib/firebase/users';
 import { registerPartnerServiceWorker } from '@/lib/pwa/register-sw';
+import type { IncomingPushPayload } from '@/lib/pwa/incoming';
 
 export function getVapidKey() {
   return process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY?.trim() || '';
@@ -19,6 +20,7 @@ export async function showPartnerNotification(
   options: NotificationOptions & {
     url?: string;
     renotify?: boolean;
+    silent?: boolean;
     vibrate?: number[];
     requireInteraction?: boolean;
     actions?: Array<{ action: string; title: string; icon?: string }>;
@@ -32,6 +34,7 @@ export async function showPartnerNotification(
   const payload: NotificationOptions & {
     actions?: Array<{ action: string; title: string; icon?: string }>;
   } = {
+    silent: false,
     icon: '/web-app-manifest-192x192.png',
     badge: '/web-app-manifest-192x192.png',
     ...rest,
@@ -76,4 +79,40 @@ export async function registerPartnerPushToken(uid: string): Promise<string | nu
     console.warn('[ShiQueen] FCM token registration failed:', error);
     return null;
   }
+}
+
+/** Fires while the PWA is open so incoming orders can ring even if the tab is focused. */
+export function subscribeForegroundPush(
+  onPayload: (payload: IncomingPushPayload) => void
+): () => void {
+  let unsubscribe: (() => void) | undefined;
+  let cancelled = false;
+
+  void (async () => {
+    try {
+      const { getMessaging, onMessage, isSupported } = await import('firebase/messaging');
+      const { getFirebaseApp } = await import('@/lib/firebase/auth');
+      const supported = await isSupported().catch(() => false);
+      if (!supported || cancelled) return;
+      const app = getFirebaseApp();
+      if (!app) return;
+      unsubscribe = onMessage(getMessaging(app), (message) => {
+        const data = (message.data ?? {}) as IncomingPushPayload;
+        onPayload({
+          title: data.title || message.notification?.title,
+          body: data.body || message.notification?.body,
+          url: data.url,
+          type: data.type,
+          tag: data.tag,
+        });
+      });
+    } catch (error) {
+      console.warn('[ShiQueen] Foreground push listener failed:', error);
+    }
+  })();
+
+  return () => {
+    cancelled = true;
+    unsubscribe?.();
+  };
 }

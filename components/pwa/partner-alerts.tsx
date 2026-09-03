@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, Phone, PhoneOff, ShoppingBag, Sparkles } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { subscribeOrdersForSupplier } from '@/lib/firebase/orders';
 import { subscribeServiceBookingsForProvider } from '@/lib/firebase/service-bookings';
@@ -14,19 +14,17 @@ import {
   requestPartnerNotificationPermission,
   showPartnerNotification,
 } from '@/lib/pwa/messaging';
-import { startPartnerRing, stopPartnerRing } from '@/lib/pwa/sound';
+import { INCOMING_VIBRATE_PATTERN, startPartnerRing, stopPartnerRing } from '@/lib/pwa/sound';
+import { FOREGROUND_PUSH_EVENT, type IncomingPushPayload } from '@/lib/pwa/incoming';
 import type { Order } from '@/lib/types/database';
 import type { ServiceBooking } from '@/lib/types/services';
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import {
+  IncomingCallOverlay,
+  type IncomingAlert,
+} from '@/components/pwa/incoming-call-overlay';
 
-type IncomingCall = {
-  id: string;
-  kind: 'order' | 'booking';
-  title: string;
-  body: string;
-  href: string;
-};
+type IncomingCall = IncomingAlert;
 
 const PROMPT_KEY = 'shequeen-partner-notify-prompt';
 
@@ -68,7 +66,8 @@ export function PartnerAlerts() {
       tag: `incoming-${next.kind}-${next.id}`,
       renotify: true,
       requireInteraction: true,
-      vibrate: [420, 160, 420, 900, 420, 160, 420, 900],
+      silent: false,
+      vibrate: [...INCOMING_VIBRATE_PATTERN],
       data: { type: next.kind, id: next.id, url: next.href },
       actions: [
         { action: 'accept', title: 'Accept' },
@@ -129,11 +128,35 @@ export function PartnerAlerts() {
     if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
 
     const onMessage = (event: MessageEvent) => {
-      const data = event.data as { type?: string; action?: string; url?: string } | null;
+      const data = event.data as {
+        type?: string;
+        action?: string;
+        url?: string;
+        kind?: string;
+        title?: string;
+        body?: string;
+      } | null;
       if (!data || data.type !== 'partner-incoming') return;
       if (data.action === 'decline' || data.action === 'silence') {
         silenceRing();
         setIncoming(null);
+        return;
+      }
+      if (data.action === 'ring') {
+        const isBooking = data.kind === 'booking';
+        if (isBooking && !providerId) return;
+        if (!isBooking && !supplierId) return;
+        if (data.url && data.title) {
+          presentIncoming({
+            id: data.url,
+            kind: isBooking ? 'booking' : 'order',
+            title: data.title,
+            body: data.body || '',
+            href: data.url,
+          });
+        } else {
+          startPartnerRing();
+        }
         return;
       }
       if (data.action === 'accept') {
@@ -145,7 +168,7 @@ export function PartnerAlerts() {
 
     navigator.serviceWorker.addEventListener('message', onMessage);
     return () => navigator.serviceWorker.removeEventListener('message', onMessage);
-  }, [router]);
+  }, [router, supplierId, providerId]);
 
   useEffect(() => {
     return () => silenceRing();
@@ -202,6 +225,34 @@ export function PartnerAlerts() {
     });
   }, [enabled, providerId]);
 
+  useEffect(() => {
+    if (!enabled) return;
+    const onPush = (event: Event) => {
+      const detail = (event as CustomEvent<IncomingPushPayload>).detail;
+      if (!detail?.type) return;
+      if (detail.type === 'order' && supplierId) {
+        presentIncoming({
+          id: detail.tag || detail.url || 'order',
+          kind: 'order',
+          title: detail.title || 'Incoming order',
+          body: detail.body || 'A customer placed an order',
+          href: detail.url || SUPPLIER_HOME_HREF,
+        });
+      }
+      if (detail.type === 'booking' && providerId) {
+        presentIncoming({
+          id: detail.tag || detail.url || 'booking',
+          kind: 'booking',
+          title: detail.title || 'Incoming booking',
+          body: detail.body || 'A customer booked a service',
+          href: detail.url || PROVIDER_HOME_HREF,
+        });
+      }
+    };
+    window.addEventListener(FOREGROUND_PUSH_EVENT, onPush);
+    return () => window.removeEventListener(FOREGROUND_PUSH_EVENT, onPush);
+  }, [enabled, supplierId, providerId]);
+
   if (!incoming) {
     const showPrompt =
       enabled && (Boolean(supplierId) || Boolean(providerId)) && permission === 'default' && !promptHidden;
@@ -225,6 +276,8 @@ export function PartnerAlerts() {
                     const next = await requestPartnerNotificationPermission();
                     setPermission(next);
                     if (next === 'granted' && user?.uid) {
+                      const { unlockPartnerAudio } = await import('@/lib/pwa/sound');
+                      unlockPartnerAudio();
                       await registerPartnerPushToken(user.uid);
                     }
                     window.localStorage.setItem(PROMPT_KEY, 'hidden');
@@ -251,59 +304,7 @@ export function PartnerAlerts() {
     );
   }
 
-  const Icon = incoming.kind === 'order' ? ShoppingBag : Sparkles;
-
   return (
-    <div className="pointer-events-none fixed inset-0 z-[80] flex items-end justify-center p-4 sm:items-center">
-      <div
-        className="pointer-events-none absolute inset-0 bg-background/55 backdrop-blur-[2px]"
-        aria-hidden
-      />
-      <div
-        role="alertdialog"
-        aria-labelledby="partner-incoming-title"
-        aria-describedby="partner-incoming-body"
-        className={cn(
-          'pointer-events-auto relative w-full max-w-sm overflow-hidden rounded-[1.75rem]',
-          'border border-border/70 bg-card shadow-[0_24px_80px_oklch(0.35_0.08_340_/_28%)]'
-        )}
-      >
-        <div className="bg-gradient-to-b from-primary/[0.12] via-card to-card px-5 pb-5 pt-6 text-center">
-          <div className="relative mx-auto mb-4 flex h-16 w-16 items-center justify-center">
-            <span className="absolute inset-0 animate-ping rounded-full bg-primary/25" />
-            <span className="absolute inset-1 animate-pulse rounded-full bg-primary/15" />
-            <span className="relative flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg">
-              <Icon className="h-6 w-6" />
-            </span>
-          </div>
-
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            {incoming.kind === 'order' ? 'New order' : 'New booking'}
-          </p>
-          <h2 id="partner-incoming-title" className="mt-1 text-xl font-bold tracking-tight">
-            {incoming.title}
-          </h2>
-          <p id="partner-incoming-body" className="mt-1 text-sm text-muted-foreground">
-            {incoming.body}
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 border-t border-border/60 bg-muted/20 p-4">
-          <Button
-            type="button"
-            variant="outline"
-            className="h-12 rounded-full border-rose-200 bg-background text-rose-700 hover:bg-rose-50 hover:text-rose-800"
-            onClick={decline}
-          >
-            <PhoneOff className="h-4 w-4" />
-            Decline
-          </Button>
-          <Button type="button" className="h-12 rounded-full" onClick={accept}>
-            <Phone className="h-4 w-4" />
-            Accept
-          </Button>
-        </div>
-      </div>
-    </div>
+    <IncomingCallOverlay incoming={incoming} onAccept={accept} onDecline={decline} />
   );
 }

@@ -87,7 +87,10 @@ async function sendToTokens(tokens: string[], payload: AlertPayload): Promise<vo
     },
     webpush: {
       fcmOptions: { link: payload.url },
-      ...(payload.type === 'order' || payload.type === 'admin_order'
+      ...(payload.type === 'order' ||
+      payload.type === 'booking' ||
+      payload.type === 'admin_order' ||
+      payload.type === 'admin_booking'
         ? { headers: { Urgency: 'high' } }
         : {}),
     },

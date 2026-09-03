@@ -58,8 +58,8 @@ function clearActiveNodes() {
 function playToneBurst(ctx: AudioContext, startAt: number) {
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(0.0001, startAt);
-  gain.gain.exponentialRampToValueAtTime(0.22, startAt + 0.03);
-  gain.gain.setValueAtTime(0.22, startAt + 0.35);
+  gain.gain.exponentialRampToValueAtTime(0.32, startAt + 0.03);
+  gain.gain.setValueAtTime(0.32, startAt + 0.35);
   gain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.55);
   gain.connect(ctx.destination);
   activeNodes.push(gain);
@@ -128,6 +128,9 @@ export function playPartnerChime() {
   void unlocked;
 }
 
+export const INCOMING_VIBRATE_PULSE = [420, 160, 420, 900];
+export const INCOMING_VIBRATE_PATTERN = [420, 160, 420, 900, 420, 160, 420, 900];
+
 export function vibratePartnerAlert() {
   if (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') return;
   try {
@@ -140,8 +143,7 @@ export function vibratePartnerAlert() {
 function vibratePartnerRingPulse() {
   if (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') return;
   try {
-    // Double pulse, then pause — mirrors a phone ring cadence.
-    navigator.vibrate([420, 160, 420, 900]);
+    navigator.vibrate([...INCOMING_VIBRATE_PULSE]);
   } catch {
     // Vibration not permitted
   }
@@ -156,6 +158,7 @@ export function startPartnerRing() {
   if (typeof window === 'undefined') return;
   stopPartnerRing();
   ringing = true;
+  unlockPartnerAudio();
   void requestRingWakeLock();
 
   const pulse = () => {

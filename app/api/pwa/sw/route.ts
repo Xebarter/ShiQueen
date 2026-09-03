@@ -35,7 +35,7 @@ self.addEventListener('notificationclick', (event) => {
   const data = (event.notification && event.notification.data) || {};
   const targetUrl = data.url || '/';
   const type = data.type || '';
-  const isIncoming = type === 'order' || type === 'booking';
+  const isIncoming = type === 'order' || type === 'booking' || type === 'admin_order' || type === 'admin_booking';
   event.notification.close();
 
   if (event.action === 'decline') {
@@ -57,7 +57,7 @@ self.addEventListener('notificationclick', (event) => {
 self.addEventListener('notificationclose', (event) => {
   const data = (event.notification && event.notification.data) || {};
   const type = data.type || '';
-  if (type === 'order' || type === 'booking') {
+  if (type === 'order' || type === 'booking' || type === 'admin_order' || type === 'admin_booking') {
     event.waitUntil(postToClients({ type: 'partner-incoming', action: 'silence' }));
   }
 });
@@ -91,16 +91,16 @@ if (FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.messagingSenderId && FIREBASE_CONF
       const url = payload.data?.url || '/';
       const type = payload.data?.type || '';
       const tag = payload.data?.tag || type || 'shequeen';
-      const isIncoming = type === 'order' || type === 'booking';
-      const isAdminOrder = type === 'admin_order';
+      const isIncoming = type === 'order' || type === 'booking' || type === 'admin_order' || type === 'admin_booking';
       return self.registration.showNotification(title, {
         body,
         icon: '/web-app-manifest-192x192.png',
         badge: '/web-app-manifest-192x192.png',
         tag,
+        silent: false,
         renotify: true,
-        requireInteraction: isIncoming || isAdminOrder,
-        data: { url, type },
+        requireInteraction: isIncoming,
+        data: { url, type, title, body },
         vibrate: isIncoming
           ? [420, 160, 420, 900, 420, 160, 420, 900]
           : [180, 80, 180, 80, 240],
@@ -110,6 +110,16 @@ if (FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.messagingSenderId && FIREBASE_CONF
               { action: 'decline', title: 'Decline' },
             ]
           : undefined,
+      }).then(() => {
+        if (!isIncoming) return;
+        return postToClients({
+          type: 'partner-incoming',
+          action: 'ring',
+          url,
+          kind: type === 'booking' || type === 'admin_booking' ? 'booking' : 'order',
+          title,
+          body,
+        });
       });
     });
   } catch (error) {
