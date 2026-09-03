@@ -116,7 +116,7 @@ export interface Order {
   paytotaReference?: string;
   cardTransToken?: string;
   cardTransRef?: string;
-  supplierIds?: string[];
+  giftPayment?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

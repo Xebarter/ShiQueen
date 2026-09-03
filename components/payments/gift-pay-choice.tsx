@@ -20,16 +20,16 @@ export function GiftPayChoice({
   mode,
   onChange,
   selfLabel = "I'll pay",
-  giftLabel = 'Someone else will pay',
-  selfDescription = 'Pay now with mobile money or card',
-  giftDescription = 'Tap once to share a secure payment link',
+  giftLabel = 'Someone else',
+  selfDescription = 'Mobile money or card',
+  giftDescription = 'Share a payment link',
   showTitle = true,
   className,
 }: GiftPayChoiceProps) {
   return (
     <div className={cn('space-y-3', className)}>
       {showTitle ? (
-        <p className="text-sm font-semibold tracking-tight">Who is paying?</p>
+        <p className="text-sm font-semibold tracking-tight">Who pays?</p>
       ) : null}
       <div className="grid gap-3 sm:grid-cols-2">
         <button

@@ -25,6 +25,10 @@ import { toSharedCheckoutPublicView } from '@/lib/shared-checkout-utils';
 import { formatUGX } from '@/lib/wholesale-data';
 import { useCommerceSettings } from '@/lib/commerce-settings-context';
 import { OrderQuoteLines } from '@/components/checkout/order-quote-lines';
+import {
+  PaymentStatusActions,
+  PaymentStatusPanel,
+} from '@/components/payments/payment-status-panel';
 
 const fieldClass =
   'h-12 rounded-xl border-border/80 bg-background px-4 text-base shadow-sm transition-all placeholder:text-muted-foreground/70 focus-visible:border-primary/40 focus-visible:ring-4 focus-visible:ring-primary/10 md:text-base';
@@ -171,7 +175,7 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
 
       if (data.requiresClientOrder && data.order) {
         const { createOrder } = await import('@/lib/firebase/orders');
-        await createOrder(data.order);
+        await createOrder({ ...data.order, giftPayment: true });
       }
 
       if (data.requiresClientCheckoutUpdate && data.markSharedCheckoutPaid) {
@@ -180,9 +184,7 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
       }
 
       if (data.stk?.status === 'pending' && data.orderId) {
-        toast.success(
-          data.stk.details?.message ?? 'Check your phone to approve the payment.'
-        );
+        toast.success(data.stk.details?.message ?? 'Approve on your phone.');
         router.push(`/order-confirmation?orderId=${encodeURIComponent(data.orderId)}&gift=1`);
         return;
       }
@@ -219,15 +221,17 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
 
   if (error || !checkout) {
     return (
-      <main>
+      <main className="min-h-screen bg-background">
         <Header />
-        <section className="py-20 text-center">
-          <div className="mx-auto max-w-md px-4">
-            <h1 className="text-2xl font-light tracking-tight">Payment link unavailable</h1>
-            <p className="mt-3 text-muted-foreground">{error ?? 'This link is invalid.'}</p>
-            <Link href="/shop" className="mt-6 inline-block">
-              <Button>Continue shopping</Button>
-            </Link>
+        <section className="relative overflow-hidden py-12 px-4 sm:py-16">
+          <div className="relative mx-auto max-w-lg">
+            <PaymentStatusPanel
+              kind="expired"
+              title="Unavailable"
+              detail={error ?? 'This link is invalid.'}
+              gift
+              actions={<PaymentStatusActions primaryHref="/shop" primaryLabel="Shop" />}
+            />
           </div>
         </section>
         <Footer />
@@ -237,25 +241,37 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
 
   if (checkout.status === 'paid') {
     return (
-      <main>
+      <main className="min-h-screen bg-background">
         <Header />
-        <section className="py-20 text-center">
-          <div className="mx-auto max-w-md px-4">
-            <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600">
-              <Gift className="h-7 w-7" />
-            </span>
-            <h1 className="text-2xl font-light tracking-tight">This order has been paid</h1>
-            <p className="mt-3 text-muted-foreground">
-              {checkout.recipientFirstName}&apos;s order is already covered. Thank you for checking!
-            </p>
-            {checkout.orderId && (
-              <p className="mt-2 text-sm text-muted-foreground">
-                Reference: {checkout.orderId}
-              </p>
-            )}
-            <Link href="/shop" className="mt-6 inline-block">
-              <Button variant="outline">Browse ShiQueen</Button>
-            </Link>
+        <section className="relative overflow-hidden py-12 px-4 sm:py-16">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_0%,oklch(0.74_0.12_62_/_0.16),transparent_70%)]"
+          />
+          <div className="relative mx-auto max-w-lg">
+            <PaymentStatusPanel
+              kind="paid"
+              title="Paid"
+              detail="Gift received."
+              amount={checkout.total}
+              reference={checkout.orderId}
+              gift
+              steps={[
+                { label: 'Shared', state: 'done' },
+                { label: 'Waiting', state: 'done' },
+                { label: 'Paid', state: 'done' },
+              ]}
+              actions={
+                <PaymentStatusActions
+                  primaryHref={
+                    checkout.orderId
+                      ? `/order-confirmation?orderId=${encodeURIComponent(checkout.orderId)}&gift=1`
+                      : '/shop'
+                  }
+                  primaryLabel={checkout.orderId ? 'Order' : 'Shop'}
+                />
+              }
+            />
           </div>
         </section>
         <Footer />
@@ -265,17 +281,17 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
 
   if (checkout.status === 'expired') {
     return (
-      <main>
+      <main className="min-h-screen bg-background">
         <Header />
-        <section className="py-20 text-center">
-          <div className="mx-auto max-w-md px-4">
-            <h1 className="text-2xl font-light tracking-tight">This link has expired</h1>
-            <p className="mt-3 text-muted-foreground">
-              Ask {checkout.recipientFirstName} to create a new payment link from checkout.
-            </p>
-            <Link href="/shop" className="mt-6 inline-block">
-              <Button>Continue shopping</Button>
-            </Link>
+        <section className="relative overflow-hidden py-12 px-4 sm:py-16">
+          <div className="relative mx-auto max-w-lg">
+            <PaymentStatusPanel
+              kind="expired"
+              title="Expired"
+              detail="Ask for a new link."
+              gift
+              actions={<PaymentStatusActions primaryHref="/shop" primaryLabel="Shop" />}
+            />
           </div>
         </section>
         <Footer />
@@ -310,14 +326,13 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
                 </span>
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-accent-foreground/80">
-                    You&apos;re covering this order
+                    Gift
                   </p>
                   <h1 className="mt-1 font-[family-name:var(--font-brand)] text-2xl font-medium tracking-tight sm:text-3xl">
-                    Pay for {checkout.recipientFirstName}&apos;s order
+                    Pay for {checkout.recipientFirstName}
                   </h1>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Items deliver to {checkout.recipientFirstName} in {checkout.deliveryCity}. Enter
-                    your payment details below to complete checkout.
+                    Delivers to {checkout.deliveryCity}.
                   </p>
                 </div>
               </div>
@@ -383,10 +398,8 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
                     <Smartphone className="h-5 w-5" />
                   </span>
                   <div>
-                    <h2 className="text-lg font-medium tracking-tight">Your payment details</h2>
-                    <p className="text-sm text-muted-foreground">
-                      Choose how you want to pay, then enter your details.
-                    </p>
+                    <h2 className="text-lg font-medium tracking-tight">Payment</h2>
+                    <p className="text-sm text-muted-foreground">Your details.</p>
                   </div>
                 </div>
               </div>
@@ -394,8 +407,7 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
                 <div className="grid gap-3 sm:grid-cols-2">
                   {giftMethods.length === 0 ? (
                     <p className="text-sm text-muted-foreground sm:col-span-2">
-                      Online payment is temporarily unavailable. Ask the sender to use a different
-                      method.
+                      Online payment is unavailable.
                     </p>
                   ) : (
                     (
@@ -439,7 +451,7 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="fullName">Full name</Label>
+                  <Label htmlFor="fullName">Name</Label>
                   <Input
                     id="fullName"
                     name="fullName"
@@ -453,7 +465,7 @@ export function SharedCheckoutPayPage({ token }: SharedCheckoutPayPageProps) {
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone number</Label>
+                    <Label htmlFor="phone">Phone</Label>
                     <Input
                       id="phone"
                       name="phone"

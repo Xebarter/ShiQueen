@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Clock,
   Crown,
+  Gift,
   Heart,
   Loader2,
   Package,
@@ -102,6 +103,34 @@ function OrderItemThumb({
         </div>
       )}
     </div>
+  );
+}
+
+function PaymentBadge({
+  status,
+  gift,
+}: {
+  status?: Order['paymentStatus'];
+  gift?: boolean;
+}) {
+  if (!status) return null;
+  const paid = status === 'paid';
+  const waiting = status === 'awaiting_payment';
+  const failed = status === 'failed' || status === 'cancelled';
+  if (!paid && !waiting && !failed && status !== 'cod_pending') return null;
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ring-1 ring-inset',
+        paid && 'bg-emerald-500/10 text-emerald-700 ring-emerald-500/20',
+        waiting && 'animate-pulse bg-amber-500/15 text-amber-800 ring-amber-500/25',
+        failed && 'bg-red-500/10 text-red-700 ring-red-500/20',
+        status === 'cod_pending' && 'bg-sky-500/10 text-sky-700 ring-sky-500/20'
+      )}
+    >
+      {paid ? 'Paid' : waiting ? (gift ? 'Not paid' : 'Waiting') : failed ? 'Failed' : 'COD'}
+    </span>
   );
 }
 
@@ -255,7 +284,14 @@ function OrderCard({
             </div>
             <div className="text-right">
               <p className="font-semibold tabular-nums">{formatUGX(order.total)}</p>
-              <div className="mt-1.5 flex justify-end">
+              <div className="mt-1.5 flex flex-wrap items-center justify-end gap-1.5">
+                {order.giftPayment ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-accent/20 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-accent-foreground ring-1 ring-inset ring-accent/30">
+                    <Gift className="h-3 w-3" />
+                    Gift
+                  </span>
+                ) : null}
+                <PaymentBadge status={order.paymentStatus} gift={order.giftPayment} />
                 <OrderStatusBadge status={order.status} />
               </div>
             </div>
@@ -771,7 +807,19 @@ export function AccountDashboard() {
                                 {formatUGX(latestOrder.total)}
                               </p>
                             </div>
-                            <OrderStatusBadge status={latestOrder.status} />
+                            <div className="flex flex-col items-end gap-1.5">
+                              {latestOrder.giftPayment ? (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-accent/20 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-accent-foreground ring-1 ring-inset ring-accent/30">
+                                  <Gift className="h-3 w-3" />
+                                  Gift
+                                </span>
+                              ) : null}
+                              <PaymentBadge
+                                status={latestOrder.paymentStatus}
+                                gift={latestOrder.giftPayment}
+                              />
+                              <OrderStatusBadge status={latestOrder.status} />
+                            </div>
                           </div>
                           <Button
                             variant="outline"

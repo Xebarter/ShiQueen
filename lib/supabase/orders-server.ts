@@ -23,6 +23,7 @@ export type CreateServerOrderInput = {
   cardTransToken?: string;
   cardTransRef?: string;
   supplierIds?: string[];
+  giftPayment?: boolean;
 };
 
 export type PaymentUpdateInput = {
@@ -57,13 +58,14 @@ function mapOrder(row: Record<string, unknown>): Order {
     supplierIds: Array.isArray(row.supplier_ids)
       ? (row.supplier_ids as unknown[]).map(String)
       : undefined,
+    giftPayment: row.gift_payment === true,
     createdAt: toDate(row.created_at),
     updatedAt: toDate(row.updated_at),
   };
 }
 
 function createOrderInputToRow(order: CreateServerOrderInput): Record<string, unknown> {
-  const { id, userId, customerName, email, items, subtotal, tax, total, shippingAddress, orderType, paymentMethod, paymentStatus, paytotaPurchaseId, paytotaReference, cardTransToken, cardTransRef, supplierIds } = order;
+  const { id, userId, customerName, email, items, subtotal, tax, total, shippingAddress, orderType, paymentMethod, paymentStatus, paytotaPurchaseId, paytotaReference, cardTransToken, cardTransRef, supplierIds, giftPayment } = order;
 
   return stripUndefined({
     id,
@@ -84,6 +86,7 @@ function createOrderInputToRow(order: CreateServerOrderInput): Record<string, un
     card_trans_token: cardTransToken,
     card_trans_ref: cardTransRef,
     supplier_ids: supplierIds,
+    gift_payment: giftPayment,
   });
 }
 

@@ -244,6 +244,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
           orderType: checkout.orderType,
           paymentMethod: 'card',
           paymentStatus: 'awaiting_payment',
+          giftPayment: true,
           cardTransToken: created.transToken,
           cardTransRef: created.transRef,
         });
@@ -275,6 +276,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
               orderType: checkout.orderType,
               paymentMethod: 'card' as const,
               paymentStatus: 'awaiting_payment' as const,
+              giftPayment: true,
               cardTransToken: created.transToken,
               cardTransRef: created.transRef,
             }
@@ -324,6 +326,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         orderType: checkout.orderType,
         paymentMethod: 'mobile_money',
         paymentStatus: markPaidOnServer ? 'paid' : 'awaiting_payment',
+        giftPayment: true,
         paytotaPurchaseId: purchase.id,
         paytotaReference: purchase.reference ?? orderId,
       });
@@ -361,6 +364,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
             orderType: checkout.orderType,
             paymentMethod: 'mobile_money' as const,
             paymentStatus: markPaidOnServer ? ('paid' as const) : ('awaiting_payment' as const),
+            giftPayment: true,
             paytotaPurchaseId: purchase.id,
             paytotaReference: purchase.reference ?? orderId,
           }

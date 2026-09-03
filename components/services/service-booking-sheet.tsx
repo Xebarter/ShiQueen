@@ -39,7 +39,7 @@ import { shareOrCopy } from '@/lib/share';
 import type { ServiceListing, ServiceProvider } from '@/lib/types/services';
 import { formatUGX } from '@/lib/wholesale-data';
 import { cn } from '@/lib/utils';
-import { useHistoryOverlay } from '@/lib/hooks/use-history-overlay';
+import { useGiftShareWatch } from '@/lib/hooks/use-gift-share-watch';
 
 interface ServiceBookingSheetProps {
   open: boolean;
@@ -95,6 +95,7 @@ export function ServiceBookingSheet({
   const [payMode, setPayMode] = useState<GiftPayMode>('self');
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const live = useGiftShareWatch(payMode === 'gift' ? shareUrl : null, 'booking');
 
   useEffect(() => {
     const nextName = profile?.displayName || user?.displayName || '';
@@ -271,7 +272,7 @@ export function ServiceBookingSheet({
       }
 
       if (data.stk?.status === 'pending' && data.bookingId) {
-        toast.success(data.stk.details?.message ?? 'Check your phone to approve the payment.');
+        toast.success(data.stk.details?.message ?? 'Approve on your phone.');
         onClose();
         router.push(
           `/services/booking-confirmation?bookingId=${encodeURIComponent(data.bookingId)}&payment=pending`
@@ -676,9 +677,7 @@ export function ServiceBookingSheet({
                   <GiftPayChoice mode={payMode} onChange={setPayMode} />
 
                   {!user && !authLoading ? (
-                    <p className="text-xs text-muted-foreground">
-                      You’ll be asked to sign in before paying or sharing a link.
-                    </p>
+                    <p className="text-xs text-muted-foreground">Sign in to pay or share.</p>
                   ) : null}
 
                   {payMode === 'self' ? (
@@ -693,7 +692,7 @@ export function ServiceBookingSheet({
                       ) : (
                         <Smartphone className="h-5 w-5" />
                       )}
-                      Pay {formatUGX(total)} with mobile money
+                      Pay {formatUGX(total)}
                     </Button>
                   ) : (
                     <GiftPayLinkPanel
@@ -706,10 +705,15 @@ export function ServiceBookingSheet({
                       canShare={!loading}
                       onShareLink={handleShareGiftLink}
                       onCopyLink={handleCopyGiftLink}
-                      shareLabel="Share payment link"
-                      helperText={
-                        user ? undefined : 'Sign in to create and copy the payment link.'
+                      shareLabel="Share link"
+                      payLive={live.status}
+                      viewHref={
+                        live.status === 'paid' && live.bookingId
+                          ? `/services/booking-confirmation?bookingId=${encodeURIComponent(live.bookingId)}&gift=1`
+                          : null
                       }
+                      viewLabel="View booking"
+                      helperText={user ? undefined : 'Sign in to share.'}
                     />
                   )}
                 </>

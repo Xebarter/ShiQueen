@@ -28,6 +28,7 @@ function mapOrder(row: Record<string, unknown>): Order {
     supplierIds: Array.isArray(row.supplier_ids)
       ? (row.supplier_ids as unknown[]).map(String)
       : undefined,
+    giftPayment: row.gift_payment === true,
     createdAt: toDate(row.created_at),
     updatedAt: toDate(row.updated_at),
   };
@@ -53,6 +54,7 @@ function orderToRow(data: Partial<Order> & { id?: string }): Record<string, unkn
     card_trans_token: data.cardTransToken,
     card_trans_ref: data.cardTransRef,
     supplier_ids: data.supplierIds,
+    gift_payment: data.giftPayment,
   });
 }
 

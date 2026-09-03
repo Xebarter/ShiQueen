@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Check, Copy, Loader2, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatUGX } from '@/lib/wholesale-data';
@@ -18,6 +19,9 @@ interface GiftPayLinkPanelProps {
   shareLabel?: string;
   helperText?: string;
   className?: string;
+  payLive?: 'pending' | 'paid' | 'expired';
+  viewHref?: string | null;
+  viewLabel?: string;
 }
 
 export function GiftPayLinkPanel({
@@ -33,7 +37,13 @@ export function GiftPayLinkPanel({
   shareLabel = 'Share payment link',
   helperText,
   className,
+  payLive = 'pending',
+  viewHref,
+  viewLabel = 'View order',
 }: GiftPayLinkPanelProps) {
+  const paid = payLive === 'paid';
+  const expired = payLive === 'expired';
+
   return (
     <div
       className={cn(
@@ -81,7 +91,7 @@ export function GiftPayLinkPanel({
               </span>
               Link ready
             </div>
-            {expiresAt ? (
+            {expiresAt && !paid ? (
               <p className="text-xs text-muted-foreground">
                 Valid until {new Date(expiresAt).toLocaleString()}
               </p>
@@ -95,6 +105,49 @@ export function GiftPayLinkPanel({
               <Copy className="h-4 w-4" />
               Copy link
             </Button>
+
+            <div
+              className={cn(
+                'rounded-xl px-3 py-3 text-center',
+                paid && 'bg-emerald-500/12 ring-1 ring-emerald-500/20',
+                expired && 'bg-muted ring-1 ring-border',
+                !paid && !expired && 'bg-amber-500/12 ring-1 ring-amber-500/20'
+              )}
+            >
+              <p
+                className={cn(
+                  'text-sm font-semibold',
+                  paid && 'text-emerald-800',
+                  expired && 'text-muted-foreground',
+                  !paid && !expired && 'text-amber-900'
+                )}
+              >
+                <span
+                  className={cn(
+                    'mr-2 inline-block h-2 w-2 rounded-full',
+                    paid && 'bg-emerald-600',
+                    expired && 'bg-muted-foreground',
+                    !paid && !expired && 'animate-pulse bg-amber-500'
+                  )}
+                />
+                {paid ? 'Paid' : expired ? 'Expired' : 'Waiting'}
+              </p>
+              <p
+                className={cn(
+                  'mt-1 text-xs',
+                  paid && 'text-emerald-800/80',
+                  expired && 'text-muted-foreground',
+                  !paid && !expired && 'text-amber-900/80'
+                )}
+              >
+                {paid ? 'Gift received.' : expired ? 'Ask them for a new link.' : 'Not paid yet.'}
+              </p>
+              {paid && viewHref ? (
+                <Link href={viewHref} className="mt-3 block">
+                  <Button className="h-10 w-full rounded-xl">{viewLabel}</Button>
+                </Link>
+              ) : null}
+            </div>
           </div>
         ) : null}
       </div>

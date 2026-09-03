@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { GiftPayLinkPanel } from '@/components/payments/gift-pay-link-panel';
 import {
@@ -8,9 +8,13 @@ import {
   useContinueAuthPrompt,
 } from '@/components/auth/continue-auth-dialog';
 import type { CartItem } from '@/lib/cart-context';
+import { useCart } from '@/lib/cart-context';
 import type { OrderItem } from '@/lib/types/database';
+import { useGiftShareWatch } from '@/lib/hooks/use-gift-share-watch';
 import { shareOrCopy } from '@/lib/share';
 import { formatUGX } from '@/lib/wholesale-data';
+
+const GIFT_SHARE_STORAGE = 'shiqueen.gift-checkout-share';
 
 interface SendPaymentLinkCardProps {
   cartItems: CartItem[];
@@ -51,6 +55,8 @@ export function SendPaymentLinkCard({
   const [loading, setLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const { clearCart } = useCart();
+  const live = useGiftShareWatch(shareUrl, 'checkout');
   const {
     user,
     authLoading,
@@ -59,6 +65,39 @@ export function SendPaymentLinkCard({
     authIntent,
     requireAuth,
   } = useContinueAuthPrompt();
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(GIFT_SHARE_STORAGE);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { shareUrl?: string; expiresAt?: string };
+      if (parsed.shareUrl) {
+        setShareUrl(parsed.shareUrl);
+        setExpiresAt(parsed.expiresAt ?? null);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!shareUrl) return;
+    try {
+      sessionStorage.setItem(GIFT_SHARE_STORAGE, JSON.stringify({ shareUrl, expiresAt }));
+    } catch {
+      /* ignore */
+    }
+  }, [shareUrl, expiresAt]);
+
+  useEffect(() => {
+    if (live.status !== 'paid') return;
+    clearCart();
+    try {
+      sessionStorage.removeItem(GIFT_SHARE_STORAGE);
+    } catch {
+      /* ignore */
+    }
+  }, [clearCart, live.status]);
 
   const canShare = isDeliveryComplete(deliveryDetails) && cartItems.length > 0;
 
@@ -112,7 +151,7 @@ export function SendPaymentLinkCard({
 
   const handleShareLink = async () => {
     if (!canShare) {
-      toast.error('Please complete your delivery details first.');
+      toast.error('Add delivery details first.');
       return;
     }
     if (!requireAuth('payment-link')) return;
@@ -122,7 +161,7 @@ export function SendPaymentLinkCard({
       const url = shareUrl ?? (await createLink());
       const result = await shareOrCopy({
         title: `Pay for my ShiQueen order (${formatUGX(total)})`,
-        text: 'Could you pay for my ShiQueen order? Delivery details are already included.',
+        text: 'Could you pay for my ShiQueen order?',
         url,
       });
 
@@ -162,15 +201,20 @@ export function SendPaymentLinkCard({
       canShare={canShare}
       onShareLink={handleShareLink}
       onCopyLink={handleCopyLink}
-      shareLabel="Share payment link"
+      shareLabel="Share link"
+      payLive={live.status}
+      viewHref={
+        live.status === 'paid' && live.orderId
+          ? `/order-confirmation?orderId=${encodeURIComponent(live.orderId)}&gift=1`
+          : null
+      }
+      viewLabel="View order"
       helperText={
         !isDeliveryComplete(deliveryDetails)
-          ? user
-            ? 'Fill in your name, phone, email, and delivery address above first.'
-            : 'Fill in delivery details, then sign in to create the payment link.'
+          ? 'Add name, phone, email, and address.'
           : user
             ? undefined
-            : 'Sign in to create and copy the payment link.'
+            : 'Sign in to share.'
       }
     />
     <ContinueAuthDialog

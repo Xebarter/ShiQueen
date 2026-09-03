@@ -25,6 +25,10 @@ import { createServiceBooking, updateServiceBooking } from '@/lib/firebase/servi
 import { toSharedBookingPublicView } from '@/lib/shared-booking-utils';
 import type { SharedBooking, SharedBookingPublicView } from '@/lib/types/shared-booking';
 import { formatUGX } from '@/lib/wholesale-data';
+import {
+  PaymentStatusActions,
+  PaymentStatusPanel,
+} from '@/components/payments/payment-status-panel';
 
 const fieldClass =
   'h-12 rounded-xl border-border/80 bg-background px-4 text-base shadow-sm transition-all placeholder:text-muted-foreground/70 focus-visible:border-primary/40 focus-visible:ring-4 focus-visible:ring-primary/10 md:text-base';
@@ -141,7 +145,7 @@ export function SharedBookingPayPage({ token }: SharedBookingPayPageProps) {
       }
 
       if (data.stk?.status === 'pending' && data.bookingId) {
-        toast.success(data.stk.details?.message ?? 'Check your phone to approve the payment.');
+        toast.success(data.stk.details?.message ?? 'Approve on your phone.');
         router.push(
           `/services/booking-confirmation?bookingId=${encodeURIComponent(data.bookingId)}&payment=pending&gift=1`
         );
@@ -175,35 +179,53 @@ export function SharedBookingPayPage({ token }: SharedBookingPayPageProps) {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : error || !view ? (
-          <div className="rounded-2xl border border-border/70 bg-card p-8 text-center">
-            <p className="text-lg font-semibold">Payment link unavailable</p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {error ?? 'This link could not be found.'}
-            </p>
-            <Link href={catalogHref} className="mt-6 inline-block">
-              <Button className="rounded-xl">{servicesEnabled ? 'Browse services' : 'Browse shop'}</Button>
-            </Link>
-          </div>
+          <PaymentStatusPanel
+            kind="expired"
+            title="Unavailable"
+            detail={error ?? 'This link is invalid.'}
+            gift
+            actions={
+              <PaymentStatusActions
+                primaryHref={catalogHref}
+                primaryLabel={servicesEnabled ? 'Services' : 'Shop'}
+              />
+            }
+          />
         ) : view.status === 'paid' ? (
-          <div className="rounded-2xl border border-emerald-500/30 bg-card p-8 text-center">
-            <p className="text-lg font-semibold text-emerald-700">Already paid</p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              This booking for {view.recipientFirstName} is already confirmed.
-            </p>
-            <Link
-              href={`/services/booking-confirmation?bookingId=${encodeURIComponent(view.bookingId)}&gift=1`}
-              className="mt-6 inline-block"
-            >
-              <Button className="rounded-xl">View confirmation</Button>
-            </Link>
-          </div>
+          <PaymentStatusPanel
+            kind="paid"
+            title="Paid"
+            detail="Gift received."
+            amount={view.total}
+            reference={view.bookingId}
+            gift
+            steps={[
+              { label: 'Shared', state: 'done' },
+              { label: 'Waiting', state: 'done' },
+              { label: 'Paid', state: 'done' },
+            ]}
+            actions={
+              <PaymentStatusActions
+                primaryHref={`/services/booking-confirmation?bookingId=${encodeURIComponent(view.bookingId)}&gift=1`}
+                primaryLabel="Booking"
+                secondaryHref={catalogHref}
+                secondaryLabel={servicesEnabled ? 'Services' : 'Shop'}
+              />
+            }
+          />
         ) : view.status === 'expired' ? (
-          <div className="rounded-2xl border border-border/70 bg-card p-8 text-center">
-            <p className="text-lg font-semibold">Link expired</p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Ask {view.recipientFirstName} to create a new payment link from their booking.
-            </p>
-          </div>
+          <PaymentStatusPanel
+            kind="expired"
+            title="Expired"
+            detail="Ask for a new link."
+            gift
+            actions={
+              <PaymentStatusActions
+                primaryHref={catalogHref}
+                primaryLabel={servicesEnabled ? 'Services' : 'Shop'}
+              />
+            }
+          />
         ) : (
           <div className="space-y-6">
             <div className="overflow-hidden rounded-3xl border-2 border-accent/35 bg-gradient-to-br from-accent/15 via-card to-card shadow-lg shadow-accent/10">
@@ -214,15 +236,12 @@ export function SharedBookingPayPage({ token }: SharedBookingPayPageProps) {
                   </span>
                   <div>
                     <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-accent-foreground/80">
-                      You&apos;re covering this booking
+                      Gift
                     </p>
                     <h1 className="mt-1 font-[family-name:var(--font-brand)] text-2xl font-medium tracking-tight sm:text-3xl">
-                      Pay for {view.recipientFirstName}&apos;s appointment
+                      Pay for {view.recipientFirstName}
                     </h1>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      They booked on ShiQueen. Enter your mobile money details below to complete
-                      payment.
-                    </p>
+                    <p className="mt-2 text-sm text-muted-foreground">{view.serviceName}</p>
                   </div>
                 </div>
               </div>
@@ -276,15 +295,12 @@ export function SharedBookingPayPage({ token }: SharedBookingPayPageProps) {
             <form onSubmit={handlePay} className="space-y-4 rounded-2xl border border-border/70 bg-card p-6">
               <div className="flex items-center gap-2">
                 <Smartphone className="h-5 w-5 text-primary" />
-                <h2 className="text-lg font-semibold">Your mobile money details</h2>
+                <h2 className="text-lg font-semibold">Payment</h2>
               </div>
-              <p className="text-sm text-muted-foreground">
-                We&apos;ll send an STK push to this number. You are the payer — the booking stays
-                under {view.recipientFirstName}&apos;s name.
-              </p>
+              <p className="text-sm text-muted-foreground">Your mobile money details.</p>
 
               <div className="space-y-2">
-                <Label htmlFor="payer-name">Your full name</Label>
+                <Label htmlFor="payer-name">Name</Label>
                 <Input
                   id="payer-name"
                   name="fullName"
@@ -295,7 +311,7 @@ export function SharedBookingPayPage({ token }: SharedBookingPayPageProps) {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="payer-email">Your email</Label>
+                <Label htmlFor="payer-email">Email</Label>
                 <Input
                   id="payer-email"
                   name="email"
@@ -307,7 +323,7 @@ export function SharedBookingPayPage({ token }: SharedBookingPayPageProps) {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="payer-phone">Mobile money phone</Label>
+                <Label htmlFor="payer-phone">Phone</Label>
                 <Input
                   id="payer-phone"
                   name="phone"
@@ -330,7 +346,7 @@ export function SharedBookingPayPage({ token }: SharedBookingPayPageProps) {
                 ) : (
                   <Sparkles className="h-5 w-5" />
                 )}
-                Pay {formatUGX(view.total)} now
+                Pay {formatUGX(view.total)}
               </Button>
 
               <p className="text-center text-xs text-muted-foreground">

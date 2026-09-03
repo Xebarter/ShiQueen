@@ -52,7 +52,7 @@ export async function settleCardPayment(params: {
   transToken?: string | null;
   companyRef?: string | null;
   retries?: number;
-}): Promise<{ outcome: CardSettlementOutcome; orderId?: string }> {
+}): Promise<{ outcome: CardSettlementOutcome; orderId?: string; giftPayment?: boolean }> {
   const transToken = params.transToken?.trim();
   const companyRef = params.companyRef?.trim();
 
@@ -92,7 +92,7 @@ export async function settleCardPayment(params: {
 
   const token = order.cardTransToken || transToken;
   if (!token) {
-    return { outcome: 'pending', orderId: order.id };
+    return { outcome: 'pending', orderId: order.id, giftPayment: order.giftPayment === true };
   }
 
   const { verified, mapped } = await verifyWithRetries(token, params.retries ?? 0);
@@ -108,11 +108,11 @@ export async function settleCardPayment(params: {
       cardTransToken: token,
       cardTransRef: verified.transRef || order.cardTransRef,
     });
-    return { outcome: 'failed', orderId: order.id };
+    return { outcome: 'failed', orderId: order.id, giftPayment: order.giftPayment === true };
   }
 
   if (order.paymentStatus === 'paid' && mapped.paymentStatus === 'paid') {
-    return { outcome: 'paid', orderId: order.id };
+    return { outcome: 'paid', orderId: order.id, giftPayment: order.giftPayment === true };
   }
 
   await updateOrderPaymentServer(order.id, {
@@ -130,7 +130,11 @@ export async function settleCardPayment(params: {
     await markSharedCheckoutPaidByOrderId(order.id);
   }
 
-  return { outcome: outcomeFromMapped(mapped.paymentStatus), orderId: order.id };
+  return {
+    outcome: outcomeFromMapped(mapped.paymentStatus),
+    orderId: order.id,
+    giftPayment: order.giftPayment === true,
+  };
 }
 
 export function collectCardCallbackFields(

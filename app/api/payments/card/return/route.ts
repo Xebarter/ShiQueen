@@ -7,10 +7,14 @@ export const runtime = 'nodejs';
 
 function redirectForOutcome(
   outcome: 'paid' | 'failed' | 'cancelled' | 'pending',
-  orderId?: string
+  orderId?: string,
+  gift?: boolean
 ) {
   const base = getSiteUrl();
-  const query = orderId ? `?orderId=${encodeURIComponent(orderId)}` : '';
+  const params = new URLSearchParams();
+  if (orderId) params.set('orderId', orderId);
+  if (gift) params.set('gift', '1');
+  const query = params.toString() ? `?${params.toString()}` : '';
   const status = 303;
   if (outcome === 'paid') return NextResponse.redirect(`${base}/payments/success${query}`, status);
   if (outcome === 'pending') return NextResponse.redirect(`${base}/payments/pending${query}`, status);
@@ -18,18 +22,32 @@ function redirectForOutcome(
   return NextResponse.redirect(`${base}/payments/failure${query}`, status);
 }
 
+async function resolveGiftFlag(orderId?: string, alreadyGift?: boolean): Promise<boolean> {
+  if (alreadyGift) return true;
+  if (!orderId) return false;
+  try {
+    const { getOrderServer } = await import('@/lib/firebase/orders-server');
+    const order = await getOrderServer(orderId);
+    return order?.giftPayment === true;
+  } catch {
+    return false;
+  }
+}
+
 async function handleReturn(request: NextRequest) {
   try {
     const fields = await parseCardGatewayRequest(request);
     const settled = await settleCardPayment({ ...fields, retries: 4 });
-    return redirectForOutcome(settled.outcome, settled.orderId ?? fields.companyRef);
+    const gift = await resolveGiftFlag(settled.orderId ?? fields.companyRef, settled.giftPayment);
+    return redirectForOutcome(settled.outcome, settled.orderId ?? fields.companyRef, gift);
   } catch (error) {
     console.error('[ShiQueen] card return:', error);
     const orderId =
       request.nextUrl.searchParams.get('orderId') ??
       request.nextUrl.searchParams.get('CompanyRef') ??
       undefined;
-    return redirectForOutcome('failed', orderId);
+    const gift = await resolveGiftFlag(orderId);
+    return redirectForOutcome('failed', orderId, gift);
   }
 }
 

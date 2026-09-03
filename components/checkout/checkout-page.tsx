@@ -665,7 +665,7 @@ export function CheckoutPage() {
         }
 
         if (data.stk?.status === 'pending' && data.orderId) {
-          toast.success(data.stk.details?.message ?? 'Check your phone to approve the payment.');
+          toast.success(data.stk.details?.message ?? 'Approve on your phone.');
           router.push(`/order-confirmation?orderId=${data.orderId}&payment=pending`);
           return;
         }
@@ -980,7 +980,7 @@ export function CheckoutPage() {
 
                 {!user && !authLoading ? (
                   <p className="mt-3 text-xs text-muted-foreground">
-                    You’ll be asked to sign in before paying or sharing a link.
+                    Sign in to pay or share.
                   </p>
                 ) : null}
 
@@ -1128,7 +1128,7 @@ export function CheckoutPage() {
                 ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }}
           >
-            Share payment link
+            Share link
           </Button>
         ) : (
           <Button
