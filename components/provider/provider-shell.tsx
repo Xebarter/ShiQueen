@@ -16,6 +16,7 @@ import {
 import { PartnerDashboardChrome } from '@/components/partner/partner-dashboard-shell';
 import type { PartnerNavItem, PartnerPageTitle, PartnerTabItem } from '@/components/partner/partner-nav';
 import { useAuth } from '@/lib/auth-context';
+import { shouldRedirectHomeAfterLogout } from '@/lib/auth-redirect';
 import { useServices } from '@/lib/services-context';
 import { montserrat } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
@@ -96,6 +97,10 @@ export function ProviderShell({ children }: ProviderShellProps) {
   useEffect(() => {
     if (loading) return;
     if (!user) {
+      if (shouldRedirectHomeAfterLogout()) {
+        router.replace('/');
+        return;
+      }
       router.replace(`/services/sign-in?next=${encodeURIComponent(pathname)}`);
       return;
     }
@@ -147,7 +152,7 @@ export function ProviderShell({ children }: ProviderShellProps) {
       pageTitles={PROVIDER_PAGE_TITLES}
       onLogout={async () => {
         await logout();
-        router.push('/');
+        router.replace('/');
       }}
     >
       {children}

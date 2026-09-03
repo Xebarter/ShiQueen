@@ -20,7 +20,13 @@ import { getFirebaseAuth, isFirebaseAuthConfigured } from '@/lib/firebase/auth';
 import { ensureUserProfile, resolveUserRole } from '@/lib/supabase/users';
 import { resetSupabaseClient } from '@/lib/supabase/client';
 import { UserProfile } from '@/lib/types/database';
-import { isServiceProviderProfile, isSupplierProfile } from '@/lib/auth-redirect';
+import {
+  clearHomeAfterLogout,
+  isServiceProviderProfile,
+  isSupplierProfile,
+  markHomeAfterLogout,
+} from '@/lib/auth-redirect';
+import { usePathname } from 'next/navigation';
 import { disableGoogleOneTapAutoSelect, cancelGoogleOneTapPrompt } from '@/lib/google-identity';
 
 function getAuthCode(error: unknown): string {
@@ -178,6 +184,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (pathname === '/') clearHomeAfterLogout();
+  }, [pathname]);
 
   useEffect(() => {
     const auth = getFirebaseAuth();
@@ -406,6 +417,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     const auth = getFirebaseAuth();
     if (!auth) throw new Error('Firebase Auth not initialized');
+    markHomeAfterLogout();
     disableGoogleOneTapAutoSelect();
     await signOut(auth);
     resetSupabaseClient();

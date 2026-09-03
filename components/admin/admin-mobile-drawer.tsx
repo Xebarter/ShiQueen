@@ -28,7 +28,7 @@ export function AdminMobileDrawer() {
     try {
       await logout();
       setSidebarOpen(false);
-      router.push('/');
+      router.replace('/');
     } catch (error) {
       console.error('Logout failed:', error);
     } finally {

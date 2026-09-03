@@ -12,6 +12,8 @@ import {
   PaymentStatusPanel,
   type PaymentLiveKind,
 } from '@/components/payments/payment-status-panel';
+import { RetryPaymentButton } from '@/components/payments/retry-payment-button';
+import { getOrderPayState } from '@/lib/payments/order-payment';
 
 function giftSteps(paid: boolean): { label: string; state: 'done' | 'current' | 'todo' }[] {
   if (paid) {
@@ -64,9 +66,11 @@ export default function OrderConfirmationContent() {
   }, [orderId]);
 
   const isGift = giftQuery || Boolean(order?.giftPayment);
-  const paid = order?.paymentStatus === 'paid';
-  const failed = order?.paymentStatus === 'failed' || order?.paymentStatus === 'cancelled';
+  const pay = order ? getOrderPayState(order) : null;
+  const paid = pay?.kind === 'paid';
+  const failed = pay?.kind === 'failed';
   const offline = paymentParam === 'offline';
+  const canRetry = Boolean(order && pay?.canRetry);
 
   const view = useMemo(() => {
     if (offline) {
@@ -81,7 +85,7 @@ export default function OrderConfirmationContent() {
       return {
         kind: 'failed' as PaymentLiveKind,
         title: 'Failed',
-        detail: isGift ? 'Gift payment did not go through.' : 'Payment did not go through.',
+        detail: 'Tap Pay.',
         live: false,
       };
     }
@@ -96,14 +100,10 @@ export default function OrderConfirmationContent() {
     return {
       kind: 'waiting' as PaymentLiveKind,
       title: 'Waiting',
-      detail: isGift
-        ? 'Not paid yet.'
-        : order?.paymentMethod === 'card'
-          ? 'Confirming card payment.'
-          : 'Approve on your phone.',
-      live: true,
+      detail: canRetry ? 'Tap Pay.' : isGift ? 'Not paid yet.' : 'Approve on your phone.',
+      live: !canRetry,
     };
-  }, [failed, isGift, offline, order?.paymentMethod, paid]);
+  }, [canRetry, failed, isGift, offline, paid]);
 
   return (
     <main className="min-h-screen bg-background">
@@ -129,10 +129,20 @@ export default function OrderConfirmationContent() {
               live={view.live}
               steps={isGift ? giftSteps(paid) : undefined}
               actions={
-                <PaymentStatusActions
-                  primaryHref="/account"
-                  primaryLabel="Orders"
-                />
+                canRetry && order ? (
+                  <>
+                    <RetryPaymentButton orderId={order.id} gift={isGift} />
+                    <PaymentStatusActions
+                      primaryHref="/account"
+                      primaryLabel="Orders"
+                      showPrimary={false}
+                      secondaryHref="/account"
+                      secondaryLabel="Orders"
+                    />
+                  </>
+                ) : (
+                  <PaymentStatusActions primaryHref="/account" primaryLabel="Orders" />
+                )
               }
             />
           )}

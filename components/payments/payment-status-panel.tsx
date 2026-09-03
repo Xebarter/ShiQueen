@@ -149,19 +149,23 @@ export function PaymentStatusActions({
   primaryLabel,
   secondaryHref = '/shop',
   secondaryLabel = 'Shop',
+  showPrimary = true,
 }: {
   primaryHref: string;
   primaryLabel: string;
   secondaryHref?: string;
   secondaryLabel?: string;
+  showPrimary?: boolean;
 }) {
   return (
     <>
-      <Link href={primaryHref}>
-        <Button size="lg" className="h-12 min-w-[9rem] rounded-xl">
-          {primaryLabel}
-        </Button>
-      </Link>
+      {showPrimary ? (
+        <Link href={primaryHref}>
+          <Button size="lg" className="h-12 min-w-[9rem] rounded-xl">
+            {primaryLabel}
+          </Button>
+        </Link>
+      ) : null}
       <Link href={secondaryHref}>
         <Button size="lg" variant="outline" className="h-12 min-w-[9rem] rounded-xl">
           {secondaryLabel}

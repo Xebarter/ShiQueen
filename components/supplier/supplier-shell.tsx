@@ -17,6 +17,7 @@ import {
 import { PartnerDashboardChrome } from '@/components/partner/partner-dashboard-shell';
 import type { PartnerNavItem, PartnerPageTitle, PartnerTabItem } from '@/components/partner/partner-nav';
 import { useAuth } from '@/lib/auth-context';
+import { shouldRedirectHomeAfterLogout } from '@/lib/auth-redirect';
 import { useSuppliers } from '@/lib/suppliers-context';
 import { montserrat } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
@@ -101,6 +102,10 @@ export function SupplierShell({ children, publicPage = false }: SupplierShellPro
   useEffect(() => {
     if (publicPage || loading) return;
     if (!user) {
+      if (shouldRedirectHomeAfterLogout()) {
+        router.replace('/');
+        return;
+      }
       router.replace(`/suppliers/sign-in?next=${encodeURIComponent(pathname)}`);
       return;
     }
@@ -157,7 +162,7 @@ export function SupplierShell({ children, publicPage = false }: SupplierShellPro
       chromeVariant="premium"
       onLogout={async () => {
         await logout();
-        router.push('/');
+        router.replace('/');
       }}
     >
       {children}

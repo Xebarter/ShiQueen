@@ -45,3 +45,35 @@ export function withAuthNext(href: string, next: string | null | undefined): str
   const join = href.includes('?') ? '&' : '?';
   return `${href}${join}next=${encodeURIComponent(safe)}`;
 }
+
+const HOME_AFTER_LOGOUT_KEY = 'sq.home-after-logout';
+
+let homeAfterLogout = false;
+
+/** Call before sign-out so dashboard guards send the user home instead of a portal sign-in page. */
+export function markHomeAfterLogout() {
+  homeAfterLogout = true;
+  try {
+    sessionStorage.setItem(HOME_AFTER_LOGOUT_KEY, '1');
+  } catch {
+    // ignore
+  }
+}
+
+export function shouldRedirectHomeAfterLogout(): boolean {
+  if (homeAfterLogout) return true;
+  try {
+    return sessionStorage.getItem(HOME_AFTER_LOGOUT_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function clearHomeAfterLogout() {
+  homeAfterLogout = false;
+  try {
+    sessionStorage.removeItem(HOME_AFTER_LOGOUT_KEY);
+  } catch {
+    // ignore
+  }
+}

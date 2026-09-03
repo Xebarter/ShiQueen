@@ -9,6 +9,7 @@ import {
   PaymentStatusPanel,
   type PaymentLiveKind,
 } from '@/components/payments/payment-status-panel';
+import { RetryPaymentButton } from '@/components/payments/retry-payment-button';
 import { useCart } from '@/lib/cart-context';
 
 type PaymentResultVariant = 'success' | 'failure' | 'cancel' | 'pending';
@@ -55,12 +56,8 @@ export function PaymentResultPage({ variant }: { variant: PaymentResultVariant }
           ? 'Not paid yet.'
           : 'Confirming card payment.'
         : variant === 'cancel'
-          ? isGift
-            ? 'Gift not paid.'
-            : 'Not charged.'
-          : isGift
-            ? 'Gift payment did not go through.'
-            : 'Payment did not go through.';
+          ? 'Not charged.'
+          : 'Did not go through.';
 
   const confirmHref = bookingId
     ? `/services/booking-confirmation?bookingId=${encodeURIComponent(bookingId)}${isGift ? '&gift=1' : ''}`
@@ -87,22 +84,39 @@ export function PaymentResultPage({ variant }: { variant: PaymentResultVariant }
             gift={isGift}
             live={variant === 'pending'}
             actions={
-              <PaymentStatusActions
-                primaryHref={
-                  variant === 'success' || variant === 'pending' ? confirmHref : isBooking ? '/services' : '/checkout'
-                }
-                primaryLabel={
-                  variant === 'pending'
-                    ? 'Status'
-                    : variant === 'success'
-                      ? isBooking
-                        ? 'Booking'
-                        : 'Order'
-                      : 'Try again'
-                }
-                secondaryHref={isBooking ? '/services' : '/shop'}
-                secondaryLabel={isBooking ? 'Services' : 'Shop'}
-              />
+              orderId && (variant === 'failure' || variant === 'cancel') ? (
+                <>
+                  <RetryPaymentButton orderId={orderId} gift={isGift} />
+                  <PaymentStatusActions
+                    primaryHref={confirmHref}
+                    primaryLabel="Status"
+                    showPrimary={false}
+                    secondaryHref={confirmHref}
+                    secondaryLabel="Status"
+                  />
+                </>
+              ) : (
+                <PaymentStatusActions
+                  primaryHref={
+                    variant === 'success' || variant === 'pending'
+                      ? confirmHref
+                      : isBooking
+                        ? '/services'
+                        : '/checkout'
+                  }
+                  primaryLabel={
+                    variant === 'pending'
+                      ? 'Status'
+                      : variant === 'success'
+                        ? isBooking
+                          ? 'Booking'
+                          : 'Order'
+                        : 'Try again'
+                  }
+                  secondaryHref={isBooking ? '/services' : '/shop'}
+                  secondaryLabel={isBooking ? 'Services' : 'Shop'}
+                />
+              )
             }
           />
         </div>

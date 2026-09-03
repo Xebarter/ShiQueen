@@ -17,9 +17,9 @@ export function AdminAppLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/');
+      router.replace('/');
     } else if (!loading && user && !isAdmin) {
-      router.push('/');
+      router.replace('/');
     }
   }, [user, isAdmin, loading, router]);
 

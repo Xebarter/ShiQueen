@@ -60,7 +60,7 @@ export function HeaderAccountMenu() {
       await logout();
       setOpen(false);
       toast.success('Signed out successfully');
-      router.push('/');
+      router.replace('/');
     } catch (error) {
       toast.error('Unable to sign out. Please try again.');
       console.error(error);

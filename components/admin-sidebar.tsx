@@ -22,7 +22,7 @@ export function AdminSidebar() {
     setLoggingOut(true);
     try {
       await logout();
-      router.push('/');
+      router.replace('/');
     } catch (error) {
       console.error('Logout failed:', error);
     } finally {

@@ -51,6 +51,8 @@ import { getAccountHandle, getDisplayName } from '@/lib/user-display';
 import { resolveListingImage } from '@/lib/services-utils';
 import { ShareProductButton } from '@/components/shared/share-button';
 import { cn } from '@/lib/utils';
+import { getOrderPayState } from '@/lib/payments/order-payment';
+import { RetryPaymentButton } from '@/components/payments/retry-payment-button';
 
 const ORDER_STATUS: Record<
   Order['status'],
@@ -234,6 +236,7 @@ function OrderCard({
   const reviewableItems = order.items.filter(
     (item) => item.itemType !== 'service' && Boolean(item.productId)
   );
+  const pay = getOrderPayState(order);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm ring-1 ring-border/40 transition hover:border-primary/20 hover:shadow-md">
@@ -331,6 +334,16 @@ function OrderCard({
           )}
         />
       </button>
+
+      {pay.canRetry ? (
+        <div className="border-t border-border/50 px-4 py-3 sm:px-5">
+          <RetryPaymentButton
+            orderId={order.id}
+            gift={Boolean(order.giftPayment)}
+            className="w-full"
+          />
+        </div>
+      ) : null}
 
       {expanded && (
         <div className="border-t border-border/50 bg-gradient-to-b from-muted/30 to-muted/10 px-4 py-4 sm:px-5">
@@ -617,7 +630,7 @@ export function AccountDashboard() {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/');
+      router.replace('/');
     }
   }, [user, loading, router]);
 
@@ -662,7 +675,7 @@ export function AccountDashboard() {
     try {
       await logout();
       toast.success('Signed out successfully');
-      router.push('/');
+      router.replace('/');
     } catch (error) {
       toast.error('Unable to sign out. Please try again.');
       console.error(error);
@@ -821,6 +834,13 @@ export function AccountDashboard() {
                               <OrderStatusBadge status={latestOrder.status} />
                             </div>
                           </div>
+                          {getOrderPayState(latestOrder).canRetry ? (
+                            <RetryPaymentButton
+                              orderId={latestOrder.id}
+                              gift={Boolean(latestOrder.giftPayment)}
+                              className="w-full"
+                            />
+                          ) : null}
                           <Button
                             variant="outline"
                             className="w-full rounded-xl"
