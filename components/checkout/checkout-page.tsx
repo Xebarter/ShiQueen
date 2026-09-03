@@ -75,6 +75,7 @@ const PAYMENT_OPTIONS: {
 ];
 
 const CHECKOUT_FORM_KEY = 'sq.checkout.form.v1';
+const fieldClass =
   'h-12 rounded-xl border-border/80 bg-background px-4 text-base shadow-sm transition-all placeholder:text-muted-foreground/70 focus-visible:border-primary/40 focus-visible:ring-4 focus-visible:ring-primary/10 md:text-base';
 
 function SectionCard({
