@@ -21,7 +21,6 @@ import {
   updateServiceListing,
   deleteServiceListing,
 } from '@/lib/firebase/service-listings';
-import { updateServiceBookingStatus } from '@/lib/firebase/service-bookings';
 import {
   updateServiceReviewVisibility,
   deleteServiceReview,
@@ -31,6 +30,7 @@ import { formatUGX } from '@/lib/wholesale-data';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import {
+  ArrowUpRight,
   BarChart3,
   Calendar,
   FolderOpen,
@@ -42,7 +42,6 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import type { ServiceBookingStatus } from '@/lib/types/services';
 import { AdminEntityThumb } from '@/components/admin/admin-entity-thumb';
 
 const TABS = [
@@ -56,10 +55,6 @@ const TABS = [
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
-
-const BOOKING_STATUSES: ServiceBookingStatus[] = [
-  'pending', 'confirmed', 'in_progress', 'completed', 'cancelled',
-];
 
 function isTabId(value: string | null): value is TabId {
   return TABS.some((tab) => tab.id === value);
@@ -125,7 +120,20 @@ export function AdminServicesPage() {
     if (isTabId(fromQuery) && fromQuery !== tab) setTab(fromQuery);
   }, [searchParams, tab]);
 
+  useEffect(() => {
+    if (tab !== 'bookings') return;
+    const bookingId = searchParams.get('booking') || searchParams.get('id');
+    const dest = bookingId
+      ? `/admin/orders?view=services&booking=${encodeURIComponent(bookingId)}`
+      : '/admin/orders?view=services';
+    router.replace(dest);
+  }, [tab, searchParams, router]);
+
   const selectTab = (id: TabId) => {
+    if (id === 'bookings') {
+      router.push('/admin/orders?view=services');
+      return;
+    }
     setTab(id);
     const params = new URLSearchParams(searchParams.toString());
     if (id === 'overview') params.delete('tab');
@@ -238,7 +246,7 @@ export function AdminServicesPage() {
     <AdminPage>
       <AdminPageHeader
         title="Services"
-        description="Manage categories, service providers, listings, bookings, and reviews."
+        description="Catalog, providers, and reviews. Service bookings are on the Orders appointment desk."
         action={
           tab === 'providers' ? (
             <Link
@@ -274,24 +282,28 @@ export function AdminServicesPage() {
       {tab === 'overview' && (
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total bookings</CardTitle>
-              </CardHeader>
-              <CardContent className="text-2xl font-bold">{stats.totalBookings}</CardContent>
-            </Card>
+            <Link href="/admin/orders?view=services" className="block transition hover:opacity-90">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Total bookings</CardTitle>
+                </CardHeader>
+                <CardContent className="text-2xl font-bold">{stats.totalBookings}</CardContent>
+              </Card>
+            </Link>
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Revenue (completed)</CardTitle>
               </CardHeader>
               <CardContent className="text-2xl font-bold">{formatUGX(stats.revenue)}</CardContent>
             </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Pending bookings</CardTitle>
-              </CardHeader>
-              <CardContent className="text-2xl font-bold">{stats.pendingBookings}</CardContent>
-            </Card>
+            <Link href="/admin/orders?view=services" className="block transition hover:opacity-90">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Pending bookings</CardTitle>
+                </CardHeader>
+                <CardContent className="text-2xl font-bold">{stats.pendingBookings}</CardContent>
+              </Card>
+            </Link>
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Avg. rating</CardTitle>
@@ -649,97 +661,29 @@ export function AdminServicesPage() {
       )}
 
       {tab === 'bookings' && (
-        <div className="overflow-x-auto rounded-xl border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="px-4 py-3 text-left">Customer</th>
-                <th className="px-4 py-3 text-left">Date</th>
-                <th className="px-4 py-3 text-left">Total</th>
-                <th className="px-4 py-3 text-left">Payment</th>
-                <th className="px-4 py-3 text-left">Status</th>
-                <th className="px-4 py-3 text-left">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {bookings.map((b) => {
-                const svc = listings.find((l) => l.id === b.serviceId);
-                const serviceLabel = b.serviceName || svc?.name || 'Service';
-                return (
-                  <tr key={b.id} className="border-t">
-                    <td className="px-4 py-3">
-                      <p className="font-medium">{b.customerName}</p>
-                      <p className="text-xs text-muted-foreground">{serviceLabel}</p>
-                      <p className="font-mono text-[10px] text-muted-foreground">{b.id}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      {b.date} {b.timeSlot}
-                      <p className="text-xs capitalize text-muted-foreground">{b.locationType}</p>
-                    </td>
-                    <td className="px-4 py-3 font-medium tabular-nums">
-                      {formatUGX(b.total || b.amount || svc?.basePrice || 0)}
-                      {b.travelFee > 0 && (
-                        <p className="text-[10px] text-muted-foreground">
-                          incl. {formatUGX(b.travelFee)} travel
-                        </p>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={cn(
-                          'inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize',
-                          b.paymentStatus === 'paid'
-                            ? 'bg-emerald-500/15 text-emerald-700'
-                            : b.paymentStatus === 'awaiting_payment'
-                              ? 'bg-amber-500/15 text-amber-700'
-                              : b.paymentStatus === 'failed' || b.paymentStatus === 'cancelled'
-                                ? 'bg-red-500/15 text-red-700'
-                                : 'bg-muted text-muted-foreground'
-                        )}
-                      >
-                        {(b.paymentStatus ?? 'unpaid').replace(/_/g, ' ')}
-                      </span>
-                      {b.paytotaReference && (
-                        <p className="mt-1 max-w-[140px] truncate font-mono text-[10px] text-muted-foreground">
-                          {b.paytotaReference}
-                        </p>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 capitalize">{b.status.replace('_', ' ')}</td>
-                    <td className="px-4 py-3">
-                      <select
-                        value={b.status}
-                        onChange={(e) =>
-                          updateServiceBookingStatus(b.id, e.target.value as ServiceBookingStatus)
-                            .then(() => toast.success('Status updated'))
-                            .catch((error) =>
-                              toast.error(
-                                error instanceof Error ? error.message : 'Could not update'
-                              )
-                            )
-                        }
-                        className="rounded-lg border px-2 py-1 text-xs"
-                      >
-                        {BOOKING_STATUSES.map((s) => (
-                          <option
-                            key={s}
-                            value={s}
-                            disabled={s === 'cancelled' && b.paymentStatus === 'paid'}
-                          >
-                            {s}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {bookings.length === 0 && (
-            <p className="py-8 text-center text-muted-foreground">No bookings yet.</p>
-          )}
-        </div>
+        <Card className="overflow-hidden border-border/70 shadow-sm">
+          <CardContent className="flex flex-col items-start gap-4 px-6 py-12 sm:flex-row sm:items-center sm:justify-between">
+            <div className="max-w-lg">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
+                Appointment desk
+              </p>
+              <h3 className="mt-1 font-[family-name:var(--font-brand)] text-2xl font-medium tracking-tight">
+                Service orders live with shop orders
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                Bookings are managed on a dedicated Services desk at Orders — separate from
+                product fulfillment, with full client, payment, and appointment details.
+              </p>
+            </div>
+            <Link
+              href="/admin/orders?view=services"
+              className={cn(buttonVariants({ size: 'lg' }), 'gap-2')}
+            >
+              Open appointment desk
+              <ArrowUpRight className="h-4 w-4" />
+            </Link>
+          </CardContent>
+        </Card>
       )}
 
       {tab === 'reviews' && (

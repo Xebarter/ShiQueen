@@ -350,7 +350,7 @@ export function AdminAlerts() {
         fresh.length > 1
           ? `${newest.customerName} and ${fresh.length - 1} more`
           : `${newest.customerName} booked ${newest.serviceName}`,
-      href: `${ADMIN_SERVICE_BOOKINGS_HREF}&id=${encodeURIComponent(newest.id)}`,
+      href: `${ADMIN_SERVICE_BOOKINGS_HREF}&booking=${encodeURIComponent(newest.id)}`,
     });
   }, [enabled, bookings, servicesLoading]);
 

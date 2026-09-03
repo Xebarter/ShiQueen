@@ -306,13 +306,22 @@ export function AdminDashboardPage() {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <CardTitle className="text-lg font-light tracking-tight">Recent orders</CardTitle>
-                    <CardDescription>Update status directly from the dashboard</CardDescription>
+                    <CardDescription>
+                      Product orders. Appointments live on a separate desk.
+                    </CardDescription>
                   </div>
-                  <Link href="/admin/orders">
-                    <Button variant="outline" size="sm">
-                      View all
-                    </Button>
-                  </Link>
+                  <div className="flex flex-wrap gap-2">
+                    <Link href="/admin/orders">
+                      <Button variant="outline" size="sm">
+                        Shop orders
+                      </Button>
+                    </Link>
+                    <Link href="/admin/orders?view=services">
+                      <Button variant="outline" size="sm">
+                        Appointments
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="p-0">

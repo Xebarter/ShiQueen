@@ -6,6 +6,7 @@ import {
   Clock,
   Loader2,
   Package,
+  Scissors,
   Search,
   ShoppingBag,
   Truck,
@@ -16,6 +17,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { AdminPage, AdminPageHeader } from '@/components/admin/admin-page';
 import { AdminOrderDialog } from '@/components/admin/admin-order-dialog';
+import {
+  AdminServiceBookingsPanel,
+  useServiceBookingCount,
+} from '@/components/admin/admin-service-bookings-panel';
 import { subscribeOrders, updateOrderStatus } from '@/lib/firebase/orders';
 import { Order, type PaymentMethod, type PaymentStatus } from '@/lib/types/database';
 import { PAYMENT_METHOD_LABELS } from '@/lib/payments/labels';
@@ -330,6 +335,21 @@ export function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const bookingCount = useServiceBookingCount();
+  const view = searchParams.get('view') === 'services' ? 'services' : 'shop';
+  const selectedBookingId =
+    searchParams.get('booking') || (view === 'services' ? searchParams.get('id') : null);
+
+  const setView = (next: 'shop' | 'services') => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next === 'services') params.set('view', 'services');
+    else params.delete('view');
+    params.delete('order');
+    params.delete('booking');
+    params.delete('id');
+    const qs = params.toString();
+    router.replace(qs ? `/admin/orders?${qs}` : '/admin/orders', { scroll: false });
+  };
 
   useEffect(() => {
     const fromQuery = searchParams.get('order');
@@ -354,8 +374,21 @@ export function AdminOrdersPage() {
   const closeDialog = () => {
     setSelectedOrderId(null);
     if (searchParams.get('order')) {
-      router.replace('/admin/orders');
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('order');
+      const qs = params.toString();
+      router.replace(qs ? `/admin/orders?${qs}` : '/admin/orders');
     }
+  };
+
+  const openBooking = (id: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('view', 'services');
+    params.delete('order');
+    params.delete('id');
+    if (id) params.set('booking', id);
+    else params.delete('booking');
+    router.replace(`/admin/orders?${params.toString()}`, { scroll: false });
   };
 
   const filteredOrders = useMemo(() => {
@@ -404,10 +437,81 @@ export function AdminOrdersPage() {
   return (
     <AdminPage>
       <AdminPageHeader
-        title="Orders"
-        description="Review and fulfill storefront orders. Click a strip to open full details."
+        title={view === 'services' ? 'Service orders' : 'Shop orders'}
+        description={
+          view === 'services'
+            ? 'Beauty bookings and appointments — kept separate from product fulfillment.'
+            : 'Product and package fulfillment. Switch desks for service appointments.'
+        }
       />
 
+      <div className="mb-6 grid grid-cols-2 gap-2 rounded-2xl border border-border/70 bg-card p-1.5 shadow-sm sm:gap-2.5 sm:p-2">
+        <button
+          type="button"
+          onClick={() => setView('shop')}
+          className={cn(
+            'flex min-h-[4.25rem] flex-col items-start justify-center rounded-xl px-3.5 py-3 text-left transition sm:px-4',
+            view === 'shop'
+              ? 'bg-foreground text-background shadow-sm'
+              : 'text-foreground hover:bg-muted/60'
+          )}
+        >
+          <span className="flex items-center gap-2 text-sm font-semibold">
+            <ShoppingBag className="h-4 w-4" />
+            Shop
+            <span
+              className={cn(
+                'rounded-full px-1.5 py-px text-[10px] font-bold tabular-nums',
+                view === 'shop' ? 'bg-background/15' : 'bg-muted text-muted-foreground'
+              )}
+            >
+              {loading ? '—' : orders.length}
+            </span>
+          </span>
+          <span className={cn('mt-0.5 text-[11px]', view === 'shop' ? 'text-background/70' : 'text-muted-foreground')}>
+            Products, packages, delivery
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setView('services')}
+          className={cn(
+            'flex min-h-[4.25rem] flex-col items-start justify-center rounded-xl px-3.5 py-3 text-left transition sm:px-4',
+            view === 'services'
+              ? 'bg-primary text-primary-foreground shadow-sm'
+              : 'text-foreground hover:bg-muted/60'
+          )}
+        >
+          <span className="flex items-center gap-2 text-sm font-semibold">
+            <Scissors className="h-4 w-4" />
+            Services
+            <span
+              className={cn(
+                'rounded-full px-1.5 py-px text-[10px] font-bold tabular-nums',
+                view === 'services' ? 'bg-background/15' : 'bg-muted text-muted-foreground'
+              )}
+            >
+              {bookingCount}
+            </span>
+          </span>
+          <span
+            className={cn(
+              'mt-0.5 text-[11px]',
+              view === 'services' ? 'text-primary-foreground/75' : 'text-muted-foreground'
+            )}
+          >
+            Beauty bookings & appointments
+          </span>
+        </button>
+      </div>
+
+      {view === 'services' ? (
+        <AdminServiceBookingsPanel
+          selectedBookingId={selectedBookingId}
+          onSelectBooking={openBooking}
+        />
+      ) : (
+        <>
       {!loading && orders.length > 0 && (
         <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
           <StatCard label="Total orders" value={stats.total} icon={ShoppingBag} accent="text-foreground" />
@@ -512,6 +616,8 @@ export function AdminOrdersPage() {
       </Card>
 
       <AdminOrderDialog order={selectedOrder} onClose={closeDialog} />
+        </>
+      )}
     </AdminPage>
   );
 }

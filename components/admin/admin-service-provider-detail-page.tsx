@@ -613,6 +613,14 @@ export function AdminServiceProviderDetailPage() {
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary sm:max-w-xs"
                 />
               )}
+              {tab === 'bookings' && (
+                <Link
+                  href="/admin/orders?view=services"
+                  className="text-sm font-medium text-primary hover:underline"
+                >
+                  Open appointment desk
+                </Link>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
               {tabs.map((item) => (
@@ -745,7 +753,12 @@ export function AdminServiceProviderDetailPage() {
                           className="border-t border-border/60 hover:bg-muted/20"
                         >
                           <td className="px-4 py-3">
-                            <p className="font-medium">{booking.customerName}</p>
+                            <Link
+                              href={`/admin/orders?view=services&booking=${encodeURIComponent(booking.id)}`}
+                              className="font-medium hover:text-primary hover:underline"
+                            >
+                              {booking.customerName}
+                            </Link>
                             <p className="text-xs text-muted-foreground">
                               {booking.serviceName}
                             </p>

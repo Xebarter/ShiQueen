@@ -4,7 +4,7 @@ export const SUPPLIER_INSIGHTS_HREF = '/suppliers/insights';
 export const PROVIDER_INSIGHTS_HREF = '/services/dashboard/insights';
 export const ADMIN_SUPPLIERS_HREF = '/admin/suppliers';
 export const ADMIN_SERVICE_PROVIDERS_HREF = '/admin/services?tab=providers';
-export const ADMIN_SERVICE_BOOKINGS_HREF = '/admin/services?tab=bookings';
+export const ADMIN_SERVICE_BOOKINGS_HREF = '/admin/orders?view=services';
 export const ADMIN_MESSAGES_HREF = '/admin/messages';
 export const ADMIN_REVIEWS_HREF = '/admin/reviews';
 export const ADMIN_ORDERS_HREF = '/admin/orders';
