@@ -132,6 +132,7 @@ function FormField({
   onChange,
   placeholder,
   autoComplete,
+  required = true,
   className,
 }: {
   id: string;
@@ -142,6 +143,7 @@ function FormField({
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder: string;
   autoComplete?: string;
+  required?: boolean;
   className?: string;
 }) {
   return (
@@ -157,7 +159,7 @@ function FormField({
         onChange={onChange}
         placeholder={placeholder}
         autoComplete={autoComplete}
-        required
+        required={required}
         className={fieldClass}
       />
     </div>
@@ -450,6 +452,7 @@ export function CheckoutPage() {
     enabledMethods[0] ?? 'mobile_money'
   );
   const [payMode, setPayMode] = useState<GiftPayMode>('self');
+  const [editContact, setEditContact] = useState(false);
   const [form, setForm] = useState({
     fullName: profile?.displayName || user?.displayName || profile?.defaultAddress?.fullName || '',
     phone: profile?.phone || user?.phoneNumber || profile?.defaultAddress?.phone || '',
@@ -531,6 +534,27 @@ export function CheckoutPage() {
     return <EmptyCheckout />;
   }
 
+  const accountName = (
+    profile?.displayName ||
+    user?.displayName ||
+    profile?.defaultAddress?.fullName ||
+    ''
+  ).trim();
+  const accountPhone = (
+    profile?.phone ||
+    user?.phoneNumber ||
+    profile?.defaultAddress?.phone ||
+    ''
+  ).trim();
+  const accountEmail = (user?.email || profile?.email || '').trim();
+  const showName = editContact || !accountName;
+  const showPhone = editContact || !accountPhone;
+  const showEmail = editContact || !accountEmail;
+  const showContactSummary = Boolean(accountName || accountPhone);
+  const checkoutName = (form.fullName.trim() || accountName).trim();
+  const checkoutEmail = (form.email.trim() || accountEmail).trim();
+  const checkoutPhone = (form.phone.trim() || accountPhone).trim();
+
   const quote = quoteTotals(total);
   const orderTotal = quote.total;
   const paymentOptions = PAYMENT_OPTIONS.filter((option) => enabledMethods.includes(option.id));
@@ -569,10 +593,40 @@ export function CheckoutPage() {
       toast.error('This payment method is not available.');
       return;
     }
+
+    const customerName = checkoutName;
+    const email = checkoutEmail;
+    const phone = checkoutPhone;
+    const address = form.address.trim();
+    if (!customerName) {
+      toast.error('Enter your name.');
+      setEditContact(true);
+      return;
+    }
+    if (!phone) {
+      toast.error('Enter your phone.');
+      setEditContact(true);
+      return;
+    }
+    if (!email) {
+      toast.error('Enter your email.');
+      setEditContact(true);
+      return;
+    }
+    if (!address) {
+      toast.error('Enter your drop-off.');
+      return;
+    }
+
     setLoading(true);
 
-    const shippingAddress = buildShippingAddress(form);
-    const customerName = form.fullName.trim();
+    const shippingAddress = buildShippingAddress({
+      fullName: customerName,
+      email,
+      phone,
+      address,
+      city: form.city.trim() || 'Kampala',
+    });
     try {
       if (paymentMethod === 'mobile_money') {
         let response: Response;
@@ -583,8 +637,8 @@ export function CheckoutPage() {
             body: JSON.stringify({
               userId: user?.uid ?? null,
               customerName,
-              email: form.email,
-              phone: form.phone,
+              email,
+              phone,
               items: orderItems,
               subtotal: quote.subtotal,
               tax: quote.tax,
@@ -635,7 +689,7 @@ export function CheckoutPage() {
             id: orderId,
             userId: user?.uid ?? null,
             customerName,
-            email: form.email,
+            email,
             items: orderItems,
             subtotal: data.subtotal ?? quote.subtotal,
             tax: data.tax ?? quote.tax,
@@ -693,8 +747,8 @@ export function CheckoutPage() {
             body: JSON.stringify({
               userId: user?.uid ?? null,
               customerName,
-              email: form.email,
-              phone: form.phone,
+              email,
+              phone,
               items: orderItems,
               subtotal: quote.subtotal,
               tax: quote.tax,
@@ -736,7 +790,7 @@ export function CheckoutPage() {
             id: data.orderId,
             userId: user?.uid ?? null,
             customerName,
-            email: form.email,
+            email,
             items: orderItems,
             subtotal: data.subtotal ?? quote.subtotal,
             tax: data.tax ?? quote.tax,
@@ -767,8 +821,8 @@ export function CheckoutPage() {
           body: JSON.stringify({
             userId: user?.uid ?? null,
             customerName,
-            email: form.email,
-            phone: form.phone,
+            email,
+            phone,
             items: orderItems,
             shippingAddress,
             orderType,
@@ -886,60 +940,78 @@ export function CheckoutPage() {
                 title="Delivery"
               >
                 <div className="space-y-5">
-                  <FormField
-                    id="fullName"
-                    name="fullName"
-                    label="Name"
-                    value={form.fullName}
-                    onChange={handleChange}
-                    placeholder="Jane Nakato"
-                    autoComplete="name"
-                  />
+                  {showContactSummary ? (
+                    <div className="flex items-start justify-between gap-3 rounded-xl border border-border/70 bg-muted/30 px-4 py-3">
+                      <p className="min-w-0 text-sm text-foreground">
+                        {[accountName || form.fullName, accountPhone || form.phone]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setEditContact((open) => !open)}
+                        className="shrink-0 text-sm font-medium text-primary hover:underline"
+                      >
+                        {editContact ? 'Done' : 'Change'}
+                      </button>
+                    </div>
+                  ) : null}
 
-                  <div className="grid gap-5 sm:grid-cols-2">
+                  {showName ? (
                     <FormField
-                      id="phone"
-                      name="phone"
-                      label="Phone"
-                      type="tel"
-                      value={form.phone}
+                      id="fullName"
+                      name="fullName"
+                      label="Name"
+                      value={form.fullName}
                       onChange={handleChange}
-                      placeholder="07XX XXX XXX"
-                      autoComplete="tel"
+                      placeholder="Jane Nakato"
+                      autoComplete="name"
                     />
-                    <FormField
-                      id="email"
-                      name="email"
-                      label="Email"
-                      type="email"
-                      value={form.email}
-                      onChange={handleChange}
-                      placeholder="you@example.com"
-                      autoComplete="email"
-                    />
-                  </div>
+                  ) : null}
+
+                  {showPhone || showEmail ? (
+                    <div
+                      className={cn(
+                        'grid gap-5',
+                        showPhone && showEmail && 'sm:grid-cols-2'
+                      )}
+                    >
+                      {showPhone ? (
+                        <FormField
+                          id="phone"
+                          name="phone"
+                          label="Phone"
+                          type="tel"
+                          value={form.phone}
+                          onChange={handleChange}
+                          placeholder="07XX XXX XXX"
+                          autoComplete="tel"
+                        />
+                      ) : null}
+                      {showEmail ? (
+                        <FormField
+                          id="email"
+                          name="email"
+                          label="Email"
+                          type="email"
+                          value={form.email}
+                          onChange={handleChange}
+                          placeholder="you@example.com"
+                          autoComplete="email"
+                        />
+                      ) : null}
+                    </div>
+                  ) : null}
 
                   <FormField
                     id="address"
                     name="address"
-                    label="Address"
+                    label="Drop-off"
                     value={form.address}
                     onChange={handleChange}
-                    placeholder="Street, building, area"
+                    placeholder="Area, landmark, or street"
                     autoComplete="street-address"
                   />
-
-                  <FormField
-                    id="city"
-                    name="city"
-                    label="City"
-                    value={form.city}
-                    onChange={handleChange}
-                    placeholder="Kampala"
-                    autoComplete="address-level2"
-                    className="sm:max-w-xs"
-                  />
-
                   <div className="flex items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] px-4 py-3">
                     <Truck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                     <p className="text-sm text-foreground/90">
@@ -994,11 +1066,11 @@ export function CheckoutPage() {
                       total={orderTotal}
                       orderType={orderType}
                       deliveryDetails={{
-                        fullName: form.fullName,
-                        email: form.email,
-                        phone: form.phone,
+                        fullName: checkoutName,
+                        email: checkoutEmail,
+                        phone: checkoutPhone,
                         address: form.address,
-                        city: form.city,
+                        city: form.city.trim() || 'Kampala',
                       }}
                       senderUserId={user?.uid ?? null}
                     />

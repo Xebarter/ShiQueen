@@ -21,6 +21,7 @@ export function isEmailOrGoogleSignIn(user: User | null | undefined): boolean {
 
 export function isAuthFlowPath(pathname: string | null | undefined): boolean {
   if (!pathname) return false;
+  if (pathname === '/suppliers') return true;
   return AUTH_ROUTE_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   );

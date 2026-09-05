@@ -38,7 +38,7 @@ export const FEATURE_FLAG_META: Record<
   },
   supplierApplications: {
     title: 'Supplier applications',
-    description: '“Sell with us” landing page and new supplier sign-up.',
+    description: '“Sell with us” portal and new supplier sign-up.',
   },
   providerApplications: {
     title: 'Provider applications',

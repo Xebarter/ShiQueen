@@ -151,7 +151,7 @@ export function SendPaymentLinkCard({
 
   const handleShareLink = async () => {
     if (!canShare) {
-      toast.error('Add delivery details first.');
+      toast.error('Add a drop-off first.');
       return;
     }
     if (!requireAuth('payment-link')) return;

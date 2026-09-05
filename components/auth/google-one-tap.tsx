@@ -33,6 +33,7 @@ const EXCLUDED_PREFIXES = [
 ];
 
 function isExcludedPath(pathname: string): boolean {
+  if (pathname === '/suppliers') return true;
   return EXCLUDED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
