@@ -7,7 +7,7 @@ import { ensureSuppliersReady } from '@/lib/supabase/suppliers';
 let seedPromise: Promise<void> | null = null;
 
 function productToRow(product: (typeof SEED_PRODUCTS)[number]) {
-  const { id, supplierId, originalPrice, isWholesaleEnabled, minOrderQuantity, maxOrderQuantity, ...rest } =
+  const { id, supplierId, originalPrice, isWholesaleEnabled, isRetailEnabled, minOrderQuantity, maxOrderQuantity, ...rest } =
     product;
   return {
     id,
@@ -15,6 +15,7 @@ function productToRow(product: (typeof SEED_PRODUCTS)[number]) {
     supplier_id: supplierId,
     original_price: originalPrice ?? null,
     is_wholesale_enabled: isWholesaleEnabled,
+    is_retail_enabled: isRetailEnabled,
     min_order_quantity: minOrderQuantity,
     max_order_quantity: maxOrderQuantity,
   };

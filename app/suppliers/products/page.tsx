@@ -19,6 +19,7 @@ import { useSuppliers } from '@/lib/suppliers-context';
 import { canListCatalog } from '@/lib/partner-status';
 import { formatUGX } from '@/lib/wholesale-data';
 import { cn } from '@/lib/utils';
+import { isWholesaleOnlyProduct } from '@/lib/product-channels';
 
 export default function SupplierProductsPage() {
   const { supplierId } = useAuth();
@@ -52,7 +53,7 @@ export default function SupplierProductsPage() {
             title="No products yet"
             description={
               allowed
-                ? 'Add your first product. It appears on the storefront when active.'
+                ? 'Add your first product. Choose shop, wholesale, or both.'
                 : 'You can add products after an admin approves your account.'
             }
           />
@@ -95,6 +96,11 @@ export default function SupplierProductsPage() {
                       {product.status}
                     </span>
                     <p className="text-xs text-muted-foreground">Stock {product.stock}</p>
+                    {isWholesaleOnlyProduct(product) ? (
+                      <span className="rounded-full bg-accent/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent-foreground">
+                        Wholesale only
+                      </span>
+                    ) : null}
                   </div>
                 </div>
               </Link>

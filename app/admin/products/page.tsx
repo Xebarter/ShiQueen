@@ -16,6 +16,7 @@ import Image from 'next/image';
 import { isRemoteProductImage } from '@/components/product-image';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import { isWholesaleOnlyProduct } from '@/lib/product-channels';
 
 type SupplierGroup = {
   supplierId: string;
@@ -295,6 +296,11 @@ export default function AdminProducts() {
                                 >
                                   {product.status}
                                 </span>
+                                {isWholesaleOnlyProduct(product) ? (
+                                  <span className="rounded bg-accent/20 px-2 py-0.5 text-[11px] font-medium text-accent-foreground">
+                                    Wholesale only
+                                  </span>
+                                ) : null}
                                 <span
                                   className={cn(
                                     'text-xs',
@@ -427,6 +433,11 @@ function FragmentGroup({
             >
               {product.status}
             </span>
+            {isWholesaleOnlyProduct(product) ? (
+              <span className="ml-2 rounded bg-accent/20 px-2 py-1 text-xs font-medium text-accent-foreground">
+                Wholesale only
+              </span>
+            ) : null}
           </td>
           <td className="px-4 py-3">
             <div className="flex gap-2">

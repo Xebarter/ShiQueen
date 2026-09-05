@@ -116,6 +116,7 @@ function SearchResultRow({
             imageClassName="object-cover"
             fallbackClassName="text-2xl"
             sizes="56px"
+            variant="thumb"
           />
         </div>
         <div className="min-w-0 flex-1">

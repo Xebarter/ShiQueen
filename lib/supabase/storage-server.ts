@@ -1,5 +1,12 @@
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 import { TABLES } from '@/lib/supabase/tables';
+import {
+  IMAGE_OPTIMIZATION,
+  IMAGE_VARIANT_NAMES,
+  type ImageVariantName,
+} from '@/lib/image-optimization/config';
+import { optimizeProductImageBuffer } from '@/lib/image-optimization/server';
+import type { ProductImageUploadResult, ProductImageVariants } from '@/lib/image-optimization/types';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -184,6 +191,7 @@ async function uploadToBucket(
   const admin = getSupabaseAdmin();
   const { error } = await admin.storage.from(bucket).upload(objectPath, fileBuffer, {
     contentType,
+    cacheControl: IMAGE_OPTIMIZATION.cacheControl,
     upsert: true,
   });
 
@@ -194,25 +202,94 @@ async function uploadToBucket(
   return getPublicUrl(bucket, objectPath);
 }
 
+async function listStorageFolder(bucket: string, folder: string) {
+  const admin = getSupabaseAdmin();
+  const { data, error } = await admin.storage.from(bucket).list(folder, { limit: 24 });
+  if (error || !data) return [];
+  return data;
+}
+
+function publicVariantUrls(
+  productId: string,
+  hash: string,
+  extension: string
+): ProductImageVariants {
+  const folder = `${productId}/${hash}`;
+  return Object.fromEntries(
+    IMAGE_VARIANT_NAMES.map((name) => [
+      name,
+      getPublicUrl('products', `${folder}/${name}.${extension}`),
+    ])
+  ) as ProductImageVariants;
+}
+
 export async function uploadProductImageServer(
   idToken: string,
   productId: string,
-  fileName: string,
+  _fileName: string,
   contentType: string,
   fileBuffer: Buffer
-): Promise<string> {
-  if (!ALLOWED_TYPES.includes(contentType)) {
-    throw new Error('Please upload a JPEG, PNG, WebP, or GIF image.');
-  }
-  if (fileBuffer.byteLength > MAX_FILE_SIZE) {
-    throw new Error('Each image must be 5MB or smaller.');
+): Promise<ProductImageUploadResult> {
+  const trimmedId = productId.trim();
+  if (!trimmedId) {
+    throw new Error('Product ID is required.');
   }
 
   const { uid, email } = await verifyFirebaseToken(idToken);
-  await verifyCatalogImageUpload(uid, email, productId);
+  await verifyCatalogImageUpload(uid, email, trimmedId);
 
-  const objectPath = `${productId}/${Date.now()}-${sanitizeFileName(fileName)}`;
-  return uploadToBucket('products', objectPath, contentType, fileBuffer);
+  const optimized = await optimizeProductImageBuffer(fileBuffer, contentType);
+  const folder = `${trimmedId}/${optimized.hash}`;
+  const existing = await listStorageFolder('products', folder);
+  const existingSrc = existing.find((object) => object.name.startsWith('src.'));
+
+  let duplicate = false;
+  let extension = optimized.extension;
+
+  if (existingSrc) {
+    extension = existingSrc.name.endsWith('.jpeg') || existingSrc.name.endsWith('.jpg') ? 'jpeg' : 'webp';
+    const missing = IMAGE_VARIANT_NAMES.filter(
+      (name) => !existing.some((object) => object.name.startsWith(`${name}.`))
+    );
+    if (missing.length === 0) {
+      duplicate = true;
+    } else {
+      await Promise.all(
+        missing.map((name: ImageVariantName) =>
+          uploadToBucket(
+            'products',
+            `${folder}/${name}.${optimized.extension}`,
+            optimized.contentType,
+            optimized.variants[name]
+          )
+        )
+      );
+      extension = optimized.extension;
+    }
+  } else {
+    await Promise.all(
+      IMAGE_VARIANT_NAMES.map((name) =>
+        uploadToBucket(
+          'products',
+          `${folder}/${name}.${optimized.extension}`,
+          optimized.contentType,
+          optimized.variants[name]
+        )
+      )
+    );
+  }
+
+  const variants = publicVariantUrls(trimmedId, optimized.hash, extension);
+  return {
+    url: variants.src,
+    variants,
+    bytes: optimized.srcBytes,
+    width: optimized.width,
+    height: optimized.height,
+    format: optimized.format,
+    hash: optimized.hash,
+    duplicate,
+  };
 }
 
 async function canUploadProviderLogo(uid: string, email: string, providerId: string): Promise<boolean> {

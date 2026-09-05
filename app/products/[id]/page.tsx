@@ -8,6 +8,7 @@ import {
 } from '@/lib/metadata/catalog';
 import { resolveProductOgImage } from '@/lib/metadata/resolve-og-image';
 import { getProductForSeo } from '@/lib/seo/catalog-server';
+import { isRetailCatalogProduct } from '@/lib/product-channels';
 import { isFirebaseAdminConfigured } from '@/lib/firebase/admin-config';
 import { breadcrumbJsonLd, JsonLd, productJsonLd } from '@/lib/seo/json-ld';
 import { pageMetadata } from '@/lib/seo/site';
@@ -45,11 +46,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function ProductDetail({ params }: PageProps) {
   const { id } = await params;
   const product = await getProductForSeo(id);
-  const image = product ? resolveProductOgImage(product) : undefined;
+  const image = product && isRetailCatalogProduct(product) ? resolveProductOgImage(product) : undefined;
+  const indexable = Boolean(product && isRetailCatalogProduct(product));
 
   return (
     <>
-      {product ? (
+      {indexable && product ? (
         <JsonLd
           data={[
             productJsonLd({
@@ -73,7 +75,7 @@ export default async function ProductDetail({ params }: PageProps) {
         />
       ) : null}
       <ProductDetailPage />
-      {product ? (
+      {indexable && product ? (
         <noscript>
           <article>
             <h1>{product.name}</h1>

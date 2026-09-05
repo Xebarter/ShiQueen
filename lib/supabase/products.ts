@@ -27,6 +27,7 @@ function mapProduct(row: Record<string, unknown>): Product {
     colors: Array.isArray(row.colors) ? (row.colors as string[]) : [],
     details: Array.isArray(row.details) ? (row.details as string[]) : [],
     isWholesaleEnabled: Boolean(row.is_wholesale_enabled ?? true),
+    isRetailEnabled: row.is_retail_enabled !== false,
     minOrderQuantity: Number(row.min_order_quantity ?? 10),
     maxOrderQuantity:
       row.max_order_quantity === null || row.max_order_quantity === undefined
@@ -58,6 +59,7 @@ function productToRow(data: Partial<Product> & { id?: string }): Record<string, 
     colors: data.colors,
     details: data.details,
     is_wholesale_enabled: data.isWholesaleEnabled,
+    is_retail_enabled: data.isRetailEnabled,
     min_order_quantity: data.minOrderQuantity,
     max_order_quantity: data.maxOrderQuantity,
     status: data.status,

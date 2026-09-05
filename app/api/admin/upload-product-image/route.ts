@@ -1,6 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadProductImageServer } from '@/lib/firebase/storage-server';
 
+export const maxDuration = 30;
+
+function statusForUploadError(message: string): number {
+  if (
+    message.includes('sign-in') ||
+    message.includes('Admin access') ||
+    message.includes('Supplier or admin') ||
+    message.includes('only upload')
+  ) {
+    return 403;
+  }
+  if (
+    message.includes('valid image') ||
+    message.includes('too large') ||
+    message.includes('8MB') ||
+    message.includes('JPEG, PNG') ||
+    message.includes('No image') ||
+    message.includes('Product ID')
+  ) {
+    return 400;
+  }
+  return 500;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('Authorization');
@@ -22,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const downloadUrl = await uploadProductImageServer(
+    const result = await uploadProductImageServer(
       idToken,
       productId.trim(),
       file.name,
@@ -30,17 +54,10 @@ export async function POST(request: NextRequest) {
       buffer
     );
 
-    return NextResponse.json({ url: downloadUrl });
+    return NextResponse.json(result);
   } catch (error) {
     console.error('[ShiQueen] upload-product-image:', error);
     const message = error instanceof Error ? error.message : 'Upload failed.';
-    const status =
-      message.includes('sign-in') ||
-      message.includes('Admin access') ||
-      message.includes('Supplier or admin') ||
-      message.includes('only upload')
-        ? 403
-        : 500;
-    return NextResponse.json({ error: message }, { status });
+    return NextResponse.json({ error: message }, { status: statusForUploadError(message) });
   }
 }

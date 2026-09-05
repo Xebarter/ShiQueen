@@ -47,6 +47,7 @@ import { getStoredWishlist, removeFromStoredWishlist, getDiscountPercent } from 
 import { useProducts } from '@/lib/products-context';
 import { Order, type OrderItem, Product } from '@/lib/types/database';
 import { formatUGX } from '@/lib/wholesale-data';
+import { isRetailCatalogProduct } from '@/lib/product-channels';
 import { getAccountHandle, getDisplayName } from '@/lib/user-display';
 import { resolveListingImage } from '@/lib/services-utils';
 import { ShareProductButton } from '@/components/shared/share-button';
@@ -691,6 +692,10 @@ export function AccountDashboard() {
   const handleAddToCart = (productId: string) => {
     const product = getProductById(productId);
     if (!product) return;
+    if (!isRetailCatalogProduct(product)) {
+      toast.error('This item is listed for wholesale buyers only.');
+      return;
+    }
     addItem({
       id: product.id,
       name: product.name,

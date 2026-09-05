@@ -1,7 +1,8 @@
 /** ShiQueen public contact details — used in footer, contact page, WhatsApp CTAs. */
-export const CONTACT_PHONE_E164 = '+256783676313';
-export const CONTACT_PHONE_DIGITS = '256783676313';
-export const CONTACT_PHONE_DISPLAY = '+256 783 676313';
+export const CONTACT_PHONE_E164 = '+256750225159';
+export const CONTACT_PHONE_DIGITS = '256750225159';
+export const CONTACT_PHONE_DISPLAY = '+256 750 225159';
+export const CONTACT_TIKTOK_HREF = 'https://www.tiktok.com/@shiqueen_ug';
 
 export const CONTACT_PHONE_HREF = `tel:${CONTACT_PHONE_E164}`;
 

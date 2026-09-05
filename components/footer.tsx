@@ -6,6 +6,7 @@ import { BrandLogo } from './brand-logo';
 import {
   CONTACT_PHONE_DISPLAY,
   CONTACT_PHONE_HREF,
+  CONTACT_TIKTOK_HREF,
   contactWhatsAppHref,
 } from '@/lib/contact-info';
 import { useFeatureFlags } from '@/lib/feature-flags-context';
@@ -21,10 +22,10 @@ function InstagramIcon({ className }: { className?: string }) {
   );
 }
 
-function FacebookIcon({ className }: { className?: string }) {
+function TikTokIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden className={className} fill="currentColor">
-      <path d="M13.5 3.5H16V0h-2.5C9.91 0 7.5 2.41 7.5 5.5V8H5v3.5h2.5V24h3.5v-12.5H16L16.5 8H11V6c0-.83.67-1.5 1.5-1.5z" />
+      <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.88-2.88c.31 0 .61.05.88.13V11.2a6.37 6.37 0 00-.88-.06 6.34 6.34 0 106.34 6.34V8.73a8.28 8.28 0 004.76 1.51V6.8a4.87 4.87 0 01-1.56-.11z" />
     </svg>
   );
 }
@@ -65,9 +66,9 @@ const SOCIAL_LINKS = [
     icon: InstagramIcon,
   },
   {
-    label: 'Facebook',
-    href: 'https://facebook.com',
-    icon: FacebookIcon,
+    label: 'TikTok',
+    href: CONTACT_TIKTOK_HREF,
+    icon: TikTokIcon,
   },
   {
     label: 'WhatsApp',

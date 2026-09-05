@@ -12,29 +12,62 @@ import { Product } from '@/lib/types/database';
 import { createProduct, updateProduct, deleteProduct } from '@/lib/firebase/products';
 import { uploadProductImages } from '@/lib/firebase/storage';
 import { isRemoteProductImage } from '@/components/product-image';
+import { productImageVariant } from '@/lib/image-optimization/variants';
 import { ArrowLeft, Save, Loader2, Upload, X, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SupplierSelect } from '@/components/admin/supplier-select';
 import { useSuppliers } from '@/lib/suppliers-context';
+import { optimizeImageForUpload, isLikelyImageFile } from '@/lib/image-optimization/client';
+import { IMAGE_ACCEPT_ATTRIBUTE, IMAGE_OPTIMIZATION } from '@/lib/image-optimization/config';
+import { formatFileSize, reductionPercent } from '@/lib/image-optimization/format';
+import type { PendingImageStatus } from '@/lib/image-optimization/types';
+import { cn } from '@/lib/utils';
+import {
+  getProductSalesChannel,
+  salesChannelToFlags,
+} from '@/lib/product-channels';
 
 const CATEGORIES = ['Clothing', 'Beauty', 'Wellness', 'Accessories', 'Home'];
 
 type PendingImage = {
   id: string;
+  originalFile: File;
   file: File;
   previewUrl: string;
+  originalBytes: number;
+  optimizedBytes: number;
+  status: PendingImageStatus;
+  progress: number;
+  error?: string;
 };
 
-function createPendingImages(files: FileList | File[]): PendingImage[] {
-  return Array.from(files).map((file) => ({
+function createPendingImages(files: File[]): PendingImage[] {
+  return files.map((file) => ({
     id: `${file.name}-${file.size}-${file.lastModified}-${crypto.randomUUID()}`,
+    originalFile: file,
     file,
     previewUrl: URL.createObjectURL(file),
+    originalBytes: file.size,
+    optimizedBytes: file.size,
+    status: 'optimizing',
+    progress: 0,
   }));
 }
 
 function revokePendingImages(items: PendingImage[]) {
   items.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+}
+
+function pendingStatusLabel(item: PendingImage): string {
+  if (item.status === 'optimizing') return 'Optimizing…';
+  if (item.status === 'uploading') return `Uploading ${item.progress}%`;
+  if (item.status === 'duplicate') return 'Already stored';
+  if (item.status === 'error') return item.error || 'Failed';
+  const reduced = reductionPercent(item.originalBytes, item.optimizedBytes);
+  if (reduced <= 0 || item.optimizedBytes >= item.originalBytes) {
+    return `${formatFileSize(item.optimizedBytes)} · ready`;
+  }
+  return `${formatFileSize(item.originalBytes)} → ${formatFileSize(item.optimizedBytes)} (−${reduced}%)`;
 }
 
 type ProductFormProps = {
@@ -62,6 +95,7 @@ function emptyForm(defaultSupplierId = '') {
     colors: '',
     details: '',
     isWholesaleEnabled: true,
+    isRetailEnabled: true,
     minOrderQuantity: '10',
   };
 }
@@ -80,6 +114,7 @@ function productToFormState(product: Product) {
     colors: product.colors.join(', '),
     details: product.details.join('\n'),
     isWholesaleEnabled: product.isWholesaleEnabled,
+    isRetailEnabled: product.isRetailEnabled !== false,
     minOrderQuantity: String(product.minOrderQuantity),
   };
 }
@@ -124,7 +159,9 @@ export function ProductForm({
   const isSupplierPortal = portal === 'supplier';
   const listHref = backHref ?? (isSupplierPortal ? '/suppliers/products' : '/admin/products');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const saveAbortRef = useRef<AbortController | null>(null);
   const [saving, setSaving] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
   const [formData, setFormData] = useState(() =>
     initialProduct
       ? productToFormState(initialProduct)
@@ -156,6 +193,7 @@ export function ProductForm({
   useEffect(() => {
     return () => {
       revokePendingImages(pendingImagesRef.current);
+      saveAbortRef.current?.abort();
     };
   }, []);
 
@@ -170,12 +208,81 @@ export function ProductForm({
     }));
   };
 
-  const handleFilesSelected = (files: FileList | null) => {
-    if (!files?.length) return;
-    // Snapshot File objects before the input is cleared — live FileList empties
-    // when value is reset, and deferred setState updaters then see zero files.
-    const next = createPendingImages(Array.from(files));
+  const applyOptimizeResult = async (item: PendingImage) => {
+    try {
+      const result = await optimizeImageForUpload(item.originalFile);
+      setPendingImages((prev) => {
+        const exists = prev.some((entry) => entry.id === item.id);
+        if (!exists) {
+          URL.revokeObjectURL(result.previewUrl);
+          return prev;
+        }
+        return prev.map((entry) => {
+          if (entry.id !== item.id) return entry;
+          URL.revokeObjectURL(entry.previewUrl);
+          return {
+            ...entry,
+            file: result.file,
+            previewUrl: result.previewUrl,
+            originalBytes: result.originalBytes,
+            optimizedBytes: result.optimizedBytes,
+            status: 'ready',
+            progress: 0,
+            error: undefined,
+          };
+        });
+      });
+    } catch (error) {
+      setPendingImages((prev) =>
+        prev.map((entry) =>
+          entry.id === item.id
+            ? {
+                ...entry,
+                status: 'error',
+                error:
+                  error instanceof Error ? error.message : 'Could not optimize this image.',
+              }
+            : entry
+        )
+      );
+    }
+  };
+
+  const handleFilesSelected = (files: FileList | File[] | null) => {
+    if (!files) return;
+    const incoming = Array.from(files);
+    if (!incoming.length) return;
+
+    const usable: File[] = [];
+    for (const file of incoming) {
+      if (!isLikelyImageFile(file)) {
+        toast.error(`${file.name}: use JPEG, PNG, WebP, AVIF, or GIF.`);
+        continue;
+      }
+      if (file.size > IMAGE_OPTIMIZATION.pickerMaxBytes) {
+        toast.error(`${file.name}: each image must be 40MB or smaller.`);
+        continue;
+      }
+      usable.push(file);
+    }
+    if (!usable.length) return;
+
+    const remaining =
+      IMAGE_OPTIMIZATION.galleryMax - imageUrls.length - pendingImagesRef.current.length;
+    if (remaining <= 0) {
+      toast.error(`You can add up to ${IMAGE_OPTIMIZATION.galleryMax} photos.`);
+      return;
+    }
+    const accepted = usable.slice(0, remaining);
+    if (accepted.length < usable.length) {
+      toast.error(`You can add up to ${IMAGE_OPTIMIZATION.galleryMax} photos.`);
+    }
+
+    const next = createPendingImages(accepted);
     setPendingImages((prev) => [...prev, ...next]);
+    next.forEach((item) => {
+      void applyOptimizeResult(item);
+    });
   };
 
   const removeExistingImage = (index: number) => {
@@ -215,6 +322,7 @@ export function ProductForm({
       : undefined;
     if (
       formData.isWholesaleEnabled &&
+      formData.isRetailEnabled &&
       wholesalePrice &&
       wholesalePrice > 0 &&
       wholesalePrice >= price
@@ -222,13 +330,66 @@ export function ProductForm({
       toast.error('Wholesale must be lower than retail.');
       return;
     }
+    if (!formData.isRetailEnabled && !formData.isWholesaleEnabled) {
+      toast.error('Choose shop, wholesale, or both.');
+      return;
+    }
+    if (!formData.isRetailEnabled && formData.isWholesaleEnabled && !(price > 0 || (wholesalePrice && wholesalePrice > 0))) {
+      toast.error('Set a wholesale or list price.');
+      return;
+    }
+
+    const pending = pendingImagesRef.current;
+    if (pending.some((item) => item.status === 'optimizing')) {
+      toast.error('Wait for photos to finish optimizing.');
+      return;
+    }
+
+    const ready = pending.filter(
+      (item) => item.status === 'ready' || item.status === 'duplicate'
+    );
+    const failed = pending.filter((item) => item.status === 'error');
+    if (failed.length > 0 && ready.length === 0 && pending.length > 0) {
+      toast.error('Fix or remove photos that failed to optimize.');
+      return;
+    }
 
     setSaving(true);
+    saveAbortRef.current?.abort();
+    const abort = new AbortController();
+    saveAbortRef.current = abort;
     try {
-      const pending = pendingImagesRef.current;
       const uploadedUrls = await uploadProductImages(
         productId,
-        pending.map((item) => item.file)
+        ready.map((item) => item.file),
+        {
+          alreadyOptimized: true,
+          signal: abort.signal,
+          onFileProgress: (index, percent) => {
+            const id = ready[index]?.id;
+            if (!id) return;
+            setPendingImages((prev) =>
+              prev.map((item) =>
+                item.id === id ? { ...item, status: 'uploading', progress: percent } : item
+              )
+            );
+          },
+          onFileStatus: (index, status) => {
+            const id = ready[index]?.id;
+            if (!id) return;
+            setPendingImages((prev) =>
+              prev.map((item) =>
+                item.id === id
+                  ? {
+                      ...item,
+                      status: status === 'duplicate' ? 'duplicate' : 'uploading',
+                      progress: status === 'done' || status === 'duplicate' ? 100 : item.progress,
+                    }
+                  : item
+              )
+            );
+          },
+        }
       );
       const allImages = [...imageUrls, ...uploadedUrls];
       const stock = parseInt(formData.stock, 10) || 0;
@@ -256,6 +417,7 @@ export function ProductForm({
         colors: parseCommaList(formData.colors),
         details: parseLineList(formData.details),
         isWholesaleEnabled: formData.isWholesaleEnabled,
+        isRetailEnabled: formData.isRetailEnabled !== false,
         minOrderQuantity: parseInt(formData.minOrderQuantity, 10) || 10,
         maxOrderQuantity: initialProduct?.maxOrderQuantity ?? null,
         rating: initialProduct?.rating ?? 0,
@@ -265,19 +427,30 @@ export function ProductForm({
 
       if (mode === 'create') {
         await createProduct(payload);
-        toast.success('Product created');
       } else {
         await updateProduct(productId, payload);
-        toast.success('Product saved');
       }
 
       revokePendingImages(pending);
       setPendingImages([]);
       setImageUrls(allImages);
+      if (failed.length > 0) {
+        toast.success(
+          mode === 'create'
+            ? `Product created. ${failed.length} photo${failed.length === 1 ? '' : 's'} skipped.`
+            : `Product saved. ${failed.length} photo${failed.length === 1 ? '' : 's'} skipped.`
+        );
+      } else {
+        toast.success(mode === 'create' ? 'Product created' : 'Product saved');
+      }
       onSaved?.();
     } catch (error) {
       console.error(error);
-      toast.error(error instanceof Error ? error.message : 'Failed to save product');
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        toast.error('Upload cancelled.');
+      } else {
+        toast.error(error instanceof Error ? error.message : 'Failed to save product');
+      }
     } finally {
       setSaving(false);
     }
@@ -317,11 +490,30 @@ export function ProductForm({
             <CardHeader>
               <CardTitle>Images</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent
+              className="space-y-4"
+              onDragEnter={(event) => {
+                event.preventDefault();
+                setDragActive(true);
+              }}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setDragActive(true);
+              }}
+              onDragLeave={(event) => {
+                if (event.currentTarget.contains(event.relatedTarget as Node)) return;
+                setDragActive(false);
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                setDragActive(false);
+                handleFilesSelected(event.dataTransfer.files);
+              }}
+            >
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
+                accept={IMAGE_ACCEPT_ATTRIBUTE}
                 multiple
                 className="hidden"
                 onChange={(e) => {
@@ -332,14 +524,19 @@ export function ProductForm({
               />
 
               {imageUrls.length > 0 || pendingImages.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div
+                  className={cn(
+                    'grid grid-cols-2 md:grid-cols-3 gap-4 rounded-xl p-1 transition-colors',
+                    dragActive && 'ring-2 ring-primary/40 bg-primary/5'
+                  )}
+                >
                   {imageUrls.map((url, index) => (
                     <div
                       key={`saved-${url}`}
                       className="relative aspect-square rounded-xl overflow-hidden border border-border bg-secondary"
                     >
                       {isRemoteProductImage(url) ? (
-                        <Image src={url} alt="" fill className="object-cover" sizes="200px" />
+                        <Image src={productImageVariant(url, 'card')} alt="" fill className="object-cover" sizes="200px" />
                       ) : (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={url} alt="" className="absolute inset-0 h-full w-full object-cover" />
@@ -391,11 +588,56 @@ export function ProductForm({
                       <button
                         type="button"
                         onClick={() => removePendingFile(index)}
-                        className="absolute top-2 right-2 rounded-full bg-background/90 p-1.5 hover:bg-background text-red-600"
+                        disabled={saving}
+                        className="absolute top-2 right-2 rounded-full bg-background/90 p-1.5 hover:bg-background text-red-600 disabled:opacity-50"
                         title="Remove"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
+                      <div className="absolute inset-x-0 bottom-0 bg-background/85 px-2 py-1.5 text-[10px] leading-tight text-foreground">
+                        {item.status === 'optimizing' && (
+                          <span className="inline-flex items-center gap-1">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Optimizing…
+                          </span>
+                        )}
+                        {item.status === 'uploading' && (
+                          <div>
+                            <div className="mb-1 flex justify-between gap-2">
+                              <span>Uploading {item.progress}%</span>
+                            </div>
+                            <div className="h-1 overflow-hidden rounded-full bg-muted">
+                              <div
+                                className="h-full bg-primary transition-all"
+                                style={{ width: `${item.progress}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                        {item.status !== 'optimizing' && item.status !== 'uploading' && (
+                          <span className={item.status === 'error' ? 'text-red-600' : undefined}>
+                            {pendingStatusLabel(item)}
+                          </span>
+                        )}
+                        {item.status === 'error' && (
+                          <button
+                            type="button"
+                            className="mt-0.5 underline"
+                            onClick={() => {
+                              setPendingImages((prev) =>
+                                prev.map((entry) =>
+                                  entry.id === item.id
+                                    ? { ...entry, status: 'optimizing', error: undefined }
+                                    : entry
+                                )
+                              );
+                              void applyOptimizeResult(item);
+                            }}
+                          >
+                            Retry
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -403,22 +645,35 @@ export function ProductForm({
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-secondary/40 px-6 py-12 text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                  className={cn(
+                    'flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-secondary/40 px-6 py-12 text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground',
+                    dragActive ? 'border-primary bg-primary/5 text-foreground' : 'border-border'
+                  )}
                 >
                   <Upload className="h-7 w-7" />
                   <span className="text-sm">Add photos</span>
+                  <span className="text-xs">Drag and drop or click · JPEG, PNG, WebP, AVIF, GIF</span>
                 </button>
               )}
 
               {(imageUrls.length > 0 || pendingImages.length > 0) && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Upload
-                </Button>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={
+                      imageUrls.length + pendingImages.length >= IMAGE_OPTIMIZATION.galleryMax
+                    }
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    {imageUrls.length + pendingImages.length}/{IMAGE_OPTIMIZATION.galleryMax} photos
+                    {dragActive ? ' · Drop to add' : ''}
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -472,7 +727,9 @@ export function ProductForm({
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="price">Retail (UGX)</Label>
+                <Label htmlFor="price">
+                  {formData.isRetailEnabled === false ? 'List price (UGX)' : 'Retail (UGX)'}
+                </Label>
                 <Input
                   id="price"
                   name="price"
@@ -528,17 +785,63 @@ export function ProductForm({
                   disabled={!formData.isWholesaleEnabled}
                 />
               </div>
-              <div className="flex items-end pb-2">
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    name="isWholesaleEnabled"
-                    checked={formData.isWholesaleEnabled}
-                    onChange={handleInputChange}
-                    className="rounded border-border"
-                  />
-                  Wholesale
-                </label>
+              <div className="md:col-span-2 space-y-2">
+                <Label>Listed on</Label>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  {(
+                    [
+                      {
+                        id: 'both',
+                        label: 'Shop & wholesale',
+                        hint: 'Buyers can purchase in the shop or in bulk',
+                      },
+                      {
+                        id: 'retail',
+                        label: 'Shop only',
+                        hint: 'Hidden from wholesale',
+                      },
+                      {
+                        id: 'wholesale',
+                        label: 'Wholesale only',
+                        hint: 'Hidden from the shop',
+                      },
+                    ] as const
+                  ).map((option) => {
+                    const selected =
+                      getProductSalesChannel({
+                        isRetailEnabled: formData.isRetailEnabled !== false,
+                        isWholesaleEnabled: formData.isWholesaleEnabled,
+                      }) === option.id;
+                    return (
+                      <label
+                        key={option.id}
+                        className={cn(
+                          'flex cursor-pointer flex-col gap-0.5 rounded-lg border px-3 py-2.5 text-sm transition',
+                          selected
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border hover:border-primary/40'
+                        )}
+                      >
+                        <span className="flex items-center gap-2 font-medium">
+                          <input
+                            type="radio"
+                            name="salesChannel"
+                            className="accent-primary"
+                            checked={selected}
+                            onChange={() =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                ...salesChannelToFlags(option.id),
+                              }))
+                            }
+                          />
+                          {option.label}
+                        </span>
+                        <span className="pl-6 text-xs text-muted-foreground">{option.hint}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -585,13 +888,24 @@ export function ProductForm({
         </div>
 
         <div className="space-y-6">
-          <Button className="w-full" size="lg" onClick={handleSave} disabled={saving}>
+          <Button
+            className="w-full"
+            size="lg"
+            onClick={handleSave}
+            disabled={saving || pendingImages.some((item) => item.status === 'optimizing')}
+          >
             {saving ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
             ) : (
               <Save className="w-4 h-4 mr-2" />
             )}
-            {mode === 'create' ? 'Create' : 'Save'}
+            {saving
+              ? 'Uploading…'
+              : pendingImages.some((item) => item.status === 'optimizing')
+                ? 'Optimizing…'
+                : mode === 'create'
+                  ? 'Create'
+                  : 'Save'}
           </Button>
 
           <Card>
@@ -602,7 +916,7 @@ export function ProductForm({
               <div className="relative aspect-square rounded-xl overflow-hidden mb-4 bg-secondary">
                 {imageUrls.length > 0 && isRemoteProductImage(imageUrls[0]) ? (
                   <Image
-                    src={imageUrls[0]}
+                    src={productImageVariant(imageUrls[0], 'card')}
                     alt=""
                     fill
                     className="object-cover"

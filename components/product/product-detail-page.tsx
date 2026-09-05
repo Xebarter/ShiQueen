@@ -22,8 +22,16 @@ import { ProductReviewFormModal } from '@/components/product/product-review-form
 import { PricingTiers } from '@/components/pricing-tiers';
 import { ProductImage, isRemoteProductImage } from '@/components/product-image';
 import { ShareProductButton } from '@/components/shared/share-button';
+import { productImageVariant } from '@/lib/image-optimization/variants';
 import { useCart } from '@/lib/cart-context';
 import { usePublicProducts } from '@/lib/hooks/use-public-catalog';
+import { useProducts } from '@/lib/products-context';
+import { useSuppliers } from '@/lib/suppliers-context';
+import {
+  buildSuppliersById,
+  isCatalogSupplierVisible,
+} from '@/lib/supplier-visibility';
+import { isWholesaleOnlyProduct } from '@/lib/product-channels';
 import { useFeature } from '@/lib/feature-flags-context';
 import { formatUGX, getProductWholesaleTiers } from '@/lib/wholesale-data';
 import { cn } from '@/lib/utils';
@@ -91,8 +99,17 @@ export function ProductDetailPage() {
   const id = params.id as string;
   const goBack = useSmartBack('/shop');
   const { getProductById, loading } = usePublicProducts();
+  const { getProductById: getAnyProduct } = useProducts();
+  const { suppliers } = useSuppliers();
   const wholesaleEnabled = useFeature('wholesale');
   const product = getProductById(id);
+  const wholesaleOnlyProduct = (() => {
+    if (product || loading) return undefined;
+    const candidate = getAnyProduct(id);
+    if (!candidate || !isWholesaleOnlyProduct(candidate)) return undefined;
+    const byId = buildSuppliersById(suppliers);
+    return isCatalogSupplierVisible(candidate.supplierId, byId) ? candidate : undefined;
+  })();
 
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState('');
@@ -152,6 +169,39 @@ export function ProductDetailPage() {
   }
 
   if (!product) {
+    if (wholesaleOnlyProduct) {
+      return (
+        <main>
+          <Header />
+          <section className="flex min-h-[50vh] flex-col items-center justify-center px-4 py-16 text-center">
+            <p className="mb-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+              Wholesale
+            </p>
+            <h1 className="mb-3 text-2xl font-light tracking-tight sm:text-3xl">
+              {wholesaleOnlyProduct.name}
+            </h1>
+            <p className="mb-8 max-w-sm text-sm text-muted-foreground">
+              This item is listed for wholesale buyers only and is not sold in the shop.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              {wholesaleEnabled ? (
+                <Link href="/wholesale">
+                  <Button>Browse wholesale</Button>
+                </Link>
+              ) : null}
+              <Link href="/shop">
+                <Button variant={wholesaleEnabled ? 'outline' : 'default'} className="gap-2">
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to shop
+                </Button>
+              </Link>
+            </div>
+          </section>
+          <Footer />
+        </main>
+      );
+    }
+
     return (
       <main>
         <Header />
@@ -212,7 +262,7 @@ export function ProductDetailPage() {
               <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-secondary ring-1 ring-border/40 sm:rounded-2xl">
                 {activeImage ? (
                   <Image
-                    src={activeImage}
+                    src={productImageVariant(activeImage, 'src')}
                     alt={product.name}
                     fill
                     className="object-cover"
@@ -249,7 +299,14 @@ export function ProductDetailPage() {
                         activeImage === url ? 'border-primary' : 'border-transparent ring-1 ring-border/50'
                       )}
                     >
-                      <Image src={url} alt="" fill className="object-cover" sizes="72px" quality={75} />
+                      <Image
+                        src={productImageVariant(url, 'thumb')}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        sizes="72px"
+                        quality={75}
+                      />
                     </button>
                   ))}
                 </div>

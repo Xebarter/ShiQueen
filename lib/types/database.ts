@@ -54,6 +54,8 @@ export interface Product {
   colors: string[];
   details: string[];
   isWholesaleEnabled: boolean;
+  /** When false, hidden from the retail shop and listed for wholesale buyers only. */
+  isRetailEnabled: boolean;
   minOrderQuantity: number;
   maxOrderQuantity: number | null;
   status: 'Active' | 'Low Stock' | 'Out of Stock';

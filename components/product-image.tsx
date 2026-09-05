@@ -2,6 +2,8 @@ import Image from 'next/image';
 import { Product } from '@/lib/types/database';
 import { CARD_IMAGE_SIZES, IMAGE_BLUR_DATA_URL, IMAGE_QUALITY } from '@/lib/image';
 import { cn } from '@/lib/utils';
+import { productImageVariant } from '@/lib/image-optimization/variants';
+import type { ImageVariantName } from '@/lib/image-optimization/config';
 
 const CATEGORY_EMOJI: Record<string, string> = {
   Beauty: '✨',
@@ -22,6 +24,7 @@ type ProductImageProps = {
   fallbackClassName?: string;
   sizes?: string;
   priority?: boolean;
+  variant?: ImageVariantName;
 };
 
 export function ProductImage({
@@ -31,14 +34,16 @@ export function ProductImage({
   fallbackClassName,
   sizes = CARD_IMAGE_SIZES,
   priority = false,
+  variant = 'card',
 }: ProductImageProps) {
   const emoji = CATEGORY_EMOJI[product.category] ?? '🛍️';
+  const src = productImageVariant(product.image, variant);
 
-  if (isRemoteProductImage(product.image)) {
+  if (isRemoteProductImage(src)) {
     return (
       <div className={cn('relative overflow-hidden', className)}>
         <Image
-          src={product.image}
+          src={src}
           alt={product.name}
           fill
           sizes={sizes}

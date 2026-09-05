@@ -8,6 +8,7 @@ import { resolvePackageOgImage } from '@/lib/metadata/resolve-package-og-image';
 import { SEO_CITY, SEO_COUNTRY, pageMetadata } from '@/lib/seo/site';
 import { NOINDEX_ROBOTS } from '@/lib/seo/robots-policy';
 import { toAbsoluteUrl } from '@/lib/site-url';
+import { isRetailCatalogProduct } from '@/lib/product-channels';
 
 function shareDescription(text: string, fallback: string): string {
   const trimmed = (text.replace(/\s+/g, ' ').trim() || fallback).replace(/[.;]+$/, '');
@@ -46,8 +47,7 @@ export function buildProductMetadata(product: Product): Metadata {
     `Shop ${categoryLabel.toLowerCase()} at ${BRAND_NAME}.`
   );
   const productImage = resolveProductOgImage(product);
-
-  return pageMetadata({
+  const metadata = pageMetadata({
     title: product.name,
     description,
     path,
@@ -60,6 +60,12 @@ export function buildProductMetadata(product: Product): Metadata {
       'women\'s online shop Uganda',
     ],
   });
+
+  if (!isRetailCatalogProduct(product)) {
+    return { ...metadata, robots: NOINDEX_ROBOTS };
+  }
+
+  return metadata;
 }
 
 export async function buildPackageMetadata(pkg: Package): Promise<Metadata> {

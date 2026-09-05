@@ -27,6 +27,7 @@ function mapProduct(row: Record<string, unknown>): Product {
     colors: Array.isArray(row.colors) ? (row.colors as string[]) : [],
     details: Array.isArray(row.details) ? (row.details as string[]) : [],
     isWholesaleEnabled: Boolean(row.is_wholesale_enabled ?? true),
+    isRetailEnabled: row.is_retail_enabled !== false,
     minOrderQuantity: Number(row.min_order_quantity ?? 10),
     maxOrderQuantity:
       row.max_order_quantity === null || row.max_order_quantity === undefined
@@ -155,9 +156,12 @@ export type SitemapEntry = { id: string; slug?: string; updatedAt: Date };
 export async function listProductsForSitemap(): Promise<SitemapEntry[]> {
   const admin = getAdmin();
   if (!admin) return [];
-  const { data } = await admin.from(TABLES.products).select('id, updated_at, status');
+  const { data } = await admin.from(TABLES.products).select('id, updated_at, status, is_retail_enabled');
   return (data ?? [])
-    .filter((row) => String(row.status ?? 'Active') !== 'Out of Stock')
+    .filter(
+      (row) =>
+        String(row.status ?? 'Active') !== 'Out of Stock' && row.is_retail_enabled !== false
+    )
     .map((row) => ({ id: String(row.id), updatedAt: toDate(row.updated_at) }));
 }
 
