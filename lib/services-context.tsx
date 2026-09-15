@@ -29,6 +29,8 @@ interface ServicesContextValue {
   reviews: ServiceReview[];
   availability: ProviderAvailability[];
   loading: boolean;
+  /** True after the admin bookings subscription has delivered its first snapshot. */
+  bookingsReady: boolean;
   activeCategories: ServiceCategory[];
   activeListings: ServiceListing[];
   activeProviders: ServiceProvider[];
@@ -57,6 +59,7 @@ export function ServicesProvider({ children }: { children: React.ReactNode }) {
   const [providers, setProviders] = useState<ServiceProvider[]>([]);
   const [listings, setListings] = useState<ServiceListing[]>([]);
   const [bookings, setBookings] = useState<ServiceBooking[]>([]);
+  const [bookingsReady, setBookingsReady] = useState(false);
   const [reviews, setReviews] = useState<ServiceReview[]>([]);
   const [availability, setAvailability] = useState<ProviderAvailability[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,9 +116,14 @@ export function ServicesProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isAdmin) {
       setBookings([]);
+      setBookingsReady(false);
       return;
     }
-    return subscribeServiceBookings(setBookings);
+    setBookingsReady(false);
+    return subscribeServiceBookings((next) => {
+      setBookings(next);
+      setBookingsReady(true);
+    });
   }, [isAdmin]);
 
   useEffect(() => {
@@ -139,11 +147,21 @@ export function ServicesProvider({ children }: { children: React.ReactNode }) {
       reviews,
       availability,
       loading,
+      bookingsReady,
       activeCategories,
       activeListings,
       activeProviders,
     };
-  }, [categories, providers, listings, bookings, reviews, availability, loading]);
+  }, [
+    categories,
+    providers,
+    listings,
+    bookings,
+    reviews,
+    availability,
+    loading,
+    bookingsReady,
+  ]);
 
   return <ServicesContext.Provider value={value}>{children}</ServicesContext.Provider>;
 }

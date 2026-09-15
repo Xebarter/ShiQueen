@@ -75,7 +75,7 @@ export function AdminAlerts() {
   const { user, isAdmin, profile } = useAuth();
   const router = useRouter();
   const { suppliers, loading: suppliersLoading } = useSuppliers();
-  const { providers, bookings, loading: servicesLoading } = useServices();
+  const { providers, bookings, loading: servicesLoading, bookingsReady } = useServices();
   const prefs = resolveUserPreferences(profile?.preferences);
   const enabled = isAdmin && prefs.pushAlerts !== false;
   const [banner, setBanner] = useState<Banner | null>(null);
@@ -332,13 +332,23 @@ export function AdminAlerts() {
   }, [enabled, orders, ordersLoading]);
 
   useEffect(() => {
-    if (!enabled || servicesLoading) return;
+    if (!enabled || !bookingsReady) {
+      if (!enabled) seenBookings.current = null;
+      return;
+    }
     const ids = new Set(bookings.map((booking) => booking.id));
     if (!seenBookings.current) {
+      // Baseline existing bookings so only truly new ones ring as incoming.
       seenBookings.current = ids;
       return;
     }
-    const fresh = bookings.filter((booking) => !seenBookings.current!.has(booking.id));
+    const fresh = bookings.filter(
+      (booking) =>
+        !seenBookings.current!.has(booking.id) &&
+        booking.status !== 'cancelled' &&
+        booking.status !== 'expired' &&
+        booking.status !== 'completed'
+    );
     seenBookings.current = ids;
     const newest = fresh[0];
     if (!newest) return;
@@ -352,7 +362,7 @@ export function AdminAlerts() {
           : `${newest.customerName} booked ${newest.serviceName}`,
       href: `${ADMIN_SERVICE_BOOKINGS_HREF}&booking=${encodeURIComponent(newest.id)}`,
     });
-  }, [enabled, bookings, servicesLoading]);
+  }, [enabled, bookings, bookingsReady]);
 
   useEffect(() => {
     if (!enabled || bulkLoading) return;
