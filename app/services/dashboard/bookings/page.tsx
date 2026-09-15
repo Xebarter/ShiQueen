@@ -25,6 +25,7 @@ const FILTERS: Array<{ id: 'all' | ServiceBookingStatus; label: string }> = [
   { id: 'in_progress', label: 'Live' },
   { id: 'completed', label: 'Done' },
   { id: 'cancelled', label: 'Cancelled' },
+  { id: 'expired', label: 'Expired' },
 ];
 
 const STATUS_LABEL: Record<ServiceBookingStatus, string> = {
@@ -33,11 +34,13 @@ const STATUS_LABEL: Record<ServiceBookingStatus, string> = {
   in_progress: 'Live',
   completed: 'Done',
   cancelled: 'Cancelled',
+  expired: 'Expired',
 };
 
 function bookingTone(status: ServiceBookingStatus) {
   if (status === 'in_progress') return 'progress' as const;
   if (status === 'completed') return 'completed' as const;
+  if (status === 'expired') return 'cancelled' as const;
   return status;
 }
 

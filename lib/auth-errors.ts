@@ -22,6 +22,8 @@ export function getAuthErrorMessage(error: unknown): string {
       return 'Phone verification could not start on this site. Try Google or email.';
     case 'auth/quota-exceeded':
       return 'SMS limit reached. Try again later or use another sign-in method.';
+    case 'auth/billing-not-enabled':
+      return 'Phone sign-in needs billing enabled on the Firebase project (Blaze plan). Use Google or email for now.';
     case 'auth/operation-not-allowed': {
       const message =
         typeof error === 'object' && error !== null && 'message' in error

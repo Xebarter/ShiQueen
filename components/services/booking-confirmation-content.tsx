@@ -11,6 +11,10 @@ import {
   type PaymentLiveKind,
 } from '@/components/payments/payment-status-panel';
 import { getServiceBookingById } from '@/lib/firebase/service-bookings';
+import {
+  BOOKING_ACCEPT_TTL_MS,
+  getServiceBookingAcceptDeadline,
+} from '@/lib/service-booking-utils';
 import type { ServiceBooking } from '@/lib/types/services';
 import { useFeature } from '@/lib/feature-flags-context';
 
@@ -37,6 +41,7 @@ function BookingConfirmationInner() {
   const giftQuery = searchParams.get('gift') === '1';
   const [booking, setBooking] = useState<ServiceBooking | null>(null);
   const [loading, setLoading] = useState(Boolean(bookingId));
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     if (!bookingId) {
@@ -52,11 +57,15 @@ function BookingConfirmationInner() {
       if (cancelled) return;
       setBooking(result);
       setLoading(false);
+      setNow(Date.now());
       if (
-        result?.paymentStatus === 'paid' ||
         result?.paymentStatus === 'failed' ||
         result?.paymentStatus === 'cancelled' ||
-        result?.status === 'confirmed'
+        result?.status === 'confirmed' ||
+        result?.status === 'expired' ||
+        result?.status === 'cancelled' ||
+        result?.status === 'in_progress' ||
+        result?.status === 'completed'
       ) {
         if (intervalId) window.clearInterval(intervalId);
       }
@@ -73,13 +82,35 @@ function BookingConfirmationInner() {
     };
   }, [bookingId]);
 
+  // Local countdown so the UI flips to expired without waiting for the next poll.
+  useEffect(() => {
+    if (!booking || booking.status !== 'pending' || booking.paymentStatus !== 'paid') return;
+    const deadline = getServiceBookingAcceptDeadline(booking);
+    if (!deadline) return;
+    const remaining = deadline.getTime() - Date.now();
+    if (remaining <= 0) {
+      setBooking((prev) => (prev && prev.status === 'pending' ? { ...prev, status: 'expired' } : prev));
+      return;
+    }
+    const timeoutId = window.setTimeout(() => {
+      setNow(Date.now());
+      setBooking((prev) => (prev && prev.status === 'pending' ? { ...prev, status: 'expired' } : prev));
+      void getServiceBookingById(booking.id);
+    }, Math.min(remaining, BOOKING_ACCEPT_TTL_MS));
+    return () => window.clearTimeout(timeoutId);
+  }, [booking]);
+
   const isGift = giftQuery || Boolean(booking?.sharedBookingToken);
-  const paid =
-    booking?.paymentStatus === 'paid' || booking?.status === 'confirmed';
+  const paymentPaid = booking?.paymentStatus === 'paid';
+  const accepted =
+    booking?.status === 'confirmed' ||
+    booking?.status === 'in_progress' ||
+    booking?.status === 'completed';
+  const expired = booking?.status === 'expired';
   const failed =
     booking?.paymentStatus === 'failed' || booking?.paymentStatus === 'cancelled';
   const offline = paymentParam === 'offline';
-  const catalogHref = servicesEnabled ? '/services' : '/shop';
+  const requestAgainHref = servicesEnabled ? '/services' : '/shop';
 
   const view = useMemo(() => {
     if (offline) {
@@ -98,12 +129,28 @@ function BookingConfirmationInner() {
         live: false,
       };
     }
-    if (paid) {
+    if (expired) {
+      return {
+        kind: 'expired' as PaymentLiveKind,
+        title: 'Expired',
+        detail: 'The provider did not accept in time. Request again or return to the shop.',
+        live: false,
+      };
+    }
+    if (accepted) {
       return {
         kind: 'paid' as PaymentLiveKind,
-        title: 'Paid',
-        detail: isGift ? 'Gift received.' : 'Booking confirmed.',
+        title: paymentPaid ? 'Accepted' : 'Confirmed',
+        detail: isGift ? 'Gift received and booking accepted.' : 'Your booking was accepted.',
         live: false,
+      };
+    }
+    if (paymentPaid) {
+      return {
+        kind: 'waiting' as PaymentLiveKind,
+        title: 'Waiting',
+        detail: 'Waiting for the provider to accept your request.',
+        live: true,
       };
     }
     return {
@@ -112,7 +159,25 @@ function BookingConfirmationInner() {
       detail: isGift ? 'Not paid yet.' : 'Approve on your phone.',
       live: true,
     };
-  }, [failed, isGift, offline, paid]);
+  }, [accepted, expired, failed, isGift, offline, paymentPaid, now]);
+
+  const expiredActions = (
+    <PaymentStatusActions
+      primaryHref={requestAgainHref}
+      primaryLabel="Request again"
+      secondaryHref="/shop"
+      secondaryLabel="Return to shop"
+    />
+  );
+
+  const defaultActions = (
+    <PaymentStatusActions
+      primaryHref={requestAgainHref}
+      primaryLabel={servicesEnabled ? 'Services' : 'Shop'}
+      secondaryHref="/account"
+      secondaryLabel="Account"
+    />
+  );
 
   return (
     <main className="min-h-screen bg-background">
@@ -137,15 +202,8 @@ function BookingConfirmationInner() {
                 reference={booking?.id ?? bookingId}
                 gift={isGift}
                 live={view.live}
-                steps={isGift ? giftSteps(paid) : undefined}
-                actions={
-                  <PaymentStatusActions
-                    primaryHref={catalogHref}
-                    primaryLabel={servicesEnabled ? 'Services' : 'Shop'}
-                    secondaryHref="/account"
-                    secondaryLabel="Account"
-                  />
-                }
+                steps={isGift ? giftSteps(paymentPaid || accepted) : undefined}
+                actions={expired ? expiredActions : defaultActions}
               />
               {booking ? (
                 <div className="rounded-2xl border border-border/70 bg-card/90 p-5 text-left shadow-sm">

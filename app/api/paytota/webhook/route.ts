@@ -34,7 +34,7 @@ function mapPaymentStatus(status: string): {
       return {
         paymentStatus: 'paid',
         orderStatus: 'processing',
-        bookingStatus: 'confirmed',
+        // Keep booking status as-is (pending until the provider accepts).
       };
     case 'error':
       return { paymentStatus: 'failed', orderStatus: 'pending', bookingStatus: 'pending' };

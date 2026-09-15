@@ -22,6 +22,7 @@ import {
 import { useProducts } from '@/lib/products-context';
 import { useServices } from '@/lib/services-context';
 import { isRetailCatalogProduct } from '@/lib/product-channels';
+import { withRetailPricing } from '@/lib/retail-pricing';
 import { productsToCatalog, formatUGX } from '@/lib/wholesale-data';
 import { uploadPackageImage, uploadPackageItemImage } from '@/lib/firebase/storage';
 import { resolveListingImage } from '@/lib/services-utils';
@@ -133,7 +134,7 @@ export function PackageForm({
       !isSupplierPortal || !forcedSupplierId
         ? allProducts
         : allProducts.filter((p) => p.supplierId === forcedSupplierId);
-    return scoped.filter(isRetailCatalogProduct);
+    return scoped.filter(isRetailCatalogProduct).map(withRetailPricing);
   }, [allProducts, forcedSupplierId, isSupplierPortal]);
   const serviceOptions = useMemo(() => {
     const active = activeListings.filter((s) => !s.isArchived);

@@ -636,7 +636,7 @@ export function computeBookingMonthlyTrend(
   );
 
   for (const booking of bookings) {
-    if (booking.status === 'cancelled') continue;
+    if (booking.status === 'cancelled' || booking.status === 'expired') continue;
     const key = getMonthKey(booking.createdAt);
     const month = bucket.get(key);
     if (!month) continue;
@@ -666,6 +666,7 @@ const BOOKING_STATUS_ORDER: ServiceBooking['status'][] = [
   'in_progress',
   'completed',
   'cancelled',
+  'expired',
 ];
 
 export function computeBookingStatusFunnel(bookings: ServiceBooking[]): StatusFunnelItem[] {

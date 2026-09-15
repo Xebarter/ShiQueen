@@ -5,7 +5,10 @@ import { useRouter } from 'next/navigation';
 import { Bell } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { subscribeOrdersForSupplier } from '@/lib/firebase/orders';
-import { subscribeServiceBookingsForProvider } from '@/lib/firebase/service-bookings';
+import {
+  subscribeServiceBookingsForProvider,
+  updateServiceBookingStatus,
+} from '@/lib/firebase/service-bookings';
 import { resolveUserPreferences } from '@/lib/account-settings';
 import { formatUGX } from '@/lib/wholesale-data';
 import { PROVIDER_HOME_HREF, SUPPLIER_HOME_HREF } from '@/lib/pwa/paths';
@@ -16,6 +19,7 @@ import {
 } from '@/lib/pwa/messaging';
 import { INCOMING_VIBRATE_PATTERN, startPartnerRing, stopPartnerRing } from '@/lib/pwa/sound';
 import { FOREGROUND_PUSH_EVENT, type IncomingPushPayload } from '@/lib/pwa/incoming';
+import { getServiceBookingAcceptDeadline } from '@/lib/service-booking-utils';
 import type { Order } from '@/lib/types/database';
 import type { ServiceBooking } from '@/lib/types/services';
 import { Button } from '@/components/ui/button';
@@ -43,6 +47,7 @@ export function PartnerAlerts() {
   const seenOrders = useRef<Set<string> | null>(null);
   const seenBookings = useRef<Set<string> | null>(null);
   const incomingRef = useRef<IncomingCall | null>(null);
+  const acceptTimeoutRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) {
@@ -57,7 +62,21 @@ export function PartnerAlerts() {
     incomingRef.current = incoming;
   }, [incoming]);
 
-  const presentIncoming = (next: IncomingCall) => {
+  const clearAcceptTimeout = () => {
+    if (acceptTimeoutRef.current !== undefined) {
+      window.clearTimeout(acceptTimeoutRef.current);
+      acceptTimeoutRef.current = undefined;
+    }
+  };
+
+  const expireBooking = (bookingId: string) => {
+    void updateServiceBookingStatus(bookingId, 'expired').catch(() => {
+      /* overlay may race with soft-expire on read */
+    });
+  };
+
+  const presentIncoming = (next: IncomingCall, acceptDeadlineMs?: number) => {
+    clearAcceptTimeout();
     setIncoming(next);
     startPartnerRing();
     void showPartnerNotification(next.title, {
@@ -74,17 +93,42 @@ export function PartnerAlerts() {
         { action: 'decline', title: 'Decline' },
       ],
     });
+
+    if (next.kind === 'booking' && typeof acceptDeadlineMs === 'number') {
+      const remaining = Math.max(0, acceptDeadlineMs - Date.now());
+      acceptTimeoutRef.current = window.setTimeout(() => {
+        silenceRing();
+        setIncoming((current) => (current?.id === next.id ? null : current));
+        expireBooking(next.id);
+      }, remaining);
+    }
   };
 
   const decline = () => {
+    const current = incomingRef.current;
+    clearAcceptTimeout();
     silenceRing();
     setIncoming(null);
+    if (current?.kind === 'booking') {
+      expireBooking(current.id);
+    }
   };
 
   const accept = () => {
     const current = incomingRef.current;
+    clearAcceptTimeout();
     silenceRing();
     setIncoming(null);
+    if (current?.kind === 'booking') {
+      void updateServiceBookingStatus(current.id, 'confirmed')
+        .then(() => {
+          if (current.href) router.push(current.href);
+        })
+        .catch(() => {
+          if (current.href) router.push(current.href);
+        });
+      return;
+    }
     if (current?.href) {
       router.push(current.href);
     }
@@ -135,11 +179,17 @@ export function PartnerAlerts() {
         kind?: string;
         title?: string;
         body?: string;
+        id?: string;
       } | null;
       if (!data || data.type !== 'partner-incoming') return;
       if (data.action === 'decline' || data.action === 'silence') {
+        clearAcceptTimeout();
         silenceRing();
         setIncoming(null);
+        const bookingId = data.id || incomingRef.current?.id;
+        if ((data.kind === 'booking' || incomingRef.current?.kind === 'booking') && bookingId) {
+          expireBooking(bookingId);
+        }
         return;
       }
       if (data.action === 'ring') {
@@ -148,7 +198,7 @@ export function PartnerAlerts() {
         if (!isBooking && !supplierId) return;
         if (data.url && data.title) {
           presentIncoming({
-            id: data.url,
+            id: data.id || data.url,
             kind: isBooking ? 'booking' : 'order',
             title: data.title,
             body: data.body || '',
@@ -160,8 +210,16 @@ export function PartnerAlerts() {
         return;
       }
       if (data.action === 'accept') {
+        clearAcceptTimeout();
         silenceRing();
         setIncoming(null);
+        const bookingId = data.id || incomingRef.current?.id;
+        if ((data.kind === 'booking' || incomingRef.current?.kind === 'booking') && bookingId) {
+          void updateServiceBookingStatus(bookingId, 'confirmed').finally(() => {
+            if (data.url) router.push(data.url);
+          });
+          return;
+        }
         if (data.url) router.push(data.url);
       }
     };
@@ -171,7 +229,10 @@ export function PartnerAlerts() {
   }, [router, supplierId, providerId]);
 
   useEffect(() => {
-    return () => silenceRing();
+    return () => {
+      clearAcceptTimeout();
+      silenceRing();
+    };
   }, []);
 
   useEffect(() => {
@@ -214,14 +275,18 @@ export function PartnerAlerts() {
       const fresh = bookings.filter((b) => !seenBookings.current!.has(b.id));
       seenBookings.current = ids;
       const newest = fresh[0];
-      if (!newest) return;
-      presentIncoming({
-        id: newest.id,
-        kind: 'booking',
-        title: 'Incoming booking',
-        body: `${newest.customerName || 'A customer'} · ${newest.serviceName}`,
-        href: `${PROVIDER_HOME_HREF}/${newest.id}`,
-      });
+      if (!newest || newest.status !== 'pending') return;
+      const deadline = getServiceBookingAcceptDeadline(newest);
+      presentIncoming(
+        {
+          id: newest.id,
+          kind: 'booking',
+          title: 'Incoming booking',
+          body: `${newest.customerName || 'A customer'} · ${newest.serviceName}`,
+          href: `${PROVIDER_HOME_HREF}/${newest.id}`,
+        },
+        deadline?.getTime()
+      );
     });
   }, [enabled, providerId]);
 

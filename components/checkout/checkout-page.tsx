@@ -33,6 +33,7 @@ import { useWholesale } from '@/lib/wholesale-context';
 import { useServices } from '@/lib/services-context';
 import { createOrder } from '@/lib/firebase/orders';
 import { expandPackageCartItems, isPackageCartItem } from '@/lib/package-utils';
+import { withRetailPricing } from '@/lib/retail-pricing';
 import { SendPaymentLinkCard } from '@/components/checkout/send-payment-link-card';
 import { GiftPayChoice, type GiftPayMode } from '@/components/payments/gift-pay-choice';
 import {
@@ -559,7 +560,12 @@ export function CheckoutPage() {
   const orderTotal = quote.total;
   const paymentOptions = PAYMENT_OPTIONS.filter((option) => enabledMethods.includes(option.id));
   const canGift = enabledMethods.some((method) => method === 'mobile_money' || method === 'card');
-  const orderItems = expandPackageCartItems(items, packages, products, activeListings);
+  const orderItems = expandPackageCartItems(
+    items,
+    packages,
+    products.map(withRetailPricing),
+    activeListings
+  );
   const wholesaleSavings = getWholesaleSavings(items);
   const isWholesaleOrder = items.some((item) => item.quantity >= 10);
   const isPackageOrder = items.some((item) => item.id.startsWith('pkg-'));

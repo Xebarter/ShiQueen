@@ -2,6 +2,7 @@ import { getSupabaseAdmin, isSupabaseAdminConfigured } from '@/lib/supabase/admi
 import { stripUndefined } from '@/lib/supabase/sanitize';
 import { TABLES } from '@/lib/supabase/tables';
 import { toDate } from '@/lib/supabase/timestamp';
+import { withResolvedServiceBookingStatus } from '@/lib/service-booking-utils';
 import type { ServiceBooking, ServiceBookingStatus, ServiceLocationType } from '@/lib/types/services';
 import type { PaymentMethod, PaymentStatus } from '@/lib/types/database';
 
@@ -39,7 +40,7 @@ export type BookingPaymentUpdateInput = {
 };
 
 function mapBooking(row: Record<string, unknown>): ServiceBooking {
-  return {
+  return withResolvedServiceBookingStatus({
     id: String(row.id),
     serviceId: String(row.service_id ?? ''),
     providerId: String(row.provider_id ?? ''),
@@ -67,7 +68,7 @@ function mapBooking(row: Record<string, unknown>): ServiceBooking {
       : undefined,
     createdAt: toDate(row.created_at),
     updatedAt: toDate(row.updated_at),
-  };
+  });
 }
 
 function createBookingInputToRow(booking: CreateServerBookingInput): Record<string, unknown> {
@@ -265,7 +266,7 @@ export async function getBookedSlotsForProviderDateServer(
     .filter((row) => {
       const status = String(row.status ?? '');
       const paymentStatus = String(row.payment_status ?? '');
-      if (status === 'cancelled') return false;
+      if (status === 'cancelled' || status === 'expired') return false;
       if (paymentStatus === 'failed' || paymentStatus === 'cancelled') return false;
       return (
         blocking.has(status) ||

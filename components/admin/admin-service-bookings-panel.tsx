@@ -23,7 +23,7 @@ import type { ServiceBooking, ServiceBookingStatus } from '@/lib/types/services'
 import { formatUGX } from '@/lib/wholesale-data';
 import { cn } from '@/lib/utils';
 
-const STATUS_FILTERS = ['All', 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled'] as const;
+const STATUS_FILTERS = ['All', 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'expired'] as const;
 
 const BOOKING_STATUS: Record<ServiceBookingStatus, { label: string; className: string }> = {
   pending: { label: 'Pending', className: 'bg-amber-500/10 text-amber-800 ring-amber-500/20' },
@@ -31,6 +31,7 @@ const BOOKING_STATUS: Record<ServiceBookingStatus, { label: string; className: s
   in_progress: { label: 'In session', className: 'bg-violet-500/10 text-violet-800 ring-violet-500/20' },
   completed: { label: 'Completed', className: 'bg-emerald-500/10 text-emerald-800 ring-emerald-500/20' },
   cancelled: { label: 'Cancelled', className: 'bg-rose-500/10 text-rose-800 ring-rose-500/20' },
+  expired: { label: 'Expired', className: 'bg-muted text-muted-foreground ring-border' },
 };
 
 const PAYMENT_STATUS: Record<PaymentStatus, { label: string; className: string }> = {

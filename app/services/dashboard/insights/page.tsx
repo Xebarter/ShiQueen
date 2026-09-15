@@ -48,6 +48,7 @@ import { formatUGX } from '@/lib/wholesale-data';
 
 function bookingTone(status: ServiceBooking['status']) {
   if (status === 'in_progress') return 'progress' as const;
+  if (status === 'expired') return 'cancelled' as const;
   return status;
 }
 

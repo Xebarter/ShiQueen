@@ -254,7 +254,7 @@ function toBookedSet(
   return new Set(
     (bookedTimeSlots as ServiceBooking[])
       .filter((b) => {
-        if (b.date !== date || b.status === 'cancelled') return false;
+        if (b.date !== date || b.status === 'cancelled' || b.status === 'expired') return false;
         if (b.paymentStatus === 'failed' || b.paymentStatus === 'cancelled') return false;
         return true;
       })

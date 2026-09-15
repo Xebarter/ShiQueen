@@ -3,12 +3,13 @@ import { isSupabaseAdminConfigured } from '@/lib/supabase/config';
 import { TABLES } from '@/lib/supabase/tables';
 import { toDate } from '@/lib/supabase/timestamp';
 import { isValidPackageCategory } from '@/lib/package-catalog';
+import { withRetailPricing } from '@/lib/retail-pricing';
 import type { Product } from '@/lib/types/database';
 import type { Package } from '@/lib/types/wholesale';
 import type { ServiceCategory, ServiceListing } from '@/lib/types/services';
 
 function mapProduct(row: Record<string, unknown>): Product {
-  return {
+  return withRetailPricing({
     id: String(row.id),
     name: String(row.name ?? ''),
     sku: String(row.sku ?? ''),
@@ -36,7 +37,7 @@ function mapProduct(row: Record<string, unknown>): Product {
     status: (row.status as Product['status']) ?? 'Active',
     createdAt: toDate(row.created_at),
     updatedAt: toDate(row.updated_at),
-  };
+  });
 }
 
 function mapPackage(row: Record<string, unknown>): Package {

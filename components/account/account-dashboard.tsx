@@ -48,6 +48,7 @@ import { useProducts } from '@/lib/products-context';
 import { Order, type OrderItem, Product } from '@/lib/types/database';
 import { formatUGX } from '@/lib/wholesale-data';
 import { isRetailCatalogProduct } from '@/lib/product-channels';
+import { withRetailPricing } from '@/lib/retail-pricing';
 import { getAccountHandle, getDisplayName } from '@/lib/user-display';
 import { resolveListingImage } from '@/lib/services-utils';
 import { ShareProductButton } from '@/components/shared/share-button';
@@ -614,7 +615,8 @@ export function AccountDashboard() {
     () =>
       wishlistIds
         .map((id) => getProductById(id))
-        .filter((product): product is NonNullable<typeof product> => Boolean(product)),
+        .filter((product): product is NonNullable<typeof product> => Boolean(product))
+        .map(withRetailPricing),
     [wishlistIds, getProductById, products]
   );
 
@@ -696,14 +698,15 @@ export function AccountDashboard() {
       toast.error('This item is listed for wholesale buyers only.');
       return;
     }
+    const retail = withRetailPricing(product);
     addItem({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
+      id: retail.id,
+      name: retail.name,
+      price: retail.price,
+      image: retail.image,
       quantity: 1,
     });
-    toast.success(`${product.name} added to cart`);
+    toast.success(`${retail.name} added to cart`);
   };
 
   if (loading) {

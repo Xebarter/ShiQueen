@@ -8,7 +8,8 @@ export type ServiceBookingStatus =
   | 'confirmed'
   | 'in_progress'
   | 'completed'
-  | 'cancelled';
+  | 'cancelled'
+  | 'expired';
 
 export type ServiceLocationType = 'studio' | 'mobile';
 

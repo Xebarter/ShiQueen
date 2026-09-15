@@ -33,6 +33,7 @@ const BOOKING_STATUS: Record<ServiceBookingStatus, { label: string; className: s
   in_progress: { label: 'In session', className: 'bg-violet-500/15 text-violet-800 ring-violet-500/25' },
   completed: { label: 'Completed', className: 'bg-emerald-500/15 text-emerald-800 ring-emerald-500/25' },
   cancelled: { label: 'Cancelled', className: 'bg-rose-500/15 text-rose-800 ring-rose-500/25' },
+  expired: { label: 'Expired', className: 'bg-muted text-muted-foreground ring-border' },
 };
 
 const PAYMENT_STATUS: Record<PaymentStatus, { label: string; className: string }> = {

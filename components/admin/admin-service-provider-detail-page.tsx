@@ -54,6 +54,7 @@ const BOOKING_STATUSES: ServiceBookingStatus[] = [
   'in_progress',
   'completed',
   'cancelled',
+  'expired',
 ];
 
 function formatDate(date: Date) {

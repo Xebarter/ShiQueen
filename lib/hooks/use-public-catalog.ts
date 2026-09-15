@@ -9,6 +9,7 @@ import {
   isCatalogSupplierVisible,
 } from '@/lib/supplier-visibility';
 import { isRetailCatalogProduct } from '@/lib/product-channels';
+import { withRetailPricing } from '@/lib/retail-pricing';
 
 /** Storefront products from approved + active suppliers only. */
 export function usePublicProducts() {
@@ -19,17 +20,21 @@ export function usePublicProducts() {
 
   const publicProducts = useMemo(
     () =>
-      products.filter(
-        (product) =>
-          isRetailCatalogProduct(product) && isCatalogSupplierVisible(product.supplierId, byId)
-      ),
+      products
+        .filter(
+          (product) =>
+            isRetailCatalogProduct(product) && isCatalogSupplierVisible(product.supplierId, byId)
+        )
+        .map(withRetailPricing),
     [products, byId]
   );
 
   const getPublicProductById = (id: string) => {
     const product = getProductById(id);
     if (!product || !isRetailCatalogProduct(product)) return undefined;
-    return isCatalogSupplierVisible(product.supplierId, byId) ? product : undefined;
+    return isCatalogSupplierVisible(product.supplierId, byId)
+      ? withRetailPricing(product)
+      : undefined;
   };
 
   return {

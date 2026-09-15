@@ -3,11 +3,15 @@ import { subscribeTable, type Unsubscribe } from '@/lib/supabase/realtime';
 import { stripUndefined } from '@/lib/supabase/sanitize';
 import { TABLES } from '@/lib/supabase/tables';
 import { toDate } from '@/lib/supabase/timestamp';
+import {
+  resolveServiceBookingStatus,
+  withResolvedServiceBookingStatus,
+} from '@/lib/service-booking-utils';
 import type { ServiceBooking, ServiceBookingStatus } from '@/lib/types/services';
 import type { PaymentMethod, PaymentStatus } from '@/lib/types/database';
 
 function mapBooking(row: Record<string, unknown>): ServiceBooking {
-  return {
+  const booking: ServiceBooking = {
     id: String(row.id),
     serviceId: String(row.service_id ?? ''),
     providerId: String(row.provider_id ?? ''),
@@ -36,6 +40,22 @@ function mapBooking(row: Record<string, unknown>): ServiceBooking {
     createdAt: toDate(row.created_at),
     updatedAt: toDate(row.updated_at),
   };
+  return withResolvedServiceBookingStatus(booking);
+}
+
+async function persistExpiredIfNeeded(booking: ServiceBooking): Promise<ServiceBooking> {
+  if (booking.status !== 'expired') return booking;
+  const supabase = getSupabaseClient();
+  if (!supabase) return booking;
+
+  // Soft-expire on read; ignore write errors (e.g. offline / RLS).
+  void supabase
+    .from(TABLES.serviceBookings)
+    .update({ status: 'expired' })
+    .eq('id', booking.id)
+    .eq('status', 'pending');
+
+  return booking;
 }
 
 function bookingToRow(data: Partial<ServiceBooking> & { id?: string }): Record<string, unknown> {
@@ -133,7 +153,7 @@ export async function getBookedTimeSlotsForProviderDate(
   return (data ?? [])
     .map((row) => mapBooking(row as Record<string, unknown>))
     .filter((b) => {
-      if (b.status === 'cancelled') return false;
+      if (b.status === 'cancelled' || b.status === 'expired') return false;
       if (b.paymentStatus === 'failed' || b.paymentStatus === 'cancelled') return false;
       return (
         b.status === 'pending' ||
@@ -174,19 +194,46 @@ export async function updateServiceBookingStatus(
   const supabase = getSupabaseClient();
   if (!supabase) throw new Error('Supabase not initialized');
 
+  const existing = await getServiceBookingByIdRaw(id);
+  if (!existing) throw new Error('Booking not found');
+
+  const resolved = resolveServiceBookingStatus(existing);
+
   if (status === 'cancelled') {
-    const existing = await getServiceBookingById(id);
-    if (existing?.paymentStatus === 'paid') {
+    if (existing.paymentStatus === 'paid') {
       throw new Error('Paid bookings cannot be cancelled');
+    }
+    if (resolved === 'expired' || existing.status === 'expired') {
+      throw new Error('Expired bookings cannot be cancelled');
     }
   }
 
-  const { error } = await supabase
-    .from(TABLES.serviceBookings)
-    .update({ status })
-    .eq('id', id);
+  if (status === 'confirmed') {
+    if (resolved === 'expired' || existing.status === 'expired') {
+      throw new Error('This request expired. Ask the customer to book again.');
+    }
+    if (existing.status !== 'pending') {
+      throw new Error('Only pending bookings can be accepted');
+    }
+  }
 
+  let query = supabase.from(TABLES.serviceBookings).update({ status }).eq('id', id);
+
+  // Accept / expire only while still pending to avoid racing a late Accept.
+  if (status === 'confirmed' || status === 'expired') {
+    query = query.eq('status', 'pending');
+  }
+
+  const { error, data } = await query.select('id');
   if (error) throw error;
+
+  if ((status === 'confirmed' || status === 'expired') && (!data || data.length === 0)) {
+    const latest = await getServiceBookingByIdRaw(id);
+    if (latest?.status === status) return;
+    if (status === 'confirmed') {
+      throw new Error('This request expired. Ask the customer to book again.');
+    }
+  }
 }
 
 export async function updateServiceBooking(
@@ -204,7 +251,7 @@ export async function updateServiceBooking(
   if (error) throw error;
 }
 
-export async function getServiceBookingById(id: string): Promise<ServiceBooking | null> {
+async function getServiceBookingByIdRaw(id: string): Promise<ServiceBooking | null> {
   const supabase = getSupabaseClient();
   if (!supabase) return null;
 
@@ -216,5 +263,42 @@ export async function getServiceBookingById(id: string): Promise<ServiceBooking 
 
   if (error) throw error;
   if (!data) return null;
-  return mapBooking(data as Record<string, unknown>);
+
+  const row = data as Record<string, unknown>;
+  return {
+    id: String(row.id),
+    serviceId: String(row.service_id ?? ''),
+    providerId: String(row.provider_id ?? ''),
+    userId: row.user_id ? String(row.user_id) : null,
+    customerName: String(row.customer_name ?? ''),
+    customerPhone: String(row.customer_phone ?? ''),
+    customerEmail: row.customer_email ? String(row.customer_email) : undefined,
+    date: String(row.date ?? ''),
+    timeSlot: String(row.time_slot ?? ''),
+    locationType: (row.location_type as ServiceBooking['locationType']) ?? 'studio',
+    customerAddress: row.customer_address ? String(row.customer_address) : undefined,
+    notes: row.notes ? String(row.notes) : undefined,
+    status: (row.status as ServiceBookingStatus) ?? 'pending',
+    amount: Number(row.amount ?? 0),
+    travelFee: Number(row.travel_fee ?? 0),
+    total: Number(row.total ?? row.amount ?? 0),
+    serviceName: String(row.service_name ?? ''),
+    providerName: String(row.provider_name ?? ''),
+    paymentMethod: row.payment_method as PaymentMethod | undefined,
+    paymentStatus: row.payment_status as PaymentStatus | undefined,
+    paytotaPurchaseId: row.paytota_purchase_id ? String(row.paytota_purchase_id) : undefined,
+    paytotaReference: row.paytota_reference ? String(row.paytota_reference) : undefined,
+    sharedBookingToken: row.shared_booking_token
+      ? String(row.shared_booking_token)
+      : undefined,
+    createdAt: toDate(row.created_at),
+    updatedAt: toDate(row.updated_at),
+  };
+}
+
+export async function getServiceBookingById(id: string): Promise<ServiceBooking | null> {
+  const raw = await getServiceBookingByIdRaw(id);
+  if (!raw) return null;
+  const booking = withResolvedServiceBookingStatus(raw);
+  return persistExpiredIfNeeded(booking);
 }

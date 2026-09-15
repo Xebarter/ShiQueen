@@ -39,7 +39,7 @@ const NEXT: Partial<Record<ServiceBookingStatus, ServiceBookingStatus>> = {
 };
 
 const NEXT_LABEL: Partial<Record<ServiceBookingStatus, string>> = {
-  confirmed: 'Confirm',
+  confirmed: 'Accept',
   in_progress: 'Start',
   completed: 'Complete',
 };
@@ -50,11 +50,13 @@ const STATUS_LABEL: Record<ServiceBookingStatus, string> = {
   in_progress: 'Live',
   completed: 'Done',
   cancelled: 'Cancelled',
+  expired: 'Expired',
 };
 
 function bookingTone(status: ServiceBookingStatus) {
   if (status === 'in_progress') return 'progress' as const;
   if (status === 'completed') return 'completed' as const;
+  if (status === 'expired') return 'cancelled' as const;
   return status;
 }
 
@@ -149,6 +151,7 @@ export default function ProviderBookingDetailPage() {
   const canCancel =
     booking.status !== 'cancelled' &&
     booking.status !== 'completed' &&
+    booking.status !== 'expired' &&
     booking.paymentStatus !== 'paid';
 
   return (
