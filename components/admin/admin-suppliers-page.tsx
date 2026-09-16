@@ -125,29 +125,31 @@ export function AdminSuppliersPage() {
 
   const filtered = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
-    return suppliers.filter((supplier) => {
-      if (filter === 'default' && !supplier.isDefault) return false;
-      if (
-        filter !== 'all' &&
-        filter !== 'default' &&
-        supplier.approvalStatus !== filter
-      ) {
-        return false;
-      }
-      if (!q) return true;
-      const haystack = [
-        supplier.name,
-        supplier.companyName,
-        supplier.contactName,
-        supplier.email,
-        supplier.phone,
-        supplier.city,
-        supplier.approvalStatus,
-      ]
-        .join(' ')
-        .toLowerCase();
-      return haystack.includes(q);
-    });
+    return suppliers
+      .filter((supplier) => {
+        if (filter === 'default' && !supplier.isDefault) return false;
+        if (
+          filter !== 'all' &&
+          filter !== 'default' &&
+          supplier.approvalStatus !== filter
+        ) {
+          return false;
+        }
+        if (!q) return true;
+        const haystack = [
+          supplier.name,
+          supplier.companyName,
+          supplier.contactName,
+          supplier.email,
+          supplier.phone,
+          supplier.city,
+          supplier.approvalStatus,
+        ]
+          .join(' ')
+          .toLowerCase();
+        return haystack.includes(q);
+      })
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }, [suppliers, searchTerm, filter]);
 
   const catalogCoverBySupplier = useMemo(() => {
