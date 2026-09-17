@@ -28,6 +28,84 @@ function isAdminEmail(email: string): boolean {
   return getAdminEmails().includes(email.toLowerCase());
 }
 
+export function roleAfterUnlinkingSupplier(
+  profile: Pick<UserProfile, 'role' | 'providerId'>
+): UserRole {
+  if (profile.role !== 'supplier') return profile.role;
+  return profile.providerId ? 'service_provider' : 'customer';
+}
+
+async function supplierRecordExists(supplierId: string): Promise<boolean> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return true;
+
+  const { data, error } = await supabase
+    .from(TABLES.suppliers)
+    .select('id')
+    .eq('id', supplierId)
+    .maybeSingle();
+
+  if (error) return true;
+  return Boolean(data);
+}
+
+async function clearStaleSupplierLink(uid: string, profile: UserProfile): Promise<UserProfile> {
+  const supplierId = profile.supplierId?.trim();
+  if (supplierId) {
+    const exists = await supplierRecordExists(supplierId);
+    if (exists) return profile;
+  } else if (profile.role !== 'supplier') {
+    return profile;
+  }
+
+  const nextRole = roleAfterUnlinkingSupplier(profile);
+  try {
+    await updateUserProfile(uid, { supplierId: '', role: nextRole });
+  } catch (error) {
+    if (!isSupabaseOfflineError(error)) throw error;
+  }
+
+  return {
+    ...profile,
+    supplierId: undefined,
+    role: nextRole,
+    updatedAt: new Date(),
+  };
+}
+
+/** Drop supplier_id (and the supplier role) from every profile linked to a deleted supplier. */
+export async function unlinkSupplierFromProfiles(supplierId: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  if (!supabase || !supplierId) return;
+
+  const { data, error } = await supabase
+    .from(TABLES.profiles)
+    .select('id, role, provider_id')
+    .eq('supplier_id', supplierId);
+
+  if (error) throw error;
+  if (!data?.length) return;
+
+  const grouped = new Map<UserRole, string[]>();
+  for (const row of data) {
+    const nextRole = roleAfterUnlinkingSupplier({
+      role: (row.role as UserRole) ?? 'customer',
+      providerId: row.provider_id ? String(row.provider_id) : undefined,
+    });
+    const ids = grouped.get(nextRole) ?? [];
+    ids.push(String(row.id));
+    grouped.set(nextRole, ids);
+  }
+
+  for (const [role, ids] of grouped) {
+    const { error: updateError } = await supabase
+      .from(TABLES.profiles)
+      .update({ supplier_id: null, role })
+      .in('id', ids);
+    if (updateError) throw updateError;
+  }
+}
+
 function mapPreferences(raw: unknown): UserNotificationPreferences | undefined {
   if (!raw || typeof raw !== 'object') return undefined;
   const data = raw as Record<string, unknown>;
@@ -226,39 +304,28 @@ export async function ensureUserProfile(
         }
       }
 
-      if (isAdminEmail(email) && existing.role !== 'admin') {
-        try {
-          await updateUserRole(uid, 'admin');
-          return {
-            ...existing,
-            displayName: nextDisplayName,
-            photoURL: nextPhotoURL,
-            phone: nextPhone,
-            role: 'admin',
-            updatedAt: new Date(),
-          };
-        } catch (error) {
-          if (isSupabaseOfflineError(error)) {
-            return {
-              ...existing,
-              displayName: nextDisplayName,
-              photoURL: nextPhotoURL,
-              phone: nextPhone,
-              role: 'admin',
-              updatedAt: new Date(),
-            };
-          }
-          throw error;
-        }
-      }
-
-      return {
+      let resolved: UserProfile = {
         ...existing,
         displayName: nextDisplayName,
         photoURL: nextPhotoURL,
         phone: nextPhone,
         updatedAt: shouldSyncProfile ? new Date() : existing.updatedAt,
       };
+
+      if (isAdminEmail(email) && existing.role !== 'admin') {
+        try {
+          await updateUserRole(uid, 'admin');
+          resolved = { ...resolved, role: 'admin', updatedAt: new Date() };
+        } catch (error) {
+          if (isSupabaseOfflineError(error)) {
+            resolved = { ...resolved, role: 'admin', updatedAt: new Date() };
+          } else {
+            throw error;
+          }
+        }
+      }
+
+      return await clearStaleSupplierLink(uid, resolved);
     }
 
     return createUserProfile(uid, email, displayName, { photoURL, phone });

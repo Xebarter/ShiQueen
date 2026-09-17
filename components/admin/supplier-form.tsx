@@ -274,7 +274,7 @@ export function SupplierForm({
     }
     if (
       !confirm(
-        `Delete "${initialSupplier.name}"? Linked catalog items will move to the default supplier.`
+        `Delete "${initialSupplier.name}"? Linked catalog items will move to the default supplier. The owner can apply again as a new supplier.`
       )
     ) {
       return;

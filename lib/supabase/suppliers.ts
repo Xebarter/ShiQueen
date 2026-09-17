@@ -300,6 +300,9 @@ export async function deleteSupplier(id: string): Promise<void> {
     await reassignCatalogToSupplier(id, defaultSupplier.id);
   }
 
+  const { unlinkSupplierFromProfiles } = await import('@/lib/supabase/profiles');
+  await unlinkSupplierFromProfiles(id);
+
   const { error } = await supabase.from(TABLES.suppliers).delete().eq('id', id);
   if (error) throw error;
 }

@@ -12,4 +12,6 @@ export {
   addUserFcmToken,
   removeUserFcmToken,
   deleteUserProfile,
+  unlinkSupplierFromProfiles,
+  roleAfterUnlinkingSupplier,
 } from '@/lib/supabase/profiles';

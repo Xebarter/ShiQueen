@@ -18,6 +18,7 @@ import { PartnerDashboardChrome } from '@/components/partner/partner-dashboard-s
 import type { PartnerNavItem, PartnerPageTitle, PartnerTabItem } from '@/components/partner/partner-nav';
 import { useAuth } from '@/lib/auth-context';
 import { shouldRedirectHomeAfterLogout } from '@/lib/auth-redirect';
+import { getSupplier } from '@/lib/firebase/suppliers';
 import { useSuppliers } from '@/lib/suppliers-context';
 import { montserrat } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
@@ -110,10 +111,20 @@ export function SupplierShell({ children, publicPage = false }: SupplierShellPro
       router.replace(`${SUPPLIER_SIGN_IN_HREF}?next=${encodeURIComponent(pathname)}`);
       return;
     }
-    if (!isSupplier) {
+    if (!isSupplier || !supplierId) {
       router.replace('/suppliers');
+      return;
     }
-  }, [publicPage, loading, user, isSupplier, router, pathname]);
+    if (getSupplierById(supplierId)) return;
+
+    let cancelled = false;
+    void getSupplier(supplierId).then((row) => {
+      if (!cancelled && !row) router.replace('/suppliers');
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [publicPage, loading, user, isSupplier, supplierId, getSupplierById, router, pathname]);
 
   if (publicPage) {
     return <div className={cn(montserrat.className, 'min-h-[100dvh] bg-background')}>{children}</div>;

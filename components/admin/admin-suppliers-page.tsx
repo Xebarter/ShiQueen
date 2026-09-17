@@ -274,7 +274,7 @@ export function AdminSuppliersPage() {
     }
     if (
       !confirm(
-        `Delete "${name}"? Linked catalog items will move to the default supplier.`
+        `Delete "${name}"? Linked catalog items will move to the default supplier. The owner can apply again as a new supplier.`
       )
     ) {
       return;

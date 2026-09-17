@@ -22,7 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getFirebaseAuth } from '@/lib/firebase/auth';
-import { linkSupplierRegistration } from '@/lib/firebase/suppliers';
+import { getSupplier, linkSupplierRegistration } from '@/lib/firebase/suppliers';
 import { useAuth } from '@/lib/auth-context';
 import { getAuthErrorMessage } from '@/lib/auth-errors';
 import { isSupplierProfile } from '@/lib/auth-redirect';
@@ -67,6 +67,7 @@ const STEPS = [
 
 type EmailStep = 'identify' | 'password';
 type Phase = 'auth' | 'apply';
+type SupplierAccess = 'idle' | 'checking' | 'active' | 'none';
 
 function resolveSupplierNext(next: string | null): string {
   if (!next) return '/suppliers/orders';
@@ -100,6 +101,7 @@ export function SupplierAuthPage({
   } = useAuth();
 
   const [phase, setPhase] = useState<Phase>('auth');
+  const [supplierAccess, setSupplierAccess] = useState<SupplierAccess>('idle');
   const [emailOpen, setEmailOpen] = useState(false);
   const [emailStep, setEmailStep] = useState<EmailStep>('identify');
   const [email, setEmail] = useState('');
@@ -122,15 +124,49 @@ export function SupplierAuthPage({
 
   useEffect(() => {
     if (authLoading) return;
-    if (user && isSupplier) {
-      router.replace(nextHref);
+
+    if (!user || !isSupplier) {
+      setSupplierAccess('none');
+      return;
     }
-  }, [authLoading, user, isSupplier, router, nextHref]);
+
+    const linkedId = profile?.supplierId?.trim();
+    if (!linkedId) {
+      setSupplierAccess('none');
+      void refreshProfile();
+      return;
+    }
+
+    let cancelled = false;
+    setSupplierAccess('checking');
+    void getSupplier(linkedId)
+      .then(async (row) => {
+        if (cancelled) return;
+        if (row) {
+          setSupplierAccess('active');
+          return;
+        }
+        await refreshProfile();
+        if (!cancelled) setSupplierAccess('none');
+      })
+      .catch(() => {
+        if (!cancelled) setSupplierAccess('active');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, user, isSupplier, profile?.supplierId]);
 
   useEffect(() => {
-    if (authLoading || !user || isSupplier) return;
+    if (supplierAccess !== 'active') return;
+    router.replace(nextHref);
+  }, [supplierAccess, router, nextHref]);
+
+  useEffect(() => {
+    if (authLoading || !user || supplierAccess !== 'none') return;
     if (applicationsEnabled) setPhase('apply');
-  }, [authLoading, user, isSupplier, applicationsEnabled]);
+  }, [authLoading, user, supplierAccess, applicationsEnabled]);
 
   useEffect(() => {
     if (!user) return;
@@ -149,9 +185,12 @@ export function SupplierAuthPage({
     const { getUserProfile } = await import('@/lib/supabase/users');
     const uid = getFirebaseAuth()?.currentUser?.uid;
     const nextProfile = uid ? await getUserProfile(uid) : null;
-    if (isSupplierProfile(nextProfile)) {
-      router.push(nextHref);
-      return true;
+    if (isSupplierProfile(nextProfile) && nextProfile?.supplierId) {
+      const stillActive = await getSupplier(nextProfile.supplierId);
+      if (stillActive) {
+        router.push(nextHref);
+        return true;
+      }
     }
     if (!applicationsEnabled) {
       toast.error('This account is not registered as a supplier.');
@@ -284,7 +323,13 @@ export function SupplierAuthPage({
           : 'Sell with ShiQueen';
   const applySubheading = 'Add your business details and get approved immediately.';
 
-  if (authLoading || (user && isSupplier)) {
+  const openingPortal =
+    authLoading ||
+    supplierAccess === 'checking' ||
+    supplierAccess === 'active' ||
+    Boolean(user && isSupplier && supplierAccess === 'idle');
+
+  if (openingPortal) {
     return (
       <div className="flex min-h-[100dvh] items-center justify-center bg-[oklch(0.985_0.012_350)]">
         <div className="text-center">
@@ -387,7 +432,7 @@ export function SupplierAuthPage({
           </div>
 
           <div className="rounded-2xl border border-border/70 bg-card/95 px-4 py-5 shadow-[0_24px_60px_-32px_oklch(0.40_0.13_340_/_0.4)] ring-1 ring-black/[0.03] backdrop-blur-sm sm:px-7 sm:py-7">
-            {phase === 'auth' && user && !isSupplier && !applicationsEnabled ? (
+            {phase === 'auth' && user && supplierAccess === 'none' && !applicationsEnabled ? (
               <div className="space-y-4 text-center">
                 <h2 className="text-lg font-semibold tracking-tight">Not a supplier account</h2>
                 <p className="text-sm text-muted-foreground">
