@@ -26,6 +26,7 @@ import {
   isSupplierProfile,
   markHomeAfterLogout,
 } from '@/lib/auth-redirect';
+import { shouldMarkHomeAfterLogout } from '@/lib/pwa/scope';
 import { usePathname } from 'next/navigation';
 import { disableGoogleOneTapAutoSelect, cancelGoogleOneTapPrompt } from '@/lib/google-identity';
 
@@ -417,7 +418,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     const auth = getFirebaseAuth();
     if (!auth) throw new Error('Firebase Auth not initialized');
-    markHomeAfterLogout();
+    if (shouldMarkHomeAfterLogout()) {
+      markHomeAfterLogout();
+    }
     disableGoogleOneTapAutoSelect();
     await signOut(auth);
     resetSupabaseClient();

@@ -34,6 +34,7 @@ import {
   usePartnerTabSwipe,
 } from '@/components/partner/partner-tab-swipe';
 import { InstallAppButton } from '@/components/pwa/install-app-button';
+import { PwaExternalLink } from '@/components/pwa/pwa-scope-runtime';
 
 type PartnerShellContextValue = {
   navOpen: boolean;
@@ -271,13 +272,13 @@ function PartnerSidebar(props: PartnerDashboardChromeProps) {
             </p>
           )}
           <InstallAppButton variant="sidebar" />
-          <Link
+          <PwaExternalLink
             href={marketplaceHref}
             className="flex min-h-11 items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-foreground transition hover:bg-secondary"
           >
             <ExternalLink className="h-5 w-5 shrink-0" />
             {marketplaceLabel}
-          </Link>
+          </PwaExternalLink>
           <Button
             variant="outline"
             className="min-h-11 w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950/20"
@@ -354,7 +355,7 @@ function PartnerMobileHeader({
         <p className="truncate text-base font-semibold leading-tight tracking-tight">{title}</p>
       </div>
 
-      <Link
+      <PwaExternalLink
         href={marketplaceHref}
         onClick={(e) => e.stopPropagation()}
         className={cn(
@@ -365,7 +366,7 @@ function PartnerMobileHeader({
         )}
       >
         {marketplaceLabel === 'Storefront' ? 'Store' : marketplaceLabel}
-      </Link>
+      </PwaExternalLink>
     </header>
   );
 }
@@ -419,14 +420,14 @@ function PartnerMobileDrawer(props: PartnerDashboardChromeProps) {
         <div className="shrink-0 border-t border-border/60 bg-muted/15 px-2 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
           <InstallAppButton variant="drawer" />
           <div className="grid grid-cols-2 gap-1.5">
-            <Link
+            <PwaExternalLink
               href={marketplaceHref}
               onClick={close}
               className="flex h-8 items-center justify-center gap-1 rounded-md border border-border bg-card text-[11px] font-semibold transition hover:bg-secondary sm:h-9 sm:text-xs"
             >
               <ExternalLink className="h-3 w-3" />
               {marketplaceLabel === 'Storefront' ? 'Store' : marketplaceLabel}
-            </Link>
+            </PwaExternalLink>
             <button
               type="button"
               disabled={loggingOut}

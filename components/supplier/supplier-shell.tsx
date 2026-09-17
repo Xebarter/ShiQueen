@@ -22,7 +22,8 @@ import { useSuppliers } from '@/lib/suppliers-context';
 import { montserrat } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
 import type { SupplierApprovalStatus } from '@/lib/types/suppliers';
-import { SUPPLIER_HOME_HREF, SUPPLIER_INSIGHTS_HREF } from '@/lib/pwa/paths';
+import { isStandaloneDisplay } from '@/lib/pwa/install';
+import { SUPPLIER_HOME_HREF, SUPPLIER_INSIGHTS_HREF, SUPPLIER_SIGN_IN_HREF } from '@/lib/pwa/paths';
 
 export const SUPPLIER_NAV: readonly PartnerNavItem[] = [
   { href: SUPPLIER_HOME_HREF, label: 'Orders', icon: ClipboardList, group: 'Work' },
@@ -102,11 +103,11 @@ export function SupplierShell({ children, publicPage = false }: SupplierShellPro
   useEffect(() => {
     if (publicPage || loading) return;
     if (!user) {
-      if (shouldRedirectHomeAfterLogout()) {
+      if (shouldRedirectHomeAfterLogout() && !isStandaloneDisplay()) {
         router.replace('/');
         return;
       }
-      router.replace(`/suppliers/sign-in?next=${encodeURIComponent(pathname)}`);
+      router.replace(`${SUPPLIER_SIGN_IN_HREF}?next=${encodeURIComponent(pathname)}`);
       return;
     }
     if (!isSupplier) {
@@ -162,7 +163,7 @@ export function SupplierShell({ children, publicPage = false }: SupplierShellPro
       chromeVariant="premium"
       onLogout={async () => {
         await logout();
-        router.replace('/');
+        router.replace(SUPPLIER_SIGN_IN_HREF);
       }}
     >
       {children}

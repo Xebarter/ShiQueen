@@ -21,7 +21,8 @@ import { useServices } from '@/lib/services-context';
 import { montserrat } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
 import type { ProviderApprovalStatus } from '@/lib/types/services';
-import { PROVIDER_HOME_HREF, PROVIDER_INSIGHTS_HREF } from '@/lib/pwa/paths';
+import { PROVIDER_HOME_HREF, PROVIDER_INSIGHTS_HREF, PROVIDER_SIGN_IN_HREF } from '@/lib/pwa/paths';
+import { isStandaloneDisplay } from '@/lib/pwa/install';
 
 export const PROVIDER_NAV: readonly PartnerNavItem[] = [
   { href: PROVIDER_HOME_HREF, label: 'Bookings', icon: ClipboardList, group: 'Studio' },
@@ -97,15 +98,15 @@ export function ProviderShell({ children }: ProviderShellProps) {
   useEffect(() => {
     if (loading) return;
     if (!user) {
-      if (shouldRedirectHomeAfterLogout()) {
+      if (shouldRedirectHomeAfterLogout() && !isStandaloneDisplay()) {
         router.replace('/');
         return;
       }
-      router.replace(`/services/sign-in?next=${encodeURIComponent(pathname)}`);
+      router.replace(`${PROVIDER_SIGN_IN_HREF}?next=${encodeURIComponent(pathname)}`);
       return;
     }
     if (!isServiceProvider) {
-      router.replace('/services');
+      router.replace(PROVIDER_SIGN_IN_HREF);
     }
   }, [loading, user, isServiceProvider, router, pathname]);
 
@@ -152,7 +153,7 @@ export function ProviderShell({ children }: ProviderShellProps) {
       pageTitles={PROVIDER_PAGE_TITLES}
       onLogout={async () => {
         await logout();
-        router.replace('/');
+        router.replace(PROVIDER_SIGN_IN_HREF);
       }}
     >
       {children}

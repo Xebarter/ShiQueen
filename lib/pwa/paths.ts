@@ -1,5 +1,9 @@
+export const ADMIN_HOME_HREF = '/admin';
+export const ADMIN_SIGN_IN_HREF = '/admin/sign-in';
 export const SUPPLIER_HOME_HREF = '/suppliers/orders';
+export const SUPPLIER_SIGN_IN_HREF = '/suppliers/sign-in';
 export const PROVIDER_HOME_HREF = '/services/dashboard/bookings';
+export const PROVIDER_SIGN_IN_HREF = '/services/sign-in';
 export const SUPPLIER_INSIGHTS_HREF = '/suppliers/insights';
 export const PROVIDER_INSIGHTS_HREF = '/services/dashboard/insights';
 export const ADMIN_SUPPLIERS_HREF = '/admin/suppliers';

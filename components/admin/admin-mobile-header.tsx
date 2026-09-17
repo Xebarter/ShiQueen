@@ -1,9 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { getAdminPageTitle, useAdminShell } from '@/components/admin/admin-shell';
+import { PwaExternalLink } from '@/components/pwa/pwa-scope-runtime';
 import { cn } from '@/lib/utils';
 
 export function AdminMobileHeader() {
@@ -51,13 +51,13 @@ export function AdminMobileHeader() {
         </p>
       </div>
 
-      <Link
+      <PwaExternalLink
         href="/"
         onClick={(e) => e.stopPropagation()}
         className="shrink-0 rounded-xl border border-border bg-background px-3 py-2 text-xs font-semibold text-primary transition hover:bg-primary/5"
       >
         Store
-      </Link>
+      </PwaExternalLink>
     </header>
   );
 }

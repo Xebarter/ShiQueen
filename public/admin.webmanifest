@@ -9,6 +9,9 @@
   "orientation": "portrait",
   "background_color": "#FAF5F4",
   "theme_color": "#5B2850",
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  },
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",

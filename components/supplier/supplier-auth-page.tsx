@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { BrandLogo } from '@/components/brand-logo';
+import { PwaExternalLink } from '@/components/pwa/pwa-scope-runtime';
 import { AuthDivider } from '@/components/auth/auth-shell';
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
 import { PasswordField } from '@/components/auth/password-field';
@@ -306,13 +307,13 @@ export function SupplierAuthPage({
       />
 
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 sm:px-6 sm:py-5">
-        <BrandLogo variant="header" href="/" />
-        <Link
+        <BrandLogo variant="header" href={null} />
+        <PwaExternalLink
           href="/"
           className="text-sm font-medium text-muted-foreground transition hover:text-foreground"
         >
           Shop
-        </Link>
+        </PwaExternalLink>
       </header>
 
       <main className="mx-auto grid w-full max-w-6xl flex-1 items-start gap-5 px-4 pb-8 sm:gap-8 sm:px-6 sm:pb-14 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,28rem)] lg:items-center lg:gap-12 lg:pb-20">
@@ -399,12 +400,12 @@ export function SupplierAuthPage({
                 >
                   Use a different account
                 </Button>
-                <Link
+                <PwaExternalLink
                   href="/"
                   className="block text-sm font-medium text-primary underline-offset-4 hover:underline"
                 >
                   Back to shop
-                </Link>
+                </PwaExternalLink>
               </div>
             ) : phase === 'auth' ? (
               <div className="space-y-4 sm:space-y-5">

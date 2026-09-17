@@ -22,6 +22,7 @@ import { INDEXABLE_ROBOTS } from '@/lib/seo/robots-policy'
 import { getSiteUrl } from '@/lib/site-url'
 import { Toaster } from 'react-hot-toast'
 import { SignedInAlertsRuntime } from '@/components/pwa/signed-in-alerts-runtime'
+import { PwaScopeRuntime } from '@/components/pwa/pwa-scope-runtime'
 
 const defaultOgImage = getDefaultOgImageUrl()
 
@@ -141,6 +142,7 @@ export default function RootLayout({
                   <CompletePhoneDialog />
                   <CompleteNameDialog />
                   <Toaster />
+                  <PwaScopeRuntime />
                   <SignedInAlertsRuntime />
                   </SuppliersProvider>
                 </ServicesProvider>

@@ -33,7 +33,11 @@ export function getSafeAuthNextPath(next: string | null | undefined): string | n
   if (!trimmed.startsWith('/') || trimmed.startsWith('//')) return null;
   if (trimmed.includes('://')) return null;
   if (trimmed.startsWith('/sign-in') || trimmed.startsWith('/sign-up')) return null;
-  if (trimmed.startsWith('/services/sign-in') || trimmed.startsWith('/suppliers/sign-in')) {
+  if (
+    trimmed.startsWith('/services/sign-in') ||
+    trimmed.startsWith('/suppliers/sign-in') ||
+    trimmed.startsWith('/admin/sign-in')
+  ) {
     return null;
   }
   return trimmed;

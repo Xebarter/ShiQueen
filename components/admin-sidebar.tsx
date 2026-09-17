@@ -10,6 +10,7 @@ import { InstallAppButton } from '@/components/pwa/install-app-button';
 import { LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
+import { ADMIN_SIGN_IN_HREF } from '@/lib/pwa/paths';
 import { cn } from '@/lib/utils';
 
 export function AdminSidebar() {
@@ -22,7 +23,7 @@ export function AdminSidebar() {
     setLoggingOut(true);
     try {
       await logout();
-      router.replace('/');
+      router.replace(ADMIN_SIGN_IN_HREF);
     } catch (error) {
       console.error('Logout failed:', error);
     } finally {

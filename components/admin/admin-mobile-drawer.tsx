@@ -7,7 +7,9 @@ import { useAuth } from '@/lib/auth-context';
 import { useAdminShell } from '@/components/admin/admin-shell';
 import { ADMIN_NAV_ITEMS, isAdminNavActive } from '@/components/admin/admin-nav-items';
 import { InstallAppButton } from '@/components/pwa/install-app-button';
+import { PwaExternalLink } from '@/components/pwa/pwa-scope-runtime';
 import { getEmailInitial, getAvatarColorsForLetter } from '@/lib/user-display';
+import { ADMIN_SIGN_IN_HREF } from '@/lib/pwa/paths';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 
@@ -28,7 +30,7 @@ export function AdminMobileDrawer() {
     try {
       await logout();
       setSidebarOpen(false);
-      router.replace('/');
+      router.replace(ADMIN_SIGN_IN_HREF);
     } catch (error) {
       console.error('Logout failed:', error);
     } finally {
@@ -121,14 +123,14 @@ export function AdminMobileDrawer() {
           <InstallAppButton variant="drawer" />
 
           <div className="grid grid-cols-2 gap-1.5">
-            <Link
+            <PwaExternalLink
               href="/"
               onClick={close}
               className="flex h-8 items-center justify-center gap-1 rounded-md border border-border bg-card text-[11px] font-semibold transition hover:bg-secondary sm:h-9 sm:text-xs"
             >
               <ExternalLink className="h-3 w-3" />
               Store
-            </Link>
+            </PwaExternalLink>
             <button
               type="button"
               onClick={handleLogout}
